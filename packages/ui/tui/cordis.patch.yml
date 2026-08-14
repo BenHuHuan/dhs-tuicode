@@ -1,0 +1,109 @@
+# The dsh-tui bundle patch: the full-screen terminal surface over dsh-base.
+# Applied after dsh-base's insert; rows here override base rows by id, with
+# the profile's own cordis.patch.yml and any --patch overlays still to come.
+#
+# A patch replaces the targeted row's whole `config`, so each row below
+# restates every key it owns.
+#
+# The TUI is single-session and composes its agent process-wide, so the base
+# keeps every agent-plane tool row (bash/pwsh/fs/todo/goal/plan) mounted —
+# nothing is disabled here, unlike the web surface's preset roster. The
+# tui-runner plugin creates (or resumes) the one agent the renderer drives.
+
+# ── surface-specific values the base deliberately omits ─────────────────────
+
+# Keep the persona to identity and behavior; tool plugins own tool guidance.
+# The agent-loop layer registers {{model}}/{{provider}}/{{cwd}} scoped to the
+# active agent, resolved at assembly time.
+- id: system-prompt
+  config:
+    persona: >-
+      You are a coding agent powered by the {{model}} model. Your working
+      directory is {{cwd}}. Verify your work by running the code or tests.
+      Keep answers brief and factual.
+
+# The shared module-reload HMR row stays off; the launcher's watch-only
+# fallback still keeps the user patch layers live until the run exits.
+- id: hmr
+  disabled: true
+
+# Shipped default: full thinking at max effort on every request. No key or
+# endpoint is inlined here — both resolve per request from the `llm-deepseek:`
+# settings section and the credential store.
+- id: llm-deepseek
+  config:
+    thinking: enabled
+    reasoningEffort: max
+
+# ── TUI-only rows ───────────────────────────────────────────────────────────
+
+- insert:
+    # Durable KV backend for the projection cache below: same storage root the
+    # web surface uses, so checkpoint rows written by either surface serve both.
+    - id: storage
+      name: '@deepseek-ai/dsh-storage'
+
+    - id: storage-json
+      name: '@deepseek-ai/dsh-storage-json'
+      config:
+        root: !!js dshHomePath('storages')
+
+    - id: storage-domain
+      name: '@deepseek-ai/dsh-storage-domain'
+      config:
+        backend: json
+
+    # The projection registry itself is a base-layer row; this is its durable
+    # checkpoint cache. `/resume` reads titles from the zero-I/O checkpoint row
+    # or a tail-only cold read instead of scanning whole logs.
+    - id: session-projection-cache
+      name: '@deepseek-ai/dsh-session-projection-cache'
+      config:
+        writeEveryEvents: 200
+        writeIntervalMs: 5000
+
+    # Same-workspace session lineage behind `/resume` and the resume picker.
+    - id: session-reference
+      name: '@deepseek-ai/dsh-session-reference'
+
+    # Terminal-multiplexer context, mounted only where a terminal exists.
+    - id: tmux-context
+      name: '@deepseek-ai/dsh-tmux-context'
+      config:
+        refreshIntervalMs: 900000
+
+    # The model-facing ask_user_question tool, answered by the tui-prompt dialog.
+    - id: tool-ask-user
+      name: '@deepseek-ai/dsh-tool-ask-user'
+
+    # ── the TUI layer ─────────────────────────────────────────────────────────
+
+    # Ordinary provider for the parsed CLI flags (`--resume <sessionId>`, --help).
+    - id: tui-startup
+      name: '@deepseek-ai/dsh-tui/startup'
+
+    # Creates (or resumes) the single agent on startup and owns its lifecycle;
+    # the renderer mounts on the tui-agent/ready event it emits.
+    - id: tui-runner
+      name: '@deepseek-ai/dsh-tui/runner'
+      inject: [tuiStartup]
+      config:
+        resumeSessionId: !!js ctx.tuiStartup.resumeSessionId
+
+    # The keyboard-backed provider behind ask_user_question and the plan-mode
+    # review, and the front door it renders inside.
+    - id: tui-prompt
+      name: '@deepseek-ai/dsh-tui/prompt'
+
+    # The full-screen renderer: streaming transcript, Markdown/reasoning
+    # rendering, tool cards, todo panel, questions, approval dialogs, and the
+    # /model /resume /status /exit command set.
+    - id: tui
+      name: '@deepseek-ai/dsh-tui'
+      config:
+        showReasoning: true
+        maxToolOutputLines: 6
+        # The terminal-local first-run notice, mounted by the renderer on the
+        # channel context; its acknowledgement is owned by this Harness home.
+        firstRunWelcome:
+          dshHome: !!js dshHomePath()

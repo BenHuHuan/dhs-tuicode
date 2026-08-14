@@ -1,0 +1,5 @@
+{"type":"session","version":0,"id":"31f63cc0-0198-4ab2-bfde-79a4eb4f1867","createdAt":1783352180000,"cwd":"{{cwd}}","delegationDepth":0}
+{"type":"assistant/chunk","seq":0,"time":1783352180001,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"text"}}}
+{"type":"assistant/chunk","seq":1,"time":1783352180002,"data":{"turn":1,"step":1,"chunk":{"type":"text-delta","index":0,"text":"USER-ONLY SKILL LOADED"}}}
+{"type":"assistant/chunk","seq":2,"time":1783352180003,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"text","text":"USER-ONLY SKILL LOADED"}}}}
+{"type":"assistant/chunk","seq":3,"time":1783352180004,"data":{"turn":1,"step":1,"chunk":{"type":"finish","reason":{"kind":"stop"}}}}

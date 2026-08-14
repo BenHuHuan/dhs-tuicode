@@ -26,7 +26,7 @@ describe('writeFileAtomic', () => {
     if (process.platform !== 'win32') expect((await stat(target)).mode & 0o777).toBe(0o600)
   })
 
-  it('replaces a symlinked target itself without writing through to the referent', async () => {
+  it.skipIf(process.platform === 'win32')('replaces a symlinked target itself without writing through to the referent', async () => {
     const dir = await scratch()
     const victim = join(dir, 'victim')
     await writeFile(victim, 'victim-content')

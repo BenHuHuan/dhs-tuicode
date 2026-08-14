@@ -20,6 +20,8 @@ Status: implemented
 
 该 seam 保持进程内约定语义不变：`JobStart.run()` 仍然传入回调和确切的 `Agent` 对象，因此持久化或跨进程后端在能满足此 Service Definition 之前仍有设计工作要做（身份、重启、所有权、观察）。这次拆分把该项未来工作移出了每个 Consumer 的依赖图；它并不预先设计后端。
 
+后续的 TUI 直接 Shell 集成在不移动包边界的前提下扩展了这条 seam。`JobStart.run()` 现在可以移交一项已存活、仍由生产方持有的资源；注册表的全部准入仍先行完成，因此拒绝时绝不会调用 `run()`，资源仍归生产方。`JobStart.completionDelivery` 还区分由注册表持有的完成通知与生产方对交付更丰富终止上下文的显式承诺。本地 Service Provider 会让由生产方交付的记录从 reported 状态开始，从而阻止通用 `dsh-tool-jobs` 监听器重复添加该模型输入。这两项扩展都没有把进程句柄或 TUI 概念暴露到 Service Definition 中。
+
 ## 曾考虑的替代方案
 
 **在第二个后端出现之前保持具体服务（维持现状）。**这正是运行时 Agent Note 当初的立场：在第二个 Service Provider 出现前抽取 Service Definition，可能固化错误的边界。该方案落选，因为这条边界已不再是臆测：九个服务方法及其语义自引入以来在每一次生产方集成中都保持稳定，它们正是 `dsh-tool-jobs` 与各生产方已经面向编程的那套接口，而且仓库约定默认将可替换能力拆成三个包。剩余风险（持久化后端可能需要变更约定）不因这次拆分而改变：无论拆分与否，这类变更都会落在 Service Definition 包里；而若维持现状，它们今天还会连带搅动每个 Consumer 的提供方依赖。

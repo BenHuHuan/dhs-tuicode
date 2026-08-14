@@ -12,11 +12,11 @@ Storage was the binding one. The shipped TUI composition defaulted its persisten
 
 The picker then filtered again. It dropped records whose `cwd` differed from the current session before display, and `summarizeResumeCandidate` independently marked a differing `cwd` as `disabledReason: 'different workspace'`, so a foreign session that did reach the store was both hidden and refused.
 
-Finally, resume never changed directory. The host re-execs `dsh --resume=<id>` through `process.execve`, which inherits the cwd. Session *header* cwd is restored from the log, but process cwd is what `dsh-fs-local`, the bash executor, and glob/grep resolve against, so resuming a foreign session would have replayed its transcript while acting on the wrong project.
+Finally, resume needed execution routing, not only transcript replay. Restoring a session header is insufficient if agent-scoped filesystem or shell tools still default to process cwd: an in-process foreign-session swap would then display the right history while acting on the launch project. Conversely, changing process cwd would retarget every agent and process-global service in the same runtime.
 
 ## Decision
 
-The shared CLI configuration supplies one session root under the Harness home, the picker gains a workspace scope, and the handoff carries the target directory.
+The shared CLI configuration supplies one session root under the Harness home, the picker gains a workspace scope, and the resumed session header remains the per-agent workspace authority.
 
 **Storage.** The shared base owns the default in `apps/cli/config/base.cordis.yml`: its `session-persistence-jsonl` row calls the app-boot-provided `dshHomePath('sessions')`, which uses the canonical `DSH_HOME` resolver and its standard `~/.dsh` fallback. TUI, Web, and headless therefore consume one default without a session-specific launcher patch or slot. An overlay or personal patch that states an explicit root replaces that row's whole `config` and remains the deployment's authoritative choice.
 
@@ -24,7 +24,9 @@ The shared CLI configuration supplies one session root under the Harness home, t
 
 `summarizeResumeCandidate` therefore drops `'different workspace'` and gains `'session has no recorded workspace'`. That is a real new refusal rather than a rename: a header without `cwd` names no directory for the host to enter, so it cannot be handed off even though its log is intact.
 
-**Handoff.** `TuiResumeHost.handoff` takes the target `cwd` beside the `SessionId`. `preflightResume` resolves both together and returns them, so the caller cannot re-derive a stale directory from the row it displayed — a record whose `cwd` moved between listing and preflight is resumed in the *re-read* directory, which is why the former "reject a moved cwd" behavior is now a handoff with the new path. The shipped host chdirs before disposing the app: an unreachable directory must reject while the caller can still restore the terminal, because after teardown no owner remains to report to. Resume always uses the default `dsh --resume` surface because `meta` rejects parent options; the handoff already enters the persisted target directory.
+**Direct references.** `/resume [session]` and its `/continue [session]` alias converge on the same controller. A bare command opens the picker; an argument resolves an exact session id first, then a unique case-sensitive exact title across the full candidate set. No match fails locally, while a duplicate title reports the matching ids in stable order and requires an id. Resolution deliberately feeds the same mutable preflight and atomic swap as picker selection rather than trusting listing-time metadata.
+
+**Atomic in-process swap.** `preflightResume` re-lists and fully reads the selected log, validates its current `cwd`, route, replay surface, and idle status, then passes the exact `SessionId` to optional `TuiRuntime.swapResume`. The shipped `TuiAgentService` prepares `AgentRegistry.resume()` before retiring the previous handle; only a committed replacement emits `tui-agent/ready` and remounts the channel, so rejection leaves the original terminal session usable. The restored Agent owns the log's re-read header, and agent-scoped filesystem, bash, PowerShell, and persistent-terminal paths derive their default workspace from `agent.session.header.cwd`. Process cwd remains unchanged, avoiding cross-agent global mutation while a foreign session acts on its own workspace.
 
 ## Alternatives considered
 
@@ -36,14 +38,14 @@ The shared CLI configuration supplies one session root under the Harness home, t
 
 **One flat list of every workspace.** Rejected: it loses the "this project" default that the overwhelmingly common case wants, and in a busy home directory the current project's sessions would compete with unrelated ones.
 
-**Let the host infer the directory from the restored session header.** Rejected: the header is model- and prompt-facing state restored *after* boot, while the directory must be entered *before* `execve`. Passing it explicitly keeps the ordering visible at the seam.
+**Change process cwd during an in-process swap.** Rejected: cwd is process-global, so mutating it for one resumed Agent would silently retarget unrelated agents and services. The durable session header is already the correct per-agent authority, and agent-scoped tools consume it explicitly.
 
 ## Consequences
 
 - Sessions already stored under a project-local `./.sessions` disappear from `/resume`. This is the accepted cost of no migration.
-- A resumed session can change the process's working directory, so a foreign resume is not a pure transcript restoration — every path-resolving tool moves with it.
+- A foreign resume leaves process cwd unchanged but changes the active Agent's workspace authority; every agent-scoped path-resolving tool follows the restored session header.
 - The Harness home now holds session logs for every project on the machine. Its growth is no longer bounded by one checkout, and no retention policy is introduced here.
 
 ## Testing
 
-TUI tests cover the default scope hiding other workspaces while reporting their count, Tab revealing them with per-row workspace labels, Tab back clearing the query and selection, searching by workspace label, a cwd-less record staying visible but disabled, and the handoff receiving both the id and the workspace re-read at preflight. The former "reject a moved cwd" case now asserts the handoff carries the new directory. Built CLI PTY tests exercise the shared config default and the per-process derived query index. The keyless TUI snapshot pins both scopes of the selector, including the scope line, the per-row workspace lines, and the Tab hint in the footer. A manual cross-workspace resume verified at the process level that the replacement's working directory became the target workspace.
+TUI tests cover the default scope hiding other workspaces while reporting their count, Tab revealing them with per-row workspace labels, Tab back clearing the query and selection, searching by workspace label, a cwd-less record staying visible but disabled, exact-id and unique-title direct resolution, deterministic duplicate-title refusal, mutable preflight rechecks, and atomic swap rejection. Built CLI PTY tests exercise the shared config default, the per-process derived query index, and `/continue <title>` through terminal release, in-process channel replacement, and restored state. The keyless TUI snapshot pins both scopes of the selector, including the scope line, the per-row workspace lines, and the Tab hint in the footer. Filesystem and shell integration suites separately pin per-session cwd routing.

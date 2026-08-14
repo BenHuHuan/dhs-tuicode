@@ -1,0 +1,65 @@
+terminal 100x36 buffer=normal length=36 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "Use the todo_write tool to — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=31 bufferRow=31
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " Use the todo_write tool to"
+  style 1-26 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+5| "Use the todo_write tool to record a plan with exactly three todos: \"read the code\" (in_progress),   "
+6| "\"write the fix\" (pending), \"run the tests\" (pending). Send all three in one todo_write call. Then   "
+7| "reply with the single word DONE and stop.                                                           "
+8| <blank>
+9| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+10| "Reasoning                                                                                           "
+  style 0-8 dim italic
+11| "The user wants me to use the todo_write tool to record a plan with exactly three todos in the       "
+  style 0-99 dim italic
+12| "specified statuses, then reply with \"DONE\".                                                         "
+  style 0-42 dim italic
+13| <blank>
+14| "● Tool / todo_write"
+  style 0-18 fg=green
+15| "Update todo list                                                                                    "
+  style 0-99 dim
+16| "Updated todo list: 2 pending, 1 in progress, 0 completed.                                           "
+  style 0-99 dim
+17| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+18| <blank>
+19| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+20| "Reasoning                                                                                           "
+  style 0-8 dim italic
+21| "The todos have been written successfully. Now I just need to reply with the single word \"DONE\".     "
+  style 0-94 dim italic
+22| "DONE                                                                                                "
+23| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+24-25| <blank>
+26| "Plan"
+  style 0-3 fg=bright-magenta bold
+27| "  ● read the code"
+  style 2-2 fg=yellow
+28| "  ○ write the fix"
+  style 2-2 dim
+29| "  ○ run the tests"
+  style 2-2 dim
+30| "/workspace/project  deepseek-v4-flash  ↑3.1k ↓145  cache 47%  3% context"
+  style 0-37 fg=bright-magenta bold
+  style 40-56 dim
+  style 59-79 dim
+  style 82-91 dim
+31| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse
+32-35| <blank>

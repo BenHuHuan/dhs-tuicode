@@ -38,3 +38,9 @@ apps/web/dist/
 worktrees/
 .agents/worktrees/
 .typert-*/
+
+# local build logs and website temp output
+build.log
+m1-install.log
+web.log
+website/.vitepress/.temp/

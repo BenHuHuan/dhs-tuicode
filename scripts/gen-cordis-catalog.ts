@@ -100,6 +100,9 @@ export const SERVICE_PAGE: Record<string, string> = {
   tokenMeter: 'token-meter.md',
   toolResultPruner: 'compaction.md',
   tools: 'tools.md',
+  tui: 'tui.md',
+  tuiAgent: 'tui.md',
+  tuiPrompt: 'tui.md',
   typert: 'typert.md',
   typertGateway: 'typert.md',
   userQuestions: 'user-questions.md',
@@ -181,6 +184,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'system-prompt': 'system-prompt.md',
   'session-telemetry': 'session-telemetry.md',
   'tools': 'tools.md',
+  'tui-agent': 'tui.md',
   'workflow': 'workflow.md',
 }
 
@@ -486,6 +490,10 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   TypertPackageRecord: 'invariants.md',
   TypertSchemaFilter: 'invariants.md',
   TypertSchemaRecord: 'invariants.md',
+  TuiOverlayRequest: 'tui.md',
+  TuiOverlaySession: 'tui.md',
+  TuiPromptUnsubscribe: 'tui.md',
+  TuiPromptValueHandle: 'tui.md',
 }
 
 /** TypeScript lib and pinned framework types with no repository-owned data page. */
@@ -573,6 +581,7 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   RpcReceipt: 'carrier-layer receipt is owned by packages/host/apiproxy/src/api/rpc.ts',
   Sandbox: 'external E2B SDK handle is owned by packages/e2b/e2b/README.md',
   SessionForkSource: 'service-local fork input is owned by packages/core/session/src/index.ts',
+  SettleContext: 'TUI runner-local agent creation input is owned by packages/ui/tui/src/runner.ts',
   SubagentRunEndInfo: 'event payload contract is owned by packages/subagent/subagent/src/types.ts',
   SubagentRunInfo: 'event payload contract is owned by packages/subagent/subagent/src/types.ts',
   WorkflowAgentEndInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',

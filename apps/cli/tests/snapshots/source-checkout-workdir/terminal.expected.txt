@@ -1,0 +1,67 @@
+terminal 100x36 buffer=normal length=36 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "what's the workdir? — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=32 bufferRow=32
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " what's the workdir?"
+  style 1-19 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+5| "what's the workdir?                                                                                 "
+6| <blank>
+7| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+8| "Reasoning                                                                                           "
+  style 0-8 dim italic
+9| "The user is asking about the current working directory. Let me check using pwd.                     "
+  style 0-78 dim italic
+10| <blank>
+11| "● Tool / bash / Print current working directory"
+  style 0-46 fg=green
+12| "$ pwd                                                                                               "
+  style 0-4 dim
+13| "/workspace/project                                                                                  "
+  style 0-17 dim
+14| "[exit 0]                                                                                            "
+  style 0-7 dim
+15| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+16| <blank>
+17| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+18| "Reasoning                                                                                           "
+  style 0-8 dim italic
+19| "The current working directory is /workspace/project.              "
+  style 0-32 dim italic
+  style 33-84 fg=cyan
+  style 85-85 dim italic
+20| "The current working directory is:                                                                   "
+21| "                                                                                                    "
+22| "                                                                                                    "
+23| "  /workspace/project                                              "
+  style 2-53 fg=cyan
+24| "                                                                                                    "
+25| "                                                                                                    "
+26| "Note that the DeepSeek Harness SDK checkout is at /opt/dsh-source — that's a separate location used "
+  style 50-64 fg=cyan
+27| "for inspecting or extending DSH itself, while the working directory above is the current working    "
+28| "directory for this session.                                                                         "
+29| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+30| <blank>
+31| "/workspace/project  deepseek-v4-flash  ↑3.4k ↓185  cache 49%  3% c"
+  style 0-51 fg=bright-magenta bold
+  style 54-70 dim
+  style 73-93 dim
+  style 96-99 dim
+32| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse
+33-35| <blank>

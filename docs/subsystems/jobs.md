@@ -42,6 +42,13 @@ interface JobStart {
    */
   outputLimitBytes?: number
   /**
+   * Who owns terminal-result delivery. `registry` (the default) lets attached
+   * completion listeners report an unclaimed settlement. `producer` means the
+   * producer has already committed to deliver its own terminal result, so the
+   * record starts reported and generic completion reporters stay silent.
+   */
+  completionDelivery?: 'registry' | 'producer'
+  /**
    * Owning live agent. Access is fenced by its session id, and agent disposal
    * cancels and awaits the job. The instance must be the one currently
    * registered under its agent id. Omitting the owner creates an unowned job,
@@ -49,9 +56,9 @@ interface JobStart {
    */
   owner?: Agent
   /**
-   * Start the work after preflight and synchronously return its hooks. Called
-   * once; a throw leaves nothing registered, and the producer must clean up any
-   * partially started resources.
+   * Start the work, or transfer already-live work, after preflight and
+   * synchronously return its hooks. Called once; a throw leaves nothing
+   * registered, and the producer retains or cleans up any uncommitted resource.
    */
   run(): JobHooks
 }
@@ -128,11 +135,11 @@ interface JobSnapshot {
   /** Epoch ms when the job settled; absent while `running`/`stopping`. */
   finishedAt?: number
   /**
-   * True when a kill, read, wait, or teardown cancel has reported or committed
-   * to report the terminal state. Completion reporters suppress redundant
-   * notices when set. Teardown claims it because the owner or service being
-   * destroyed leaves no reader: a reporter that opens a turn on notice would
-   * otherwise spend a model request per teardown layer.
+   * True when a producer, kill, read, wait, or teardown cancel has reported or
+   * committed to report the terminal state. Completion reporters suppress
+   * redundant notices when set. Teardown claims it because the owner or
+   * service being destroyed leaves no reader: a reporter that opens a turn on
+   * notice would otherwise spend a model request per teardown layer.
    */
   reported: boolean
 }
@@ -180,9 +187,10 @@ Implementations must honor these semantics:
 ```ts cordis-catalog
 /**
  * Preflight access, validation, owner cleanup, and implementation-owned
- * admission before starting and atomically registering work. Any preflight
- * rejection leaves no job id or execution resource. A throwing starter
- * leaves nothing registered; after it returns, registration cannot fail.
+ * admission before starting or accepting transfer of work and atomically
+ * registering it. A preflight rejection leaves no job id and leaves an
+ * already-live resource with its caller. A throwing starter leaves nothing
+ * registered; after it returns, registration cannot fail.
  * Settlement records the outcome, notifies listeners, and releases waiters.
  * @param spec - job identity, owner, and synchronous starter.
  * @returns the registry-issued `<kind>-N` id.

@@ -1,0 +1,62 @@
+terminal 100x36 buffer=normal length=36 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "Reply with exactly the word: — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=30 bufferRow=30
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " Reply with exactly the word:"
+  style 1-28 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+5| "Reply with exactly the word: ONE. No tools.                                                         "
+6| <blank>
+7| "Plan mode on. Use /plan off to leave.                                                               "
+  style 0-36 dim
+8| <blank>
+9| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+10| "Reasoning                                                                                           "
+  style 0-8 dim italic
+11| "The user wants me to reply with exactly the word \"ONE\" and use no tools.                            "
+  style 0-71 dim italic
+12| "ONE                                                                                                 "
+13| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+14| <blank>
+15| "Context · plan-mode"
+  style 0-18 dim
+16| "The user switched this session back to the default mode.                                            "
+  style 0-55 dim
+17| <blank>
+18| "Plan mode off.                                                                                      "
+  style 0-13 dim
+19| <blank>
+20| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+21| "Reply with exactly the word: TWO. No tools.                                                         "
+22| <blank>
+23| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+24| "Reasoning                                                                                           "
+  style 0-8 dim italic
+25| "The user wants me to reply with exactly the word \"TWO\" and no tools.                                "
+  style 0-67 dim italic
+26| "TWO                                                                                                 "
+27| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+28| <blank>
+29| "/workspace/project  deepseek-v4-flash  ↑2.9k ↓41  cache 49%  3% co"
+  style 0-51 fg=bright-magenta bold
+  style 54-70 dim
+  style 73-92 dim
+  style 95-99 dim
+30| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse
+31-35| <blank>

@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { availableParallelism } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { resolvePwshPath } from './packages/shell/pwsh-local/src/resolve.ts'
@@ -89,6 +90,14 @@ const testIncludes = [
   'scripts/**/*.spec.ts',
 ]
 
+// Unbounded fork fan-out on high-core Windows hosts starves real Git, worker,
+// watcher, and subprocess fixtures past Vitest's 5 s default even though each
+// completes in 1-2 s alone. Keep direct `pnpm test` within the measured local
+// stability point; an explicit CLI --maxWorkers still overrides this default.
+const unitMaxWorkers = process.platform === 'win32'
+  ? Math.min(8, availableParallelism())
+  : undefined
+
 // The instrumented coverage gate sets this env; the exempt heavy suites then
 // run beside it uninstrumented (membership contract in scripts/coverage-exempt.ts).
 // A set-but-not-'1' value is a misconfiguration, not a silent no-op.
@@ -117,6 +126,7 @@ const processBoundTests = [
 export default defineConfig({
   plugins: [pathsPlugin(), standardDecoratorPlugin()],
   test: {
+    maxWorkers: unitMaxWorkers,
     setupFiles: ['./scripts/test-invariants.ts'],
     // .tsx: client component specs (jsdom via per-file @vitest-environment pragma).
     include: testIncludes,

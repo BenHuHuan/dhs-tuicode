@@ -1,0 +1,132 @@
+terminal 100x36 buffer=normal length=68 base=32 viewport=32
+lifecycle started=1 stopped=0 progress=inactive
+title "Reply with exactly the word: — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=35 bufferRow=67
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " Reply with exactly the word:"
+  style 1-28 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "Context · snapshot-seed"
+  style 0-22 dim
+5| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+6| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+7| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+8| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+9| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+10| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+11| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+12| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+13| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+14| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+15| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+16| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+17| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+18| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-99 dim
+19| "Older snapshot context. Older snapshot context. Older snapshot context. Older snapshot context.     "
+  style 0-94 dim
+20| <blank>
+21| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+22| "Reply with exactly the word: ONE. No tools.                                                         "
+23| <blank>
+24| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+25| "Reasoning                                                                                           "
+  style 0-8 dim italic
+26| "The user wants me to reply with exactly the word \"ONE\" and use no tools.                            "
+  style 0-71 dim italic
+27| "ONE                                                                                                 "
+28| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+29| <blank>
+30| "Keyboard shortcuts                                                                                  "
+  style 0-17 fg=bright-magenta bold
+31| "Enter send • Shift/Alt+Enter newline • Up/Down prompt history                                       "
+  style 0-60 dim
+32| "Esc cancel turn • Ctrl+O cycle cards (collapse/expand/hide) • Ctrl+R toggle reasoning • Ctrl+L      "
+  style 0-99 dim
+33| "redraw                                                                                              "
+  style 0-5 dim
+34| "Ctrl+C cancel while running; clear input or exit while idle • Ctrl+D exit                           "
+  style 0-72 dim
+35| "                                                                                                    "
+36| "/clear — Clear the transcript view (session history is unchanged)                                   "
+  style 0-64 dim
+37| "/compact — Compact older conversation history                                                       "
+  style 0-44 dim
+38| "/details [collapsed|expanded|hidden] [reasoning [on|off]] — Select tool-card visibility and         "
+  style 0-99 dim
+39| "reasoning display                                                                                   "
+  style 0-16 dim
+40| "/exit — Exit after the active turn reaches idle                                                     "
+  style 0-46 dim
+41| "/help — Show keyboard shortcuts and commands                                                        "
+  style 0-43 dim
+42| "/model [[provider/]model] — Show or switch this session's model                                     "
+  style 0-62 dim
+43| "/palette — Show every color and attribute role this terminal renders                                "
+  style 0-67 dim
+44| "/quit — Exit after the active turn reaches idle                                                     "
+  style 0-46 dim
+45| "/reload — EXPERIMENTAL (dev): re-read loader config files and apply the diff (idle only)            "
+  style 0-87 dim
+46| "/resume — List this workspace's resumable sessions                                                  "
+  style 0-49 dim
+47| "/status — Show session diagnostics, system prompt, and registered tools                             "
+  style 0-70 dim
+48| "/skill:<name> [instructions] — load a skill into the conversation                                   "
+  style 0-64 dim
+49| <blank>
+50| "Context · snapshot-injector"
+  style 0-26 dim
+51| "Injected while compaction was running.                                                              "
+  style 0-37 dim
+52| <blank>
+53| "… earlier context was compacted …                                                                   "
+  style 0-32 dim
+54| <blank>
+55| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+56| "Reply with exactly the word: TWO. No tools.                                                         "
+57| <blank>
+58| "Compacted 2 history items (~387 tokens).                                                            "
+  style 0-39 dim
+59| <blank>
+60| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+61| "Reasoning                                                                                           "
+  style 0-8 dim italic
+62| "The user wants me to reply with exactly the word \"TWO\" and no tools.                                "
+  style 0-67 dim italic
+63| "TWO                                                                                                 "
+64| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+65| <blank>
+66| "/workspace/project  deepseek-v4-flash  ↑2.9k ↓41  cache 49%  3% cont"
+  style 0-49 fg=bright-magenta bold
+  style 52-68 dim
+  style 71-90 dim
+  style 93-99 dim
+67| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse

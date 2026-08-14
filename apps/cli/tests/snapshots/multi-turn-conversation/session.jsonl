@@ -1,0 +1,31 @@
+{"type":"session","version":0,"id":"228b7b82-84ed-49b7-a567-981c03b28c77","createdAt":1783352113760,"cwd":"{{cwd}}","delegationDepth":0}
+{"type":"turn/start","seq":0,"time":1783352113765,"data":{"turn":1,"trigger":{"kind":"message","source":{"kind":"user"}}}}
+{"type":"user/message","seq":1,"time":1783352113765,"data":{"content":[{"type":"text","text":"Reply with exactly the word: ONE. No tools."}],"source":{"kind":"user"}},"surfaceOp":"append"}
+{"type":"step/start","seq":2,"time":1783352113767,"data":{"turn":1,"step":1}}
+{"type":"request/header","seq":3,"time":1783352113768,"data":{"header":{"config":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"system":"{{system}}","tools":"{{tools}}"},"reason":"initial"}}
+{"type":"assistant/chunk","seq":4,"time":1783352114428,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}}}
+{"type":"reasoning-chunks","seq0":5,"time0":1783352114428,"data":{"turn":1,"step":1,"index":0,"dt":[114,28,1,0,0,1,28,1,1,0,0,1,24,1,29,1,0],"texts":["The"," user"," wants"," me"," to"," reply"," with"," exactly"," the"," word"," \"","ONE","\""," and"," use"," no"," tools","."]}}
+{"type":"assistant/chunk","seq":23,"time":1783352114658,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":1,"blockType":"text"}}}
+{"type":"assistant/chunk","seq":24,"time":1783352114658,"data":{"turn":1,"step":1,"chunk":{"type":"text-delta","index":1,"text":"ONE"}}}
+{"type":"assistant/chunk","seq":25,"time":1783352114687,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The user wants me to reply with exactly the word \"ONE\" and use no tools."}}}}
+{"type":"assistant/chunk","seq":26,"time":1783352114687,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"ONE"}}}}
+{"type":"assistant/chunk","seq":27,"time":1783352114687,"data":{"turn":1,"step":1,"chunk":{"type":"usage","usage":{"inputTokens":2864,"outputTokens":20,"cacheReadTokens":0,"reasoningTokens":18}}}}
+{"type":"assistant/chunk","seq":28,"time":1783352114687,"data":{"turn":1,"step":1,"chunk":{"type":"finish","reason":{"kind":"stop"}}}}
+{"type":"assistant/message","seq":29,"time":1783352114690,"data":{"turn":1,"step":1,"content":[{"type":"reasoning","text":"The user wants me to reply with exactly the word \"ONE\" and use no tools."},{"type":"text","text":"ONE"}],"provenance":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"usage":{"inputTokens":2864,"outputTokens":20,"cacheReadTokens":0,"reasoningTokens":18}},"sourceEventSeqs":[4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28],"surfaceOp":"append"}
+{"type":"step/end","seq":30,"time":1783352114690,"data":{"turn":1,"step":1}}
+{"type":"turn/end","seq":31,"time":1783352114690,"data":{"turn":1,"reason":{"kind":"completed"}}}
+{"type":"turn/start","seq":32,"time":1783352114699,"data":{"turn":2,"trigger":{"kind":"message","source":{"kind":"user"}}}}
+{"type":"user/message","seq":33,"time":1783352114699,"data":{"content":[{"type":"text","text":"Reply with exactly the word: TWO. No tools."}],"source":{"kind":"user"}},"surfaceOp":"append"}
+{"type":"step/start","seq":34,"time":1783352114700,"data":{"turn":2,"step":1}}
+{"type":"assistant/chunk","seq":35,"time":1783352115341,"data":{"turn":2,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}}}
+{"type":"reasoning-chunks","seq0":36,"time0":1783352115341,"data":{"turn":2,"step":1,"index":0,"dt":[124,27,1,0,0,28,0,0,31,0,0,0,0,28,0,0,0],"texts":["The"," user"," wants"," me"," to"," reply"," with"," exactly"," the"," word"," \"","T","WO","\""," and"," no"," tools","."]}}
+{"type":"assistant/chunk","seq":54,"time":1783352115609,"data":{"turn":2,"step":1,"chunk":{"type":"block-start","index":1,"blockType":"text"}}}
+{"type":"assistant/chunk","seq":55,"time":1783352115609,"data":{"turn":2,"step":1,"chunk":{"type":"text-delta","index":1,"text":"T"}}}
+{"type":"assistant/chunk","seq":56,"time":1783352115609,"data":{"turn":2,"step":1,"chunk":{"type":"text-delta","index":1,"text":"WO"}}}
+{"type":"assistant/chunk","seq":57,"time":1783352115610,"data":{"turn":2,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The user wants me to reply with exactly the word \"TWO\" and no tools."}}}}
+{"type":"assistant/chunk","seq":58,"time":1783352115610,"data":{"turn":2,"step":1,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"TWO"}}}}
+{"type":"assistant/chunk","seq":59,"time":1783352115610,"data":{"turn":2,"step":1,"chunk":{"type":"usage","usage":{"inputTokens":64,"outputTokens":21,"cacheReadTokens":2816,"reasoningTokens":18}}}}
+{"type":"assistant/chunk","seq":60,"time":1783352115610,"data":{"turn":2,"step":1,"chunk":{"type":"finish","reason":{"kind":"stop"}}}}
+{"type":"assistant/message","seq":61,"time":1783352115611,"data":{"turn":2,"step":1,"content":[{"type":"reasoning","text":"The user wants me to reply with exactly the word \"TWO\" and no tools."},{"type":"text","text":"TWO"}],"provenance":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"usage":{"inputTokens":64,"outputTokens":21,"cacheReadTokens":2816,"reasoningTokens":18}},"sourceEventSeqs":[35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60],"surfaceOp":"append"}
+{"type":"step/end","seq":62,"time":1783352115611,"data":{"turn":2,"step":1}}
+{"type":"turn/end","seq":63,"time":1783352115611,"data":{"turn":2,"reason":{"kind":"completed"}}}

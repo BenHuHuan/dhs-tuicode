@@ -299,6 +299,27 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Plugins register direct human commands without sending invocations to the model.',
   },
   {
+    key: 'tui',
+    pkg: 'tui',
+    title: 'Terminal overlay interaction seam',
+    mode: 'seam',
+    note: 'The mounted TUI owns terminal, focus, theme, and FIFO overlay lifecycle; extensions receive only effect-owned overlay sessions.',
+  },
+  {
+    key: 'tuiAgent',
+    pkg: 'tui',
+    title: 'Interactive agent publication',
+    mode: 'bundle',
+    note: 'The profile-local runner creates or resumes the live Agent and publishes committed replacements to the renderer.',
+  },
+  {
+    key: 'tuiPrompt',
+    pkg: 'tui',
+    title: 'Terminal prompt template registry',
+    mode: 'core',
+    note: 'Plugins register lifecycle-bound prompt fragments; the TUI coalesces value changes into renderer refreshes.',
+  },
+  {
     key: 'sessionProjections',
     pkg: 'session-projection',
     title: 'Session projection units',

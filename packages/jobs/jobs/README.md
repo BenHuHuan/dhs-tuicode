@@ -6,7 +6,7 @@ The background job registry contract (`ctx.jobs`). The abstract `JobRegistry` an
 
 ## Service contract
 
-- `start(spec): JobId` validates the attached controller, spec, exact live owner, optional positive `outputLimitBytes`, and any provider-owned admission policy before calling the producer's `run()` once. A preflight rejection or starter throw leaves no job id or registered work; successful return commits without another failable step.
+- `start(spec): JobId` validates the attached controller, spec, exact live owner, optional positive `outputLimitBytes`, and any provider-owned admission policy before calling the producer's `run()` once. `run()` may start work or transfer a producer-owned live resource. A preflight rejection leaves no job id and never calls `run()`, so a transferring producer retains the resource; a starter throw leaves no registered work, and successful return commits without another failable step.
 - `get(id, caller?)` and `list(caller?)` return non-consuming snapshots. Listing includes only caller-owned and unowned jobs.
 - `read(id, caller?)` consumes the single cursor for stream jobs and reads terminal output idempotently for final-output jobs.
 - `kill(id, caller?, reason?)` invokes producer cancellation before changing status. A cancellation throw leaves the job running; success changes it to `stopping` and marks terminal delivery reported.
@@ -20,6 +20,8 @@ All three registrations are owner-relative, because one registry serves every co
 Owned access compares the job's `SessionId` with the caller's. Ids such as `bash-1` are predictable, so this fence is the boundary. Unowned jobs are open to callers and last until service disposal.
 
 `outputLimitBytes` is producer-owned model-presentation policy carried unchanged into snapshots. A controller applies it after adding status or notice metadata; the registry does not rewrite producer output or invent a default for producers that omit it.
+
+`completionDelivery` declares who owns terminal-result delivery. Its default, `registry`, lets an attached completion listener report an otherwise unclaimed settlement. `producer` is an explicit commitment that the producer will deliver its own result; that record starts with `reported: true`, so a generic completion reporter cannot duplicate the model input. This flag does not change output reads, lifecycle, or cancellation.
 
 Implementations also owe the lifecycle semantics of the contract: registrations outlive producer and controller fibers, owner and service disposal cancel live work and await compliant producers, and settlement is first-wins — one terminal record, one round of contained listener notification, released waiters.
 
@@ -36,5 +38,5 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 ## Known Limitations and Deferred Work
 
 - **Stream output has one consuming cursor** — independent observers need a cursor or snapshot API.
-- **Foreground work cannot be promoted** — producers choose foreground or background before starting.
+- **Promotion is cooperative, not discoverable** — a producer that still owns an already-live handle may transfer it through `start()` after preflight; the registry cannot discover or seize arbitrary foreground work, and the producer must retain ownership when preflight rejects.
 - **The contract is in-process** — `JobStart.run()` passes callbacks and exact `Agent` objects; a durable or cross-process backend must reshape identity, restart, ownership, and observation semantics before it can implement this seam.

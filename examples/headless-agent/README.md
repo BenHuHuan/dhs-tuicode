@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-This directory owns the replay and real-model test composition for a headless coding agent: DeepSeek V4 + local bash and filesystem tools + subagent delegation + workflows and fresh-agent Ralph iteration + `todo_write` + JSONL persistence. It explicitly mounts the shared agent spine, one root agent, persistence, and checkpoint policy; it is not a second product entry point.
+This directory owns the replay and real-model test composition for a headless coding agent: DeepSeek V4 + a platform-native local shell (`bash` on POSIX, `pwsh` on Windows) and filesystem tools + subagent delegation + workflows and fresh-agent Ralph iteration + `todo_write` + JSONL persistence. It explicitly mounts the shared agent spine, one root agent, persistence, and checkpoint policy; it is not a second product entry point.
 
 ## Run it
 

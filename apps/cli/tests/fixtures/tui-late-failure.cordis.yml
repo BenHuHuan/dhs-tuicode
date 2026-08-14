@@ -1,0 +1,6 @@
+# Insert a sibling that settles successfully with the Loader, then rejects
+# only after the TUI runner publishes its agent. This exercises fail-loud
+# terminal release without depending on concurrent entry activation order.
+- insert:
+    - id: tui-late-failure
+      name: 'tui-late-failure'

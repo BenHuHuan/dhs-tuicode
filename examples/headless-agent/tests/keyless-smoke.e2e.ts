@@ -11,9 +11,10 @@ const binScript = fileURLToPath(new URL('./fixtures/headless-driver.ts', import.
 const configPath = fileURLToPath(new URL('./fixtures/cli.cordis.yml', import.meta.url))
 const tsconfigPath = fileURLToPath(new URL('../../../tsconfig.json', import.meta.url))
 const decompress = promisify(zstdDecompress)
+const SHELL_TOOL = process.platform === 'win32' ? 'pwsh' : 'bash'
 
 describe('headless-agent keyless smoke', () => {
-  it('boots the real Loader tree, runs a real bash tool round trip, and persists the turn', async () => {
+  it('boots the real Loader tree, runs a real native-shell tool round trip, and persists the turn', async () => {
     let persistedHeader: Record<string, unknown> | undefined
     const { stdout, stderr } = await runLoaderSmoke({
       label: 'headless-agent',
@@ -36,7 +37,7 @@ describe('headless-agent keyless smoke', () => {
     const events = lines.slice(0, -1).map(line => line['event'] as SessionEvent)
     const result = lines.at(-1)
     expect(stderr).toBe('')
-    expect(events.some(event => event.type === 'tool/call' && event.data.name === 'bash')).toBe(true)
+    expect(events.some(event => event.type === 'tool/call' && event.data.name === SHELL_TOOL)).toBe(true)
     const toolResult = events.find(event => event.type === 'tool/result')
     expect(JSON.stringify(toolResult)).toContain('CLI_TOOL_ROUND_TRIP')
     expect(result).toMatchObject({

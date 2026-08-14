@@ -134,7 +134,11 @@ describe('resolvePwshPath and candidatePwshPaths (pure, every platform)', () => 
     const store = join(dir, 'store')
     mkdirSync(store, { recursive: true })
     const link = join(store, 'pwsh.exe')
-    symlinkSync(join(dir, 'no-such-target.exe'), link)
+    symlinkSync(
+      join(dir, 'no-such-target.exe'),
+      link,
+      process.platform === 'win32' ? 'junction' : 'file',
+    )
     expect(resolvePwshPath(undefined, { ProgramFiles: join(dir, 'missing'), PATH: store }, 'win32'))
       .toBe(link)
   })

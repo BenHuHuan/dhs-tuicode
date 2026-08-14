@@ -167,7 +167,7 @@ export class LocalJobRegistry extends JobRegistry {
       output: undefined,
       startedAt: Date.now(),
       finishedAt: undefined,
-      reported: false,
+      reported: spec.completionDelivery === 'producer',
       settled,
       markSettled,
       waiters: 0,

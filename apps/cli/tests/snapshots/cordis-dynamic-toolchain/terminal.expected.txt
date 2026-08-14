@@ -1,0 +1,110 @@
+terminal 100x36 buffer=normal length=59 base=23 viewport=23
+lifecycle started=1 stopped=0 progress=inactive
+title "Run this advanced flow exactly — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=35 bufferRow=58
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " Run this advanced flow exactly"
+  style 1-30 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+5| "Run this advanced flow exactly once: try a no-op temporary Cordis Plugin named snapshot-marker; use "
+6| "run_code to inspect the live temporary Plugins through tools.cordis_inspect; delegate once to a     "
+7| "direct spawn child; run one workflow that delegates to another spawn child; stop dyn-1; then reply  "
+8| "with exactly ADVANCED_ACP_OK.                                                                       "
+9| <blank>
+10| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+11| <blank>
+12| "● Tool / cordis_mount"
+  style 0-20 fg=green
+13| "Mount temporary Cordis Plugin                                                                       "
+  style 0-99 dim
+14| "Temporary Plugin dyn-1 is running (plugin \"snapshot-marker\"; available until unmounted or DSH       "
+  style 0-99 dim
+15| "restarts).                                                                                          "
+  style 0-99 dim
+16| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+17| <blank>
+18| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+19| <blank>
+20| "● Tool / run_code"
+  style 0-16 fg=green
+21| "Verify the temporary marker Plugin                                                                  "
+  style 0-99 dim
+22| "                                                                                                    "
+23| "Temporary Plugins                                                                                   "
+  style 0-16 fg=bright-magenta bold dim
+24| "                                                                                                    "
+25| "- Temporary Plugin dyn-1: snapshot-marker [running] — provides: none; waiting for: none; lifetime:  "
+  style 0-1 fg=bright-magenta dim
+  style 2-99 dim
+26| "  until unmounted or DSH restarts                                                                   "
+  style 0-99 dim
+27| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+28| <blank>
+29| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+30| <blank>
+31| "● Tool / subagent"
+  style 0-16 fg=green
+32| "DIRECT_CHILD_OK                                                                                     "
+  style 0-99 dim
+33| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+34| <blank>
+35| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+36| <blank>
+37| "● Tool / workflow"
+  style 0-16 fg=green
+38| "workflow: advanced-acp-snapshot                                                                     "
+  style 0-99 dim
+39| "workflow \"advanced-acp-snapshot\" completed (1 agent).                                               "
+  style 0-99 dim
+40| "Return value:                                                                                       "
+  style 0-99 dim
+41| "{                                                                                                   "
+  style 0-99 dim
+42| "  \"reply\": \"WORKFLOW_CHILD_OK\"                                                                      "
+  style 0-99 dim
+43| "}                                                                                                   "
+  style 0-99 dim
+44| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+45| <blank>
+46| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+47| <blank>
+48| "● Tool / cordis_unmount"
+  style 0-22 fg=green
+49| "Unmount temporary Cordis Plugin dyn-1                                                               "
+  style 0-99 dim
+50| "Temporary Plugin dyn-1 was unmounted and removed.                                                   "
+  style 0-99 dim
+51| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+52| <blank>
+53| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+54| "ADVANCED_ACP_OK                                                                                     "
+55| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+56| <blank>
+57| "/workspace/project  deepseek-v4-flash  ↑18 ↓18  cache 0%  8% cont"
+  style 0-52 fg=bright-magenta bold
+  style 55-71 dim
+  style 74-90 dim
+  style 93-99 dim
+58| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse

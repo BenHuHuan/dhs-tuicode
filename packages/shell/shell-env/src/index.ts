@@ -1,9 +1,9 @@
 /**
  * Tool-independent shell environment plugin: owns the `ctx.shellEnv` registry of
- * trusted, per-execution `DSH_*` variables consumed by the model-facing shell
- * tools (`dsh-tool-bash`, `dsh-tool-pwsh`). Built-in shell facts are owned by
- * the registry itself while plugins can register additional, enumerable facts
- * with effect-scoped disposal.
+ * trusted, per-execution `DSH_*` variables consumed by model-facing shell tools
+ * and explicit user-shell surfaces. Built-in shell facts are owned by the
+ * registry itself while plugins can register additional, enumerable facts with
+ * effect-scoped disposal.
  *
  * @module @deepseek-ai/dsh-shell-env
  */
@@ -13,7 +13,7 @@ import z from '@deepseek-ai/schemastery'
 import { DSH_ENV_PREFIX } from '@deepseek-ai/dsh-shell'
 import type { DshEnvironment, DshEnvironmentKey } from '@deepseek-ai/dsh-shell'
 import { DSH_HOME_ENV, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
-import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import type { ToolExecutionInput } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-session-persistence'
 
 declare module '@deepseek-ai/cordis' {
@@ -43,7 +43,7 @@ export interface BashEnvVariable {
 }
 
 /**
- * A plugin contribution to the managed environment of each model shell call.
+ * A plugin contribution to the managed environment of each shell execution.
  * Declared keys make ownership conflicts detectable before the first command;
  * `resolve` computes only the values available for the current execution.
  */
@@ -53,11 +53,11 @@ export interface BashEnvContributor {
   /** Complete set of `DSH_*` keys this contributor may return. */
   variables: Readonly<Record<DshEnvironmentKey, BashEnvVariable>>
   /**
-   * Resolve this contributor's available values for one tool execution.
-   * @param execution - the shell tool execution and its optional calling agent.
+   * Resolve this contributor's available values for one shell execution.
+   * @param execution - the public execution input and its optional calling agent.
    * @returns a partial map containing only keys declared in {@link variables}.
    */
-  resolve(execution: ToolExecution): Readonly<Partial<Record<DshEnvironmentKey, string>>>
+  resolve(execution: ToolExecutionInput): Readonly<Partial<Record<DshEnvironmentKey, string>>>
 }
 
 /** An enumerable declaration returned by {@link ShellEnvRegistry.list}. */
@@ -80,7 +80,7 @@ const BASH_ENV_KEY_SUFFIX = /^[A-Z][A-Z0-9_]*$/
 
 /**
  * Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables.
- * The namespace is rebuilt for every model shell call: ambient `DSH_*` values
+ * The namespace is rebuilt for every shell call: ambient `DSH_*` values
  * are discarded by the executor, then the registry's current snapshot is
  * injected. Built-in shell facts remain owned by the registry itself while
  * plugins can register additional, enumerable facts with effect-scoped
@@ -145,11 +145,15 @@ export class ShellEnvRegistry extends Service {
   }
 
   /**
-   * Build the trusted `DSH_*` snapshot for one shell tool execution.
-   * @param execution - the current tool execution.
+   * Build the trusted `DSH_*` snapshot for one shell execution.
+   * The caller-facing input shape deliberately stops before the tool runtime's
+   * private token: explicit user-shell commands are executions too, and need
+   * the same managed environment without pretending to be registered tools.
+   *
+   * @param execution - the current tool or explicit user-shell execution.
    * @returns an immutable environment overlay containing built-ins and current contributions.
    */
-  collect(execution: ToolExecution): DshEnvironment {
+  collect(execution: ToolExecutionInput): DshEnvironment {
     const values: Record<DshEnvironmentKey, string> = {
       [DSH_HOME_ENV]: this.dshHome,
       [DSH_SHELL_KEY]: '1',

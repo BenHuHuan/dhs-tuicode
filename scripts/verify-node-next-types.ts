@@ -80,11 +80,16 @@ function publicSpecifiers(pkg: WorkspacePackage): string[] {
   return [...specifiers].sort()
 }
 
+/** Link one absolute package directory without requiring Windows symlink privilege. */
+function linkDirectory(target: string, link: string): void {
+  symlinkSync(target, link, process.platform === 'win32' ? 'junction' : 'dir')
+}
+
 function linkPackage(pkg: WorkspacePackage, nodeModules: string): void {
   const parts = pkg.name.split('/')
   const link = resolve(nodeModules, ...parts)
   mkdirSync(dirname(link), { recursive: true })
-  symlinkSync(pkg.dir, link, 'dir')
+  linkDirectory(pkg.dir, link)
 }
 
 const packages = workspacePackages()
@@ -117,7 +122,7 @@ try {
   if (existsSync(rootTypes)) {
     const typesDir = resolve(nodeModules, '@types')
     mkdirSync(typesDir, { recursive: true })
-    symlinkSync(rootTypes, resolve(typesDir, 'node'), 'dir')
+    linkDirectory(rootTypes, resolve(typesDir, 'node'))
   }
 
   writeFileSync(resolve(tmp, 'package.json'), `${JSON.stringify({ type: 'module', private: true }, null, 2)}\n`)
@@ -155,8 +160,10 @@ try {
 } catch (error: unknown) {
   failed = true
   const output = error as { stdout?: Buffer; stderr?: Buffer }
+  const childOutput = `${output.stdout?.toString() ?? ''}${output.stderr?.toString() ?? ''}`
+  const fallback = error instanceof Error ? error.stack ?? error.message : String(error)
   console.error('verify-node-next-types: NodeNext consumer typecheck failed.\n')
-  console.error(`${output.stdout?.toString() ?? ''}${output.stderr?.toString() ?? ''}`)
+  console.error(childOutput || fallback)
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }

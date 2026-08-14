@@ -1,0 +1,9 @@
+# An overlay whose `llm-pi-ai` config fails schema validation: `providers` is a
+# dict keyed by provider name, and a list is the shape users reach for. The
+# runner's Loader-settlement barrier rejects this before the TUI can acquire
+# bracketed-paste or raw terminal modes.
+- id: llm-pi-ai
+  config:
+    providers:
+      - provider: openai
+        apiKey: keyless-invalid-shape

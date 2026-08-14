@@ -34,7 +34,7 @@ describe('filesystem sandbox containment', () => {
     const realRoot = join(base, 'real')
     const aliasRoot = join(base, 'alias')
     await mkdir(realRoot)
-    await symlink(realRoot, aliasRoot)
+    await symlink(realRoot, aliasRoot, process.platform === 'win32' ? 'junction' : 'dir')
     expect(await isPathUnder(join(await realpath(realRoot), 'missing', 'file.txt'), aliasRoot)).toBe(true)
   })
 

@@ -4,6 +4,8 @@ Status: implemented
 
 English | [中文](2026-08-04-remove-tui-package.zh.md)
 
+> This removal was reversed by [Restore the shipped TUI profile](../feature/2026-08-14-restore-tui-profile.md) after the terminal frontend gained a named product composition and assembled acceptance. The maintenance-cost and reintroduction criteria below remain the rationale for the removal interval.
+
 ## Problem
 
 Removing the implicit `dsh` terminal application left `@deepseek-ai/dsh-tui` without a shipped composition. The package still carried a terminal renderer, interactive command and question adapters, extension overlays, snapshot fixtures, a patched `pi-tui` dependency, and SDK scaffolding that advertised TUI as a supported application interface. Keeping that surface required maintaining a product-sized frontend whose only remaining consumer was the project generator itself.
@@ -12,7 +14,7 @@ The package also made the repository's supported application inventory misleadin
 
 ## Decision
 
-The `packages/ui/tui` package is deleted without a compatibility package or alias. Its source, package tests, terminal snapshots, dependency declarations, patched `pi-tui` artifact, workspace references, generated service catalog entry, and documentation are removed together. Generic host and agent-loop capabilities remain unchanged.
+This record owns the removal interval that began on 2026-08-04. The `packages/ui/tui` package was deleted without a compatibility package or alias, together with its source, tests, snapshots, dependency declarations, patched `pi-tui` artifact, workspace references, generated service catalog entry, and documentation. Generic host and agent-loop capabilities remained unchanged. The current package and `tui` profile are owned by the restoration decision linked above.
 
 The SDK project toolchain that remained as the TUI package's final consumer is deleted by the [toolchain removal decision](2026-08-11-remove-sdk-project-toolchain.md). Host applications may still mount the provider-neutral `dsh-user-questions`, `dsh-commands`, and presentation services directly.
 
@@ -22,7 +24,7 @@ This note consolidates the deleted package-only records that could not remain cu
 
 ## Verification
 
-Repository searches and generated catalogs contain no TUI package, dependency patch, service key, or package link. The ordinary source build, typecheck, lint, hygiene, documentation gates, and remaining assembled snapshot suites run without the deleted workspace.
+At the removal point, repository searches and generated catalogs contained no TUI package, dependency patch, service key, or package link. The ordinary source build, typecheck, lint, hygiene, documentation gates, and remaining assembled snapshot suites ran without the deleted workspace. Current verification belongs to the restoration note.
 
 ## Alternatives considered
 
@@ -34,6 +36,6 @@ Repository searches and generated catalogs contain no TUI package, dependency pa
 
 ## Consequences
 
-DeepSeek Harness has no terminal UI package. Existing imports and `cordis.yml` rows that depend on the package fail instead of being translated. Web remains the shipped interactive surface; ACP, JSON-RPC, and one-shot CLI remain the non-Web entry points.
+During the removal interval, DeepSeek Harness had no terminal UI package. Existing imports and `cordis.yml` rows that depended on it failed instead of being translated. Web remained the shipped interactive surface; ACP, JSON-RPC, and one-shot CLI remained the non-Web entry points.
 
-The provider-neutral command, user-questions, approval, tool-presentation, PTY, and session-projection capabilities remain available to other hosts. Reintroducing a terminal frontend requires a named product or deployment, an explicit package boundary, a concrete interaction provider, and assembled lifecycle and transcript acceptance for that frontend.
+The provider-neutral command, user-questions, approval, tool-presentation, PTY, and session-projection capabilities remained available to other hosts. The restored TUI now meets this note's reintroduction threshold through a named product profile, an explicit package boundary, a concrete interaction provider, and assembled lifecycle and transcript acceptance.

@@ -1,0 +1,157 @@
+=== skill autocomplete ===
+terminal 100x36 buffer=normal length=36 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "DSH TUI snapshot"
+cursor hidden column=13 viewportRow=5 bufferRow=5
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " Recorded replay: skill-invocation-policy"
+  style 1-40 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "/workspace/project  deepseek-v4-flash  ↑0 ↓0  0% context"
+  style 0-51 fg=bright-magenta bold
+  style 54-70 dim
+  style 73-77 dim
+  style 80-89 dim
+5| " dsh > /skill                                                                                       "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 13-13 inverse
+6| "       → skill:user-only-skill  (project) — User-only assembled snapshot skill.                     "
+  style 7-78 fg=bright-magenta
+7-35| <blank>
+
+
+=== loaded exact invocation ===
+terminal 100x36 buffer=normal length=36 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "<skill name=\"user-only-skill\"> Reference — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=30 bufferRow=30
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " <skill name=\"user-only-skill\"> Reference"
+  style 1-40 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+5| "<skill name=\"user-only-skill\">                                                                      "
+6| "References in this skill are relative to                                                            "
+7| "/workspace/project/.agents/skills/user-only-skill.                "
+8| "                                                                                                    "
+9| "USER-ONLY BODY                                                                                      "
+10| "</skill>                                                                                            "
+11| <blank>
+12| "Context · dsh-tool-skill"
+  style 0-23 dim
+13| "A skill is a reusable set of task-specific instructions. The following skills are available in this "
+  style 0-99 dim
+14| "session:                                                                                            "
+  style 0-7 dim
+15| "                                                                                                    "
+16| "<available_skills>                                                                                  "
+  style 0-17 dim
+17| "- `model-only-skill`: Model-only assembled snapshot skill.                                          "
+  style 0-57 dim
+18| "</available_skills>                                                                                 "
+  style 0-18 dim
+19| "                                                                                                    "
+20| "If the user names a skill, or the task clearly matches a skill's description, call the `skill` tool "
+  style 0-99 dim
+21| "with the exact skill name before taking task actions. Load all applicable skills, then follow their "
+  style 0-99 dim
+22| "full instructions. This catalog contains summaries only; do not infer or follow a skill's           "
+  style 0-99 dim
+23| "instructions until it has been loaded.                                                              "
+  style 0-37 dim
+24| <blank>
+25| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+26| "USER-ONLY SKILL LOADED                                                                              "
+27| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+28| <blank>
+29| "/workspace/project  deepseek-v4-flash  ↑0 ↓0  3% context"
+  style 0-51 fg=bright-magenta bold
+  style 54-70 dim
+  style 73-77 dim
+  style 80-89 dim
+30| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse
+31-35| <blank>
+
+
+=== denied exact invocation ===
+terminal 100x36 buffer=normal length=36 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "<skill name=\"user-only-skill\"> Reference — DSH TUI snapshot"
+cursor hidden column=7 viewportRow=32 bufferRow=32
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " <skill name=\"user-only-skill\"> Reference"
+  style 1-40 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "You                                                                                                 "
+  style 0-2 fg=bright-magenta bold underline
+5| "<skill name=\"user-only-skill\">                                                                      "
+6| "References in this skill are relative to                                                            "
+7| "/workspace/project/.agents/skills/user-only-skill.                "
+8| "                                                                                                    "
+9| "USER-ONLY BODY                                                                                      "
+10| "</skill>                                                                                            "
+11| <blank>
+12| "Context · dsh-tool-skill"
+  style 0-23 dim
+13| "A skill is a reusable set of task-specific instructions. The following skills are available in this "
+  style 0-99 dim
+14| "session:                                                                                            "
+  style 0-7 dim
+15| "                                                                                                    "
+16| "<available_skills>                                                                                  "
+  style 0-17 dim
+17| "- `model-only-skill`: Model-only assembled snapshot skill.                                          "
+  style 0-57 dim
+18| "</available_skills>                                                                                 "
+  style 0-18 dim
+19| "                                                                                                    "
+20| "If the user names a skill, or the task clearly matches a skill's description, call the `skill` tool "
+  style 0-99 dim
+21| "with the exact skill name before taking task actions. Load all applicable skills, then follow their "
+  style 0-99 dim
+22| "full instructions. This catalog contains summaries only; do not infer or follow a skill's           "
+  style 0-99 dim
+23| "instructions until it has been loaded.                                                              "
+  style 0-37 dim
+24| <blank>
+25| "Assistant                                                                                           "
+  style 0-8 fg=bright-magenta bold underline
+26| "USER-ONLY SKILL LOADED                                                                              "
+27| "Model wait 0.0s · Completed 2026-07-21 12:00:00                                                     "
+  style 0-46 dim
+28| <blank>
+29| "Skill \"model-only-skill\" is not available for user invocation.                                      "
+  style 0-61 fg=yellow
+30| <blank>
+31| "/workspace/project  deepseek-v4-flash  ↑0 ↓0  3% context"
+  style 0-51 fg=bright-magenta bold
+  style 54-70 dim
+  style 73-77 dim
+  style 80-89 dim
+32| " dsh ◍                                                                                              "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse
+33-35| <blank>

@@ -729,7 +729,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     methods: [
       {
         signature: 'abstract start(spec: JobStart): JobId',
-        description: 'Preflight access, validation, owner cleanup, and implementation-owned admission before starting and atomically registering work. Any preflight rejection leaves no job id or execution resource. A throwing starter leaves nothing registered; after it returns, registration cannot fail. Settlement records the outcome, notifies listeners, and releases waiters.',
+        description: 'Preflight access, validation, owner cleanup, and implementation-owned admission before starting or accepting transfer of work and atomically registering it. A preflight rejection leaves no job id and leaves an already-live resource with its caller. A throwing starter leaves nothing registered; after it returns, registration cannot fail. Settlement records the outcome, notifies listeners, and releases waiters.',
         parameters: [{ name: 'spec', description: 'job identity, owner, and synchronous starter.' }],
         returns: 'the registry-issued `<kind>-N` id.',
       },
@@ -1462,7 +1462,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'shellEnv',
     summary: 'Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables.',
-    description: 'Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables. The namespace is rebuilt for every model shell call: ambient `DSH_*` values are discarded by the executor, then the registry\'s current snapshot is injected. Built-in shell facts remain owned by the registry itself while plugins can register additional, enumerable facts with effect-scoped disposal.',
+    description: 'Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables. The namespace is rebuilt for every shell call: ambient `DSH_*` values are discarded by the executor, then the registry\'s current snapshot is injected. Built-in shell facts remain owned by the registry itself while plugins can register additional, enumerable facts with effect-scoped disposal.',
     methods: [
       {
         signature: 'register(contributor: BashEnvContributor): () => void',
@@ -1471,9 +1471,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the disposer that unregisters the contribution.',
       },
       {
-        signature: 'collect(execution: ToolExecution): DshEnvironment',
-        description: 'Build the trusted `DSH_*` snapshot for one shell tool execution.',
-        parameters: [{ name: 'execution', description: 'the current tool execution.' }],
+        signature: 'collect(execution: ToolExecutionInput): DshEnvironment',
+        description: 'Build the trusted `DSH_*` snapshot for one shell execution. The caller-facing input shape deliberately stops before the tool runtime\'s private token: explicit user-shell commands are executions too, and need the same managed environment without pretending to be registered tools.',
+        parameters: [{ name: 'execution', description: 'the current tool or explicit user-shell execution.' }],
         returns: 'an immutable environment overlay containing built-ins and current contributions.',
       },
       {
@@ -1936,6 +1936,77 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Execute through pre-policy, guards, around-dispatch, post-policy, definition-owned content finalization, and final notification. Tool and listener failures resolve as materialized error results; an invisible tool reports `UNKNOWN_TOOL`. The returned outcome is the same lossless, frozen snapshot final observers receive. Cancellation arriving after entry and before final result materialization skips a not-yet-started body with `ABORTED_BEFORE_DISPATCH` or replaces a successful started outcome with `ABORTED`; already-started work is still drained and may retain a tool-owned structured error.',
         parameters: [{ name: 'exec', description: 'the typed same-process call input. The registry assigns its correlation token before policy begins.' }],
         returns: 'the materialized final result.',
+      },
+    ],
+  },
+  {
+    key: 'tui',
+    summary: 'Optional terminal-local interaction service provided by one mounted TUI.',
+    description: 'Optional terminal-local interaction service provided by one mounted TUI.\n\nThe concrete provider retains pi-tui, focus, and terminal lifecycle state. Plugins receive only effect-owned overlay sessions.',
+    methods: [
+      {
+        signature: 'abstract readonly agent: Agent',
+        description: 'Exact agent driven by this terminal instance.',
+        parameters: [],
+      },
+      {
+        signature: 'abstract openOverlay(request: TuiOverlayRequest): TuiOverlaySession',
+        description: 'Queue an interactive overlay owned by the calling plugin fiber.\n\nThe TUI displays one overlay at a time in FIFO order. Disposing the caller removes a queued overlay or closes an active one before plugin teardown settles. This live presentation is neither logged nor replayed.',
+        parameters: [{ name: 'request', description: 'component factory, layout constraints, and cancellation.' }],
+        returns: 'the effect-owned overlay session.',
+        throws: ['when the TUI has begun shutting down.'],
+      },
+    ],
+  },
+  {
+    key: 'tuiAgent',
+    summary: 'Live interactive agent owned by the runner.',
+    description: 'Live interactive agent owned by the runner. `current` is set once the Agent is created or resumed. The TUI composition subscribes to `tui-agent/ready` instead of polling this field — see the event doc above.',
+    methods: [
+      {
+        signature: 'current: Agent | undefined',
+        description: 'The agent the TUI currently renders; undefined until the runner settles.',
+        parameters: [],
+      },
+      {
+        signature: 'async settle(resumeSessionId: string | undefined, settleContext: SettleContext): Promise<void>',
+        description: 'First settle: create (or resume) the interactive agent and publish it.',
+        parameters: [{ name: 'resumeSessionId', description: 'session to resume in place; undefined starts fresh.' }, { name: 'settleContext', description: 'registry and route this service reuses on swaps.' }],
+      },
+      {
+        signature: 'async swap(resumeSessionId: SessionId): Promise<void>',
+        description: 'Replace the live agent with an in-place resumed session. The previous handle is disposed only after the resume commits, so a rejected resume leaves the current session untouched; the TUI composition swaps its channel on the `tui-agent/ready` event this fires.',
+        parameters: [{ name: 'resumeSessionId', description: 'persisted session to load as the live agent.' }],
+      },
+      {
+        signature: 'async fresh(selection: ModelSelection | undefined): Promise<void>',
+        description: 'Replace the live agent with a newly-created conversation in the current workspace. A unique identity keeps the previous persisted session resumable, while the ready payload carries reasoning effort that is not an AgentOptions field.',
+        parameters: [{ name: 'selection', description: 'model target selected by the current TUI.' }],
+      },
+    ],
+  },
+  {
+    key: 'tuiPrompt',
+    summary: 'Context-global mutable values interpolated by TUI theme prompt templates.',
+    description: 'Context-global mutable values interpolated by TUI theme prompt templates. A registration, mutation, or disposal schedules one coalesced notification to the renderer subscribed with TuiPromptService.subscribe, so a value that changes on its own schedule (not only in response to a UI event) still redraws. Notification is a direct in-service callback, not a Cordis event.',
+    methods: [
+      {
+        signature: 'register(name: string, initialValue?: string): TuiPromptValueHandle',
+        description: 'Register one globally unique template value under the calling Cordis effect.',
+        parameters: [{ name: 'name', description: 'Lowercase slash-separated template name.' }, { name: 'initialValue', description: 'Initial trusted ANSI-capable fragment.' }],
+        returns: 'A mutable handle whose disposal unregisters the name.',
+      },
+      {
+        signature: 'get(name: string): string | undefined',
+        description: 'Read a registered fragment without evaluating plugin code.',
+        parameters: [{ name: 'name', description: 'Exact registered template name.' }],
+        returns: 'The current fragment, or `undefined` when unknown or unavailable.',
+      },
+      {
+        signature: 'subscribe(listener: () => unknown): TuiPromptUnsubscribe',
+        description: 'Observe registration and value changes. The listener runs after a coalesced microtask following any burst of mutations; the renderer re-reads current values on that callback. The subscription is owned by the calling Cordis effect, so it is removed when the subscriber\'s fiber disposes; the returned disposer removes it early. Listener failures are contained — a synchronous throw or a rejected returned promise cannot starve the other observers.',
+        parameters: [{ name: 'listener', description: 'Invoked once per coalesced change burst. Delivery does not wait on a returned promise; its rejection is only observed and logged, never left unhandled, so an async listener cannot order later observers.' }],
+        returns: 'A disposer that removes the subscription.',
       },
     ],
   },
@@ -2558,6 +2629,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'exec', description: 'the execution object that traversed the pipeline.' }, { name: 'result', description: 'a deep-frozen snapshot of the final returned result.' }],
   },
   {
+    name: 'tui-agent/ready',
+    mode: 'emit',
+    signature: '\'tui-agent/ready\'(payload: { sessionId: SessionId; selection?: ModelSelection }): void',
+    summary: 'The runner settled on the agent the TUI renders.',
+    description: 'The runner settled on the agent the TUI renders. Fires after every create or resume; the TUI composition mounts (or, after a resume swap, remounts) on this signal, because cordis effects do not re-run on plain service property mutation.',
+    parameters: [{ name: 'payload', description: '.sessionId - identity of the settled agent\'s session.' }],
+  },
+  {
     name: 'workflow/agent-end',
     mode: 'emit',
     signature: '\'workflow/agent-end\'(info: WorkflowRunInfo, agent: WorkflowAgentEndInfo): void',
@@ -2719,7 +2798,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'BashEnvContributor',
-    declaration: 'export interface BashEnvContributor {\n    name: string;\n    variables: Readonly<Record<DshEnvironmentKey, BashEnvVariable>>;\n    resolve(execution: ToolExecution): Readonly<Partial<Record<DshEnvironmentKey, string>>>;\n}',
+    declaration: 'export interface BashEnvContributor {\n    name: string;\n    variables: Readonly<Record<DshEnvironmentKey, BashEnvVariable>>;\n    resolve(execution: ToolExecutionInput): Readonly<Partial<Record<DshEnvironmentKey, string>>>;\n}',
   },
   {
     name: 'BashEnvVariable',
@@ -3219,7 +3298,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'JobStart',
-    declaration: 'export interface JobStart {\n    kind: JobKind;\n    label: string;\n    outputLimitBytes?: number;\n    owner?: Agent;\n    run(): JobHooks;\n}',
+    declaration: 'export interface JobStart {\n    kind: JobKind;\n    label: string;\n    outputLimitBytes?: number;\n    completionDelivery?: \'registry\' | \'producer\';\n    owner?: Agent;\n    run(): JobHooks;\n}',
   },
   {
     name: 'JobStatus',
@@ -4448,6 +4527,66 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ToolSchema',
     declaration: 'export interface ToolSchema {\n    name: string;\n    description: string;\n    parameters: Record<string, unknown>;\n}',
+  },
+  {
+    name: 'TuiComponent',
+    declaration: 'export interface TuiComponent {\n    render(width: number): string[];\n    handleInput?(data: string): void;\n    wantsKeyRelease?: boolean;\n    invalidate(): void;\n}',
+  },
+  {
+    name: 'TuiFocusable',
+    declaration: 'export interface TuiFocusable {\n    focused: boolean;\n}',
+  },
+  {
+    name: 'TuiOverlayAnchor',
+    declaration: 'export type TuiOverlayAnchor = \'center\' | \'top-left\' | \'top-right\' | \'bottom-left\' | \'bottom-right\' | \'top-center\' | \'bottom-center\' | \'left-center\' | \'right-center\';',
+  },
+  {
+    name: 'TuiOverlayCloseReason',
+    declaration: 'export type TuiOverlayCloseReason = \'closed\' | \'aborted\' | \'owner-disposed\' | \'tui-disposed\' | \'error\';',
+  },
+  {
+    name: 'TuiOverlayHost',
+    declaration: 'export interface TuiOverlayHost {\n    readonly signal: AbortSignal;\n    readonly viewport: TuiViewport;\n    readonly theme: TuiTheme;\n    display(value: string): string;\n    invalidate(): void;\n    close(): void;\n}',
+  },
+  {
+    name: 'TuiOverlayMargin',
+    declaration: 'export interface TuiOverlayMargin {\n    readonly top?: number;\n    readonly right?: number;\n    readonly bottom?: number;\n    readonly left?: number;\n}',
+  },
+  {
+    name: 'TuiOverlayOptions',
+    declaration: 'export interface TuiOverlayOptions {\n    readonly width?: number | `${number}%`;\n    readonly minWidth?: number;\n    readonly maxHeight?: number | `${number}%`;\n    readonly anchor?: TuiOverlayAnchor;\n    readonly margin?: number | TuiOverlayMargin;\n}',
+  },
+  {
+    name: 'TuiOverlayOutcome',
+    declaration: 'export type TuiOverlayOutcome = {\n    readonly reason: Exclude<TuiOverlayCloseReason, \'error\'>;\n} | {\n    readonly reason: \'error\';\n    readonly error: unknown;\n};',
+  },
+  {
+    name: 'TuiOverlayRequest',
+    declaration: 'export interface TuiOverlayRequest {\n    readonly create: (host: TuiOverlayHost) => TuiComponent & Partial<TuiFocusable>;\n    readonly options?: TuiOverlayOptions;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TuiOverlaySession',
+    declaration: 'export interface TuiOverlaySession {\n    readonly state: TuiOverlayState;\n    readonly closed: Promise<TuiOverlayOutcome>;\n    close(): Promise<TuiOverlayOutcome>;\n}',
+  },
+  {
+    name: 'TuiOverlayState',
+    declaration: 'export type TuiOverlayState = \'queued\' | \'active\' | \'closed\';',
+  },
+  {
+    name: 'TuiPromptUnsubscribe',
+    declaration: 'export type TuiPromptUnsubscribe = () => void;',
+  },
+  {
+    name: 'TuiPromptValueHandle',
+    declaration: 'export interface TuiPromptValueHandle {\n    set(value: string | undefined): void;\n    dispose(): void;\n}',
+  },
+  {
+    name: 'TuiTheme',
+    declaration: 'export interface TuiTheme {\n    readonly text: (value: string) => string;\n    readonly brand: (value: string) => string;\n    readonly dim: (value: string) => string;\n    readonly accent: (value: string) => string;\n    readonly success: (value: string) => string;\n    readonly warning: (value: string) => string;\n    readonly error: (value: string) => string;\n    readonly bold: (value: string) => string;\n}',
+  },
+  {
+    name: 'TuiViewport',
+    declaration: 'export interface TuiViewport {\n    readonly columns: number;\n    readonly rows: number;\n}',
   },
   {
     name: 'TurnEndCancelCause',

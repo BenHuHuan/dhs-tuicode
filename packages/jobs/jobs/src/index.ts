@@ -72,9 +72,10 @@ export abstract class JobRegistry extends Service {
 
   /**
    * Preflight access, validation, owner cleanup, and implementation-owned
-   * admission before starting and atomically registering work. Any preflight
-   * rejection leaves no job id or execution resource. A throwing starter
-   * leaves nothing registered; after it returns, registration cannot fail.
+   * admission before starting or accepting transfer of work and atomically
+   * registering it. A preflight rejection leaves no job id and leaves an
+   * already-live resource with its caller. A throwing starter leaves nothing
+   * registered; after it returns, registration cannot fail.
    * Settlement records the outcome, notifies listeners, and releases waiters.
    * @param spec - job identity, owner, and synchronous starter.
    * @returns the registry-issued `<kind>-N` id.

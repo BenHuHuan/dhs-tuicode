@@ -24,7 +24,9 @@ import {
  */
 
 const binScript = fileURLToPath(new URL('../src/bin.ts', import.meta.url))
-const tsxLoader = fileURLToPath(import.meta.resolve('tsx'))
+// `node --import` accepts the resolved file URL on every platform; converting
+// it to `D:\...` makes Node interpret `d:` as an unsupported URL scheme.
+const tsxLoader = import.meta.resolve('tsx')
 // Repo root is four levels up from packages/examples/acp-demo/tests.
 const repoTsconfig = fileURLToPath(new URL('../../../../tsconfig.json', import.meta.url))
 
@@ -67,10 +69,18 @@ let workdir: string | undefined
 
 afterEach(async () => {
   if (spawned !== undefined) {
-    spawned.child.kill('SIGKILL')
+    const proc = spawned.child
     spawned = undefined
+    // Windows retains the child's cwd until process teardown completes.
+    if (proc.exitCode === null && proc.signalCode === null) {
+      const exited = new Promise<void>((resolve) => { proc.once('exit', () => { resolve() }) })
+      proc.kill('SIGKILL')
+      await exited
+    }
   }
-  if (workdir !== undefined) await rm(workdir, { recursive: true, force: true })
+  if (workdir !== undefined) {
+    await rm(workdir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  }
   workdir = undefined
 })
 
@@ -123,6 +133,12 @@ describe('dsh-acp-demo real-load-path smoke (bin + Loader, keyless)', () => {
     const init = await client.initialize({
       protocolVersion: PROTOCOL_VERSION,
       clientCapabilities: {},
+    }).catch((error: unknown) => {
+      const diagnostic = stderr.join('').trim()
+      throw new Error(
+        `ACP initialize failed${diagnostic.length === 0 ? '' : `; child stderr:\n${diagnostic}`}`,
+        { cause: error },
+      )
     })
     expect(init.agentCapabilities).toEqual({
       promptCapabilities: { image: false, audio: false, embeddedContext: false },

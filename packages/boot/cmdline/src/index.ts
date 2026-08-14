@@ -35,10 +35,13 @@ export interface CmdlineArgs {
 /** Request bounded process exit; the launcher wires it to its shutdown controller. */
 export interface AppExit {
   /**
-   * Request exit once the tree has been disposed.
+   * Request exit once the tree has been disposed. Fatal startup paths set
+   * `forceAfterDispose` so a surviving process handle cannot keep a failed
+   * invocation alive after teardown; ordinary completion exits naturally.
    * @param code - the process exit code.
+   * @param options - exit behavior after graceful disposal.
    */
-  (code: number): void
+  (code: number, options?: { forceAfterDispose?: boolean }): void
 }
 
 declare module '@deepseek-ai/cordis' {

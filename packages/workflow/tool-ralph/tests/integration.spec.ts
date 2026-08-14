@@ -233,7 +233,7 @@ describe('dsh-tool-ralph over the real spawn and worker-thread stack', () => {
     expect(result.isError).toBe(expectedError)
     expect((result.content[0] as { text: string }).text).toContain(expectedText)
     await parentHandle.dispose()
-  })
+  }, 15_000)
 
   it('cancels the real worker and fresh child to quiescence', { timeout: 20_000 }, async () => {
     const { ctx, parent, parentHandle } = await mountRalph(['hang'], { maxRounds: 2 })

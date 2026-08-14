@@ -55,7 +55,9 @@ async function pkgName(absDir: string): Promise<string> {
 async function link(target: string, name: string, nm: string): Promise<void> {
   const dest = join(nm, name)
   await mkdir(dirname(dest), { recursive: true })
-  await symlink(target, dest)
+  // Directory junctions preserve the external-consumer topology on Windows
+  // without requiring Developer Mode's symbolic-link privilege.
+  await symlink(target, dest, process.platform === 'win32' ? 'junction' : 'dir')
 }
 
 /** Build a temp consumer dir + a minimal acp `cordis.yml`. Returns the dir. */

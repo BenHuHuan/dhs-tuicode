@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { CallId } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import type { ToolExecution, ToolExecutionInput } from '@deepseek-ai/dsh-tools'
 import { ShellEnvRegistry } from '@deepseek-ai/dsh-shell-env'
 import * as BashEnvPlugin from '@deepseek-ai/dsh-shell-env'
 
@@ -44,6 +44,23 @@ describe('ShellEnvRegistry', () => {
     expect(registry.collect(execution('session-a'))).toEqual({
       DSH_HOME: resolve('./test-dsh-home'),
       DSH_SESSION_ID: 'session-a',
+      DSH_SHELL: '1',
+    })
+  })
+
+  it('accepts an explicit user-shell execution without a registry-private tool token', () => {
+    const registry = new ShellEnvRegistry(new Context(), { dshHome: './test-dsh-home' })
+    const direct: ToolExecutionInput = {
+      signal: testToolSignal,
+      callId: CallId('user-shell:direct'),
+      name: 'user-shell',
+      arguments: { command: 'git status' },
+      agent: { session: { header: { version: 0, id: 'direct-session', createdAt: 0 } } } as Agent,
+    }
+
+    expect(registry.collect(direct)).toEqual({
+      DSH_HOME: resolve('./test-dsh-home'),
+      DSH_SESSION_ID: 'direct-session',
       DSH_SHELL: '1',
     })
   })

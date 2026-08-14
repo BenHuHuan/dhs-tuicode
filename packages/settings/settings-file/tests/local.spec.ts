@@ -197,7 +197,7 @@ describe('persist', () => {
     expect(beta.get().fontSize).toBe(20)
   })
 
-  it('never follows a planted symlink at a temp path and never leaves the document a symlink', async () => {
+  it.skipIf(process.platform === 'win32')('never follows a planted symlink at a temp path and never leaves the document a symlink', async () => {
     const dir = await tempDir()
     const path = join(dir, 'settings.yaml')
     const victim = join(dir, 'victim.txt')

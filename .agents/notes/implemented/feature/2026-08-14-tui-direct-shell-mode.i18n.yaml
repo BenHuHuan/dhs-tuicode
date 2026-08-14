@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-tui-direct-shell-mode.md
+2026-08-14-tui-direct-shell-mode.md: c7676c71c87cfbc3aa5731de88711c48ff9a0ceb
+2026-08-14-tui-direct-shell-mode.zh.md: 091a1514fd00e481c2079c7472f7c7075be9f65f

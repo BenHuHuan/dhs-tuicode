@@ -1,0 +1,31 @@
+overlay 60x12 rows=10
+0| "╭──────────────────────────────────────────────────────────╮"
+  style 0-59 dim
+1| "│                     DeepSeek Harness                     │"
+  style 0-0 dim
+  style 22-37 fg=blue bold
+  style 59-59 dim
+2| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+3| "│ 感谢您愿意拨冗试用 DeepSeek Harness。当前版本仍处于内部  │"
+  style 0-0 dim
+  style 59-59 dim
+4| "│ 测试阶段，功能仍待完善，体验难免有些粗糙。               │"
+  style 0-0 dim
+  style 59-59 dim
+5| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+6| "├──────────────────────────────────────────────────────────┤"
+  style 0-59 dim
+7| "│                       Enter  继续                        │"
+  style 0-0 dim
+  style 24-34 fg=bright-magenta bold
+  style 59-59 dim
+8| "│                         ↑/↓ 滚动 ↓                       │"
+  style 0-0 dim
+  style 24-35 dim
+  style 59-59 dim
+9| "╰──────────────────────────────────────────────────────────╯"
+  style 0-59 dim

@@ -70,3 +70,4 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   node-pty@1.1.0: patches/node-pty@1.1.0.patch
+  '@earendil-works/pi-tui@0.80.7': patches/@earendil-works__pi-tui@0.80.7.patch

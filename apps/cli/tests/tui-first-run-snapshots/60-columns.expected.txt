@@ -1,0 +1,64 @@
+overlay 60x30 rows=21
+0| "╭──────────────────────────────────────────────────────────╮"
+  style 0-59 dim
+1| "│                     DeepSeek Harness                     │"
+  style 0-0 dim
+  style 22-37 fg=blue bold
+  style 59-59 dim
+2| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+3| "│ 感谢您愿意拨冗试用 DeepSeek Harness。当前版本仍处于内部  │"
+  style 0-0 dim
+  style 59-59 dim
+4| "│ 测试阶段，功能仍待完善，体验难免有些粗糙。               │"
+  style 0-0 dim
+  style 59-59 dim
+5| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+6| "│ “如切如磋，如琢如磨。”                                   │"
+  style 0-0 dim
+  style 2-23 bold
+  style 59-59 dim
+7| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+8| "│ 产品的成长，离不开一次次真实的碰撞与坦诚的反馈。您在真实 │"
+  style 0-0 dim
+  style 59-59 dim
+9| "│ 使用中发现的问题，也可能促使我们重新审视，甚至推翻已有的 │"
+  style 0-0 dim
+  style 59-59 dim
+10| "│ 设计。                                                   │"
+  style 0-0 dim
+  style 59-59 dim
+11| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+12| "│ 为了帮助我们更准确地还原您真实使用中的问题，内测版本默认 │"
+  style 0-0 dim
+  style 59-59 dim
+13| "│ 会上传所有 Session Log；如需关闭，请设置环境变量         │"
+  style 0-0 dim
+  style 59-59 dim
+14| "│ DSH_TELEMETRY_DISABLED=1。另外，如果您有任何反馈与建议， │"
+  style 0-0 dim
+  style 59-59 dim
+15| "│ 请在企业微信群中留言告诉我们。每一条反馈，都会帮助我们把 │"
+  style 0-0 dim
+  style 59-59 dim
+16| "│ 它打磨得更好。                                           │"
+  style 0-0 dim
+  style 59-59 dim
+17| "├──────────────────────────────────────────────────────────┤"
+  style 0-59 dim
+18| "│                       Enter  继续                        │"
+  style 0-0 dim
+  style 24-34 fg=bright-magenta bold
+  style 59-59 dim
+19| "│                                                          │"
+  style 0-0 dim
+  style 59-59 dim
+20| "╰──────────────────────────────────────────────────────────╯"
+  style 0-59 dim

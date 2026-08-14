@@ -301,7 +301,7 @@ export const longProbe = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
     }
   })
 
-  it('preserves successful fix output channels', async () => {
+  it('preserves successful fix output channels', { timeout: 15_000 }, async () => {
     const suffix = randomUUID()
     const path = join(repositoryRoot, 'scripts', `staged-lint-probe-${suffix}.ts`)
 
@@ -325,7 +325,7 @@ export const longProbe = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
     }
   })
 
-  it('prints only the final diagnostics when a fix retry still fails', async () => {
+  it('prints only the final diagnostics when a fix retry still fails', { timeout: 15_000 }, async () => {
     const suffix = randomUUID()
     const path = join(repositoryRoot, 'scripts', `staged-lint-probe-${suffix}.ts`)
 

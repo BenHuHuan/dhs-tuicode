@@ -272,7 +272,7 @@ Source: [`packages/shell/shell/src/index.ts:65`](../../packages/shell/shell/src/
 
 ### `ctx.shellEnv` — `ShellEnvRegistry`
 
-Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables. The namespace is rebuilt for every model shell call: ambient `DSH_*` values are discarded by the executor, then the registry's current snapshot is injected. Built-in shell facts remain owned by the registry itself while plugins can register additional, enumerable facts with effect-scoped disposal.
+Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables. The namespace is rebuilt for every shell call: ambient `DSH_*` values are discarded by the executor, then the registry's current snapshot is injected. Built-in shell facts remain owned by the registry itself while plugins can register additional, enumerable facts with effect-scoped disposal.
 
 ```ts cordis-catalog
 /**
@@ -284,11 +284,15 @@ Registry (`ctx.shellEnv`) for trusted, per-execution `DSH_*` variables. The name
 register(contributor: BashEnvContributor): () => void
 
 /**
- * Build the trusted `DSH_*` snapshot for one shell tool execution.
- * @param execution - the current tool execution.
+ * Build the trusted `DSH_*` snapshot for one shell execution.
+ * The caller-facing input shape deliberately stops before the tool runtime's
+ * private token: explicit user-shell commands are executions too, and need
+ * the same managed environment without pretending to be registered tools.
+ *
+ * @param execution - the current tool or explicit user-shell execution.
  * @returns an immutable environment overlay containing built-ins and current contributions.
  */
-collect(execution: ToolExecution): DshEnvironment
+collect(execution: ToolExecutionInput): DshEnvironment
 
 /**
  * Enumerate plugin-contributed variables without executing their resolvers.
@@ -297,7 +301,7 @@ collect(execution: ToolExecution): DshEnvironment
 list(): BashEnvVariableInfo[]
 ```
 
-Types: [DshEnvironment](subprocess.md) · [ToolExecution](tools.md)
+Types: [DshEnvironment](subprocess.md) · [ToolExecutionInput](tools.md)
 
 Source: [`packages/shell/shell-env/src/index.ts:89`](../../packages/shell/shell-env/src/index.ts)
 <!-- END GENERATED cordis-surface -->

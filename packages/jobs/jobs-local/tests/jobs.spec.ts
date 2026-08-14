@@ -60,7 +60,14 @@ function producer(overrides: Partial<Omit<JobStart, 'run'> & JobHooks> = {}) {
   let settle!: (outcome: JobOutcome) => void
   let reject!: (error: unknown) => void
   const cancels: (string | undefined)[] = []
-  const { kind = 'bash', label = 'sleep 60', owner, outputLimitBytes, ...hookOverrides } = overrides
+  const {
+    kind = 'bash',
+    label = 'sleep 60',
+    owner,
+    outputLimitBytes,
+    completionDelivery,
+    ...hookOverrides
+  } = overrides
   const hooks: JobHooks = {
     cancel(reason) { cancels.push(reason) },
     done: new Promise<JobOutcome>((res, rej) => { settle = res; reject = rej }),
@@ -71,6 +78,7 @@ function producer(overrides: Partial<Omit<JobStart, 'run'> & JobHooks> = {}) {
     label,
     ...owner !== undefined ? { owner } : {},
     ...outputLimitBytes !== undefined ? { outputLimitBytes } : {},
+    ...completionDelivery !== undefined ? { completionDelivery } : {},
     run: () => hooks,
   }
   return { spec, settle, reject, cancels }
@@ -113,6 +121,18 @@ function waitResolverCount(ctx: Context, id: JobId): number {
 describe('LocalJobRegistry.start', () => {
   it('preserves the SessionId brand on public owner snapshots', () => {
     expectTypeOf<JobSnapshot['ownerSession']>().toEqualTypeOf<SessionId | undefined>()
+  })
+
+  it('starts producer-delivered work reported so generic listeners cannot duplicate it', async () => {
+    const ctx = await harness()
+    const p = producer({ completionDelivery: 'producer' })
+    const id = ctx.jobs.start(p.spec)
+
+    expect(ctx.jobs.get(id)).toMatchObject({ status: 'running', reported: true })
+    p.settle({ status: 'completed', detail: 'exit code: 0' })
+    await tick()
+    expect(ctx.jobs.get(id)).toMatchObject({ status: 'completed', reported: true })
+    await ctx.fiber.dispose()
   })
 
   it('refuses to register while no job controller serves the owner', async () => {

@@ -40,6 +40,8 @@ Status: implemented
 
 `rename(session, title)` 同步接受用户标题：按已接受标题的字节上限规范化文本、取代在途自动工作，并追加一条第三种来源 `user` 的 `session/title` 事件。最新标题来源为 user 即钉住该会话：只要它还在，`onUserMessage` 在任一节奏下都不再安排自动修订。显式 `refresh()` 仍是有意的解钉手段——只要能推导出替代标题，它就在被钉住的标题之上追加提供方或回退事件（推导不出回退标题时，例如字节上限过小，钉住状态保持不变）。Web host 将其暴露为 `session.rename` unary 方法（冷会话先恢复），并返回规范化后的标题及其事件 seq，使 client 在推送帧到达前就结算自己的 `title` 投影格。
 
+TUI 通过 `/rename [name]` 暴露同一边界：提供文本时调用 `rename()`；不带参数时携带命令的取消信号等待 `refresh()`。`/clear [name]` 及其 `/new [name]`、`/reset [name]` 别名仅在活动工作预检通过后、既有新会话 flush 与 swap 之前执行同一项显式重命名，因此输入无效或缺少标题服务都不会丢弃当前 channel。这些命令注册都设置 `recordInput: false`，因为标题载荷由 `session/title` 事件所有；成功的 `command/done` 改为通过 `sourceEventSeq` 引用该事件。既有标题事件监听器会更新 header、终端窗口标题和诊断信息，同一条持久事件则供之后的恢复发现使用，因此 TUI 不维护并行标题状态。
+
 ### Fork 与消费方
 
 与源日志的其他部分相同，fork 会原样继承作为种子的标题事件——被钉住（user 来源）的标题在子会话中保持钉住，直到显式 refresh。首消息提供方不会自动为 fork 重新生成标题。全部消息提供方可以在子会话出现后续提示词后追加一项归子会话所有的修订，并使用继承的合格消息和新增的合格消息。

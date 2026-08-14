@@ -873,6 +873,24 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:62`](../packages/workflow
 
 Source: [`packages/workflow/tool-workflow/src/types.ts:47`](../packages/workflow/tool-workflow/src/types.ts)
 
+### `tui/*`
+
+<a id="tuiinput--log-only"></a>
+
+#### `tui/input` — log-only
+
+```ts persistence-catalog
+/**
+ * Exact non-empty editor text accepted by the TUI. This log-only event
+ * never enters model history; it preserves every accepted input form for
+ * same-session and cross-session recall.
+ * @param text Trimmed editor text, including any embedded newlines.
+ */
+'tui/input': { text: string }
+```
+
+Source: [`packages/ui/tui/src/chat/prompt-history.ts:26`](../packages/ui/tui/src/chat/prompt-history.ts)
+
 ### `turn/*`
 
 <a id="turnend--log-only"></a>

@@ -1,0 +1,59 @@
+terminal 92x32 buffer=normal length=32 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "DSH snapshot"
+cursor hidden column=0 viewportRow=31 bufferRow=31
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=bright-magenta bold
+  style 10-16 bold
+1| " Snapshot agent ready."
+  style 1-21 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "/workspace/project (tui-staging)  think  ↑0 ↓0  0% context"
+  style 0-17 fg=bright-magenta bold
+  style 18-31 dim
+  style 34-38 dim
+  style 41-45 dim
+  style 48-57 dim
+5| " dsh >                                                                                      "
+  style 1-3 fg=bright-magenta bold
+  style 5-6 dim
+  style 7-7 inverse
+6-10| <blank>
+11| "        ╭ Reasoning effort ────────────────────────────────────────────────────────╮        "
+  style 8-83 fg=bright-magenta
+12| "        │ Model: alpha/think                                                       │        "
+  style 8-8 fg=bright-magenta
+  style 10-15 dim
+  style 83-83 fg=bright-magenta
+13| "        │                                                                          │        "
+  style 8-8 fg=bright-magenta
+  style 83-83 fg=bright-magenta
+14| "        │ → Auto                            adapter default: High                  │        "
+  style 8-8 fg=bright-magenta
+  style 10-64 fg=bright-magenta inverse
+  style 83-83 fg=bright-magenta
+15| "        │   Off                             explicit effort                        │        "
+  style 8-8 fg=bright-magenta
+  style 15-58 dim
+  style 83-83 fg=bright-magenta
+16| "        │   High                            Fast reasoning · adapter default       │        "
+  style 8-8 fg=bright-magenta
+  style 16-75 dim
+  style 83-83 fg=bright-magenta
+17| "        │   Max                             explicit effort                        │        "
+  style 8-8 fg=bright-magenta
+  style 15-58 dim
+  style 83-83 fg=bright-magenta
+18| "        │                                                                          │        "
+  style 8-8 fg=bright-magenta
+  style 83-83 fg=bright-magenta
+19| "        │ ←/→ or ↑/↓ move · Enter select · Esc                                     │        "
+  style 8-8 fg=bright-magenta
+  style 10-45 dim
+  style 83-83 fg=bright-magenta
+20| "        ╰──────────────────────────────────────────────────────────────────────────╯        "
+  style 8-83 fg=bright-magenta
+21-31| <blank>

@@ -1,0 +1,884 @@
+﻿node.exe : $ npm run build:lib:host && npm run typecheck:contracts-ready
+At C:\Users\huhuan\AppData\Local\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\node-v24.19.0-win-x64\pnpm.ps1:16 char:5
++     & "$basedir/node$exe"  "$basedir/node_modules/corepack/dist/pnpm. ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ($ npm run build...contracts-ready:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> @deepseek-ai/dsh-root@0.1.0-rc.5 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.DSH_BUILD_FACE host
+
+ℹ tsdown v0.22.2 powered by rolldown v1.1.1
+ℹ config file: D:\deepseek-harness\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\apps\cli\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\vendor\loader\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\vendor\schemastery\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\api\gateway\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\api\remotes\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\boot\app-boot\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\code-runtime\code-runtime-worker-thread\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\connection\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\hmr\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\locale\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\modules\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\runtime\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-agent-preset\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\schema-form\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-attachment\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-deliverables\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-commands\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-directory-picker-browse\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-input-trigger\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-jobs\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-layout\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-message-feedback\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-permission-presets\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-plan\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-directory-picker-native\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\vendor\logger-console\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-primitives\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-settings\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-conversation\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-model-selection\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-settings-models\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-settings-general\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-settings-plugin-inventory\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-sidebar\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-settings-plugins\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-skill\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-slots\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-subagent\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-theme\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-tool\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-trajectory\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-workflow-run\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-goal\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-workspace\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\web\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\web-react\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\compaction\compaction\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\context\time-context\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\core\agent\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\core\agent-default-model\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\core\agent-loop\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\core\scope\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\core\session\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\examples\acp-demo\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\examples\jsonrpc-demo\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\extensions\cordis-client-runner\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\extensions\ui-cordis\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\goal\goal\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\goal\goal-round-driver\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\host\directory-picker-native\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\host\directory-picker-browse\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\interaction\user-approval\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\llm\llm-retry\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\sandbox\sandbox-policy\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\schedule\schedule\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\sandbox\sandbox-windows-acl\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\settings\settings\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\session-query\session-log-export\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\test-support\llm-mock-server\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\test-support\client-runtime\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\ui\tui\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\typert\registry\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\client\ui-user-questions\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\packages\workflow\workflow-worker-thread\tsdown.config.ts 
+ℹ config file: D:\deepseek-harness\vendor\cosmokit\package.json 
+ℹ config file: D:\deepseek-harness\vendor\group\package.json 
+ℹ config file: D:\deepseek-harness\vendor\cordis\package.json 
+ℹ config file: D:\deepseek-harness\vendor\hmr\package.json 
+ℹ config file: D:\deepseek-harness\vendor\include\package.json 
+ℹ config file: D:\deepseek-harness\vendor\timer\package.json 
+ℹ config file: D:\deepseek-harness\packages\attachment\attachment-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\bundle\base\package.json 
+ℹ config file: D:\deepseek-harness\packages\bundle\headless\package.json 
+ℹ config file: D:\deepseek-harness\packages\acp\acp\package.json 
+ℹ config file: D:\deepseek-harness\packages\code-runtime\code-runtime\package.json 
+ℹ config file: D:\deepseek-harness\packages\attachment\attachment\package.json 
+ℹ config file: D:\deepseek-harness\packages\boot\cmdline\package.json 
+ℹ config file: D:\deepseek-harness\packages\compaction\command-compact\package.json 
+ℹ config file: D:\deepseek-harness\packages\compaction\compaction-basic\package.json 
+ℹ config file: D:\deepseek-harness\packages\bundle\web-app\package.json 
+ℹ config file: D:\deepseek-harness\packages\compaction\compaction-tool-result-pruner\package.json 
+ℹ config file: D:\deepseek-harness\packages\context\agent-instructions\package.json 
+ℹ config file: D:\deepseek-harness\packages\context\tmux-context\package.json 
+ℹ config file: D:\deepseek-harness\packages\context\session-reference\package.json 
+ℹ config file: D:\deepseek-harness\packages\core\system-prompt\package.json 
+ℹ config file: D:\deepseek-harness\packages\core\agent-tool-presentation\package.json 
+ℹ config file: D:\deepseek-harness\packages\credentials\credentials\package.json 
+ℹ config file: D:\deepseek-harness\packages\core\tools\package.json 
+ℹ config file: D:\deepseek-harness\packages\e2b\subprocess-e2b\package.json 
+ℹ config file: D:\deepseek-harness\packages\examples\agent-spine-demo\package.json 
+ℹ config file: D:\deepseek-harness\packages\credentials\credentials-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\e2b\e2b\package.json 
+ℹ config file: D:\deepseek-harness\packages\e2b\fs-e2b\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\tool-fs\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\fs-sandbox\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\fs\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\fs-observation-policy\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\fs-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\extensions\tool-cordis\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\tool-fs-search\package.json 
+ℹ config file: D:\deepseek-harness\packages\extensions\cordis-host-runner\package.json 
+ℹ config file: D:\deepseek-harness\packages\feedback\command-feedback\package.json 
+ℹ config file: D:\deepseek-harness\packages\goal\command-goal\package.json 
+ℹ config file: D:\deepseek-harness\packages\feedback\message-feedback\package.json 
+ℹ config file: D:\deepseek-harness\packages\goal\tool-goal\package.json 
+ℹ config file: D:\deepseek-harness\packages\fs\tool-str-replace-editor\package.json 
+ℹ config file: D:\deepseek-harness\packages\guard\repeat-tool-reminder\package.json 
+ℹ config file: D:\deepseek-harness\packages\guard\timeout-policy\package.json 
+ℹ config file: D:\deepseek-harness\packages\host\apiproxy\package.json 
+ℹ config file: D:\deepseek-harness\packages\host\directory-picker\package.json 
+ℹ config file: D:\deepseek-harness\packages\host\directory-picker-auto\package.json 
+ℹ config file: D:\deepseek-harness\packages\host\frontend-static\package.json 
+ℹ config file: D:\deepseek-harness\packages\identity\anonymous-user-id\package.json 
+ℹ config file: D:\deepseek-harness\packages\host\webserver\package.json 
+ℹ config file: D:\deepseek-harness\packages\interaction\commands\package.json 
+ℹ config file: D:\deepseek-harness\packages\host\plugin-inventory\package.json 
+ℹ config file: D:\deepseek-harness\packages\interaction\user-questions\package.json 
+ℹ config file: D:\deepseek-harness\packages\interaction\permission-presets\package.json 
+ℹ config file: D:\deepseek-harness\packages\jobs\jobs\package.json 
+ℹ config file: D:\deepseek-harness\packages\interaction\tool-ask-user\package.json 
+ℹ config file: D:\deepseek-harness\packages\hooks\hooks-codex\package.json 
+ℹ config file: D:\deepseek-harness\packages\hooks\hooks-claude-code\package.json 
+ℹ config file: D:\deepseek-harness\packages\jobs\jobs-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\hooks\hook-protocol\package.json 
+ℹ config file: D:\deepseek-harness\packages\lsp\lsp\package.json 
+ℹ config file: D:\deepseek-harness\packages\lsp\tool-lsp\package.json 
+ℹ config file: D:\deepseek-harness\packages\lsp\lsp-stdio\package.json 
+ℹ config file: D:\deepseek-harness\packages\llm\llm-deepseek\package.json 
+ℹ config file: D:\deepseek-harness\packages\llm\llm\package.json 
+ℹ config file: D:\deepseek-harness\packages\jobs\tool-jobs\package.json 
+ℹ config file: D:\deepseek-harness\packages\mcp\mcp-client\package.json 
+ℹ config file: D:\deepseek-harness\packages\preset\persona\package.json 
+ℹ config file: D:\deepseek-harness\packages\plan\plan-mode\package.json 
+ℹ config file: D:\deepseek-harness\packages\llm\llm-pi-ai\package.json 
+ℹ config file: D:\deepseek-harness\packages\llm\token-meter\package.json 
+ℹ config file: D:\deepseek-harness\packages\sandbox\sandbox\package.json 
+ℹ config file: D:\deepseek-harness\packages\runtime-diagnostics\invariants\package.json 
+ℹ config file: D:\deepseek-harness\packages\preset\agent-presets\package.json 
+ℹ config file: D:\deepseek-harness\packages\sandbox\sandbox-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\sdk\client\package.json 
+ℹ config file: D:\deepseek-harness\packages\sdk\protocol\package.json 
+ℹ config file: D:\deepseek-harness\packages\sdk\server\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-checkpoint-policy\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-persistence\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-persistence-sqlite\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-projection\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-persistence-jsonl\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-stats\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-telemetry-otel\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-title-all-prompts-llm\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-telemetry\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-title\package.json 
+ℹ config file: D:\deepseek-harness\packages\settings\settings-file\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-title-llm\package.json 
+ℹ config file: D:\deepseek-harness\packages\session-query\session-query-sqlite\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\pwsh-sandbox\package.json 
+ℹ config file: D:\deepseek-harness\packages\session-query\tool-session-query\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\pwsh-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\bash-sandbox\package.json 
+ℹ config file: D:\deepseek-harness\packages\session-query\session-query\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\bash-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\shell\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\shell-env\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\tool-pwsh\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\tool-bash\package.json 
+ℹ config file: D:\deepseek-harness\packages\skill\skill-badge\package.json 
+ℹ config file: D:\deepseek-harness\packages\shell\tool-bash-persistent\package.json 
+ℹ config file: D:\deepseek-harness\packages\skill\skill-filesystem\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-projection-cache\package.json 
+ℹ config file: D:\deepseek-harness\packages\skill\skill\package.json 
+ℹ config file: D:\deepseek-harness\packages\spill\spill-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\spill\spill-policy\package.json 
+ℹ config file: D:\deepseek-harness\packages\storage\storage-domain\package.json 
+ℹ config file: D:\deepseek-harness\packages\storage\storage-json\package.json 
+ℹ config file: D:\deepseek-harness\packages\storage\storage-sqlite\package.json 
+ℹ config file: D:\deepseek-harness\packages\spill\spill\package.json 
+ℹ config file: D:\deepseek-harness\packages\storage\storage\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-claude-code\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-dsh-sdk\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-codex\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-fork-in-process\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-in-process-driver\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-spawn-in-process\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\subagent-acp\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\tool-subagent\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\tool-subagent-control\package.json 
+ℹ config file: D:\deepseek-harness\packages\subagent\tool-subagent-report\package.json 
+ℹ config file: D:\deepseek-harness\packages\subprocess\subprocess\package.json 
+ℹ config file: D:\deepseek-harness\packages\subprocess\subprocess-local\package.json 
+ℹ config file: D:\deepseek-harness\packages\terminal\terminal\package.json 
+ℹ config file: D:\deepseek-harness\packages\terminal\tool-terminal\package.json 
+ℹ config file: D:\deepseek-harness\packages\terminal\terminal-bash\package.json 
+ℹ config file: D:\deepseek-harness\packages\test-support\agent-loop-testkit\package.json 
+ℹ config file: D:\deepseek-harness\packages\test-support\acp-snapshot\package.json 
+ℹ config file: D:\deepseek-harness\packages\typert\generator\package.json 
+ℹ config file: D:\deepseek-harness\packages\typert\loader\package.json 
+ℹ config file: D:\deepseek-harness\packages\test-support\loader-smoke\package.json 
+ℹ config file: D:\deepseek-harness\packages\test-support\llm-replay\package.json 
+ℹ config file: D:\deepseek-harness\packages\typert\protocol\package.json 
+ℹ config file: D:\deepseek-harness\packages\todo\tool-todo\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\home-paths\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\brand\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\launch-environment\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\atomic-write\package.json 
+ℹ config file: D:\deepseek-harness\packages\workflow\workflow\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\timeout\package.json 
+ℹ config file: D:\deepseek-harness\packages\workflow\tool-ralph\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\native-command\package.json 
+ℹ config file: D:\deepseek-harness\packages\util\output-retention\package.json 
+ℹ config file: D:\deepseek-harness\packages\web\web\package.json 
+ℹ config file: D:\deepseek-harness\packages\workflow\tool-workflow\package.json 
+ℹ config file: D:\deepseek-harness\packages\web\web-fetch-http\package.json 
+ℹ config file: D:\deepseek-harness\packages\web\tool-web\package.json 
+ℹ config file: D:\deepseek-harness\packages\web\web-search-deepseek\package.json 
+ℹ config file: D:\deepseek-harness\packages\web\web-search-perplexity\package.json 
+ℹ config file: D:\deepseek-harness\packages\web\web-search-exa\package.json 
+ℹ config file: D:\deepseek-harness\packages\workspace\workspace\package.json 
+ℹ config file: D:\deepseek-harness\packages\skill\tool-skill\package.json 
+ℹ config file: D:\deepseek-harness\packages\session\session-title-first-prompt-llm\package.json 
+ℹ [@deepseek-ai/dsh] entry: lib/types/bin.js
+ℹ [@deepseek-ai/dsh] target: es2024
+ℹ [@deepseek-ai/dsh] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-loader] entry: lib/types/index.js
+ℹ [@deepseek-ai/cordis-plugin-loader] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-loader] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-logger-console] entry: lib/types/index.js
+ℹ [@deepseek-ai/cordis-plugin-logger-console] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-logger-console] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-logger-console] entry: lib/types/browser.js
+ℹ [@deepseek-ai/cordis-plugin-logger-console] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-logger-console] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/schemastery] entry: lib/types/index.js
+ℹ [@deepseek-ai/schemastery] target: es2024
+ℹ [@deepseek-ai/schemastery] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-api-remotes] entry: lib/types/index.js, lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-api-remotes] target: es2024
+ℹ [@deepseek-ai/dsh-api-remotes] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-app-boot] entry: lib/types/index.js, lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-app-boot] target: es2024
+ℹ [@deepseek-ai/dsh-app-boot] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-code-runtime-worker-thread] entry: lib/types/index.js, lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-code-runtime-worker-thread] target: es2024
+ℹ [@deepseek-ai/dsh-code-runtime-worker-thread] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-code-runtime-worker-thread] entry: lib/types/worker.js
+ℹ [@deepseek-ai/dsh-code-runtime-worker-thread] target: es2024
+ℹ [@deepseek-ai/dsh-code-runtime-worker-thread] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-compaction] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-compaction] target: es2024
+ℹ [@deepseek-ai/dsh-compaction] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-compaction] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-compaction] target: es2024
+ℹ [@deepseek-ai/dsh-compaction] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-time-context] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-time-context] target: es2024
+ℹ [@deepseek-ai/dsh-time-context] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-time-context] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-time-context] target: es2024
+ℹ [@deepseek-ai/dsh-time-context] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-agent] target: es2024
+ℹ [@deepseek-ai/dsh-agent] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-agent] target: es2024
+ℹ [@deepseek-ai/dsh-agent] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-default-model] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-agent-default-model] target: es2024
+ℹ [@deepseek-ai/dsh-agent-default-model] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-default-model] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-agent-default-model] target: es2024
+ℹ [@deepseek-ai/dsh-agent-default-model] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-loop] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-agent-loop] target: es2024
+ℹ [@deepseek-ai/dsh-agent-loop] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-loop] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-agent-loop] target: es2024
+ℹ [@deepseek-ai/dsh-agent-loop] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-scope] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-scope] target: es2024
+ℹ [@deepseek-ai/dsh-scope] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-session] target: es2024
+ℹ [@deepseek-ai/dsh-session] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-session] target: es2024
+ℹ [@deepseek-ai/dsh-session] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-scope] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-scope] target: es2024
+ℹ [@deepseek-ai/dsh-scope] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-acp-demo] entry: lib/types/index.js, lib/types/invariant.js, lib/types/bin.js
+ℹ [@deepseek-ai/dsh-acp-demo] target: es2024
+ℹ [@deepseek-ai/dsh-acp-demo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] entry: lib/types/bin.js
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] entry: lib/types/packaged-bin.js
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-demo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-goal-round-driver] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-goal-round-driver] target: es2024
+ℹ [@deepseek-ai/dsh-goal-round-driver] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-goal] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-goal] target: es2024
+ℹ [@deepseek-ai/dsh-goal] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-goal] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-goal] target: es2024
+ℹ [@deepseek-ai/dsh-goal] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-goal-round-driver] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-goal-round-driver] target: es2024
+ℹ [@deepseek-ai/dsh-goal-round-driver] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-directory-picker-browse] entry: lib/types/index.js, lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-host-directory-picker-browse] target: es2024
+ℹ [@deepseek-ai/dsh-host-directory-picker-browse] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-directory-picker-native] entry: lib/types/index.js, lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-host-directory-picker-native] target: es2024
+ℹ [@deepseek-ai/dsh-host-directory-picker-native] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-directory-picker-native] entry: lib/types/win32-dialog-worker.js
+ℹ [@deepseek-ai/dsh-host-directory-picker-native] target: es2024
+ℹ [@deepseek-ai/dsh-host-directory-picker-native] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-user-approval] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-user-approval] target: es2024
+ℹ [@deepseek-ai/dsh-user-approval] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-user-approval] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-user-approval] target: es2024
+ℹ [@deepseek-ai/dsh-user-approval] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-retry] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-llm-retry] target: es2024
+ℹ [@deepseek-ai/dsh-llm-retry] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-retry] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-llm-retry] target: es2024
+ℹ [@deepseek-ai/dsh-llm-retry] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sandbox-policy] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-sandbox-policy] target: es2024
+ℹ [@deepseek-ai/dsh-sandbox-policy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sandbox-policy] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-sandbox-policy] target: es2024
+ℹ [@deepseek-ai/dsh-sandbox-policy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sandbox-windows-acl] entry: lib/types/index.js, lib/types/invariant.js, lib/types/runner.js
+ℹ [@deepseek-ai/dsh-sandbox-windows-acl] target: es2024
+ℹ [@deepseek-ai/dsh-sandbox-windows-acl] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-schedule] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-schedule] target: es2024
+ℹ [@deepseek-ai/dsh-schedule] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-schedule] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-schedule] target: es2024
+ℹ [@deepseek-ai/dsh-schedule] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-settings] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-settings] target: es2024
+ℹ [@deepseek-ai/dsh-settings] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-settings] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-settings] target: es2024
+ℹ [@deepseek-ai/dsh-settings] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-mock-server] entry: lib/types/index.js
+ℹ [@deepseek-ai/dsh-llm-mock-server] target: es2024
+ℹ [@deepseek-ai/dsh-llm-mock-server] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-mock-server] entry: lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-llm-mock-server] target: es2024
+ℹ [@deepseek-ai/dsh-llm-mock-server] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tui] entry: lib/types/index.js, lib/types/startup.js, lib/types/runner.js, lib/types/invariant.js, lib/types/prompt.js
+ℹ [@deepseek-ai/dsh-tui] target: es2024
+ℹ [@deepseek-ai/dsh-tui] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-workflow-worker-thread] entry: lib/types/index.js, lib/types/invariant.js
+ℹ [@deepseek-ai/dsh-workflow-worker-thread] target: es2024
+ℹ [@deepseek-ai/dsh-workflow-worker-thread] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-workflow-worker-thread] entry: lib/types/worker.js
+ℹ [@deepseek-ai/dsh-workflow-worker-thread] target: es2024
+ℹ [@deepseek-ai/dsh-workflow-worker-thread] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis] entry: lib\types\index.js
+ℹ [@deepseek-ai/cordis] target: es2024
+ℹ [@deepseek-ai/cordis] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cosmokit] entry: lib\types\index.js
+ℹ [@deepseek-ai/cosmokit] target: es2024
+ℹ [@deepseek-ai/cosmokit] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-group] entry: lib\types\index.js
+ℹ [@deepseek-ai/cordis-plugin-group] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-group] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-include] entry: lib\types\index.js
+ℹ [@deepseek-ai/cordis-plugin-include] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-include] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-hmr] entry: lib\types\index.js
+ℹ [@deepseek-ai/cordis-plugin-hmr] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-hmr] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/cordis-plugin-timer] entry: lib\types\index.js
+ℹ [@deepseek-ai/cordis-plugin-timer] target: es2024
+ℹ [@deepseek-ai/cordis-plugin-timer] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-acp] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-acp] target: es2024
+ℹ [@deepseek-ai/dsh-acp] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-attachment] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-attachment] target: es2024
+ℹ [@deepseek-ai/dsh-attachment] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-attachment-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-attachment-local] target: es2024
+ℹ [@deepseek-ai/dsh-attachment-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-cmdline] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-cmdline] target: es2024
+ℹ [@deepseek-ai/dsh-cmdline] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-base] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-base] target: es2024
+ℹ [@deepseek-ai/dsh-base] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-code-runtime] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-code-runtime] target: es2024
+ℹ [@deepseek-ai/dsh-code-runtime] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-headless] entry: lib\types\index.js, lib\types\invariant.js, lib\types\startup.js
+ℹ [@deepseek-ai/dsh-headless] target: es2024
+ℹ [@deepseek-ai/dsh-headless] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-web-app] entry: lib\types\index.js, lib\types\invariant.js, lib\types\startup.js
+ℹ [@deepseek-ai/dsh-web-app] target: es2024
+ℹ [@deepseek-ai/dsh-web-app] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-command-compact] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-command-compact] target: es2024
+ℹ [@deepseek-ai/dsh-command-compact] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-compaction-tool-result-pruner] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-compaction-tool-result-pruner] target: es2024
+ℹ [@deepseek-ai/dsh-compaction-tool-result-pruner] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-compaction-basic] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-compaction-basic] target: es2024
+ℹ [@deepseek-ai/dsh-compaction-basic] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-instructions] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-agent-instructions] target: es2024
+ℹ [@deepseek-ai/dsh-agent-instructions] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-reference] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-reference] target: es2024
+ℹ [@deepseek-ai/dsh-session-reference] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tmux-context] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tmux-context] target: es2024
+ℹ [@deepseek-ai/dsh-tmux-context] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-tool-presentation] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-agent-tool-presentation] target: es2024
+ℹ [@deepseek-ai/dsh-agent-tool-presentation] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-system-prompt] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-system-prompt] target: es2024
+ℹ [@deepseek-ai/dsh-system-prompt] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tools] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tools] target: es2024
+ℹ [@deepseek-ai/dsh-tools] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-credentials] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-credentials] target: es2024
+ℹ [@deepseek-ai/dsh-credentials] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-credentials-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-credentials-local] target: es2024
+ℹ [@deepseek-ai/dsh-credentials-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subprocess-e2b] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subprocess-e2b] target: es2024
+ℹ [@deepseek-ai/dsh-subprocess-e2b] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-fs-e2b] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-fs-e2b] target: es2024
+ℹ [@deepseek-ai/dsh-fs-e2b] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-e2b] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-e2b] target: es2024
+ℹ [@deepseek-ai/dsh-e2b] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-spine-demo] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-agent-spine-demo] target: es2024
+ℹ [@deepseek-ai/dsh-agent-spine-demo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-fs] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-fs] target: es2024
+ℹ [@deepseek-ai/dsh-fs] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-fs-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-fs-local] target: es2024
+ℹ [@deepseek-ai/dsh-fs-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-fs-observation-policy] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-fs-observation-policy] target: es2024
+ℹ [@deepseek-ai/dsh-fs-observation-policy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-fs-sandbox] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-fs-sandbox] target: es2024
+ℹ [@deepseek-ai/dsh-fs-sandbox] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-fs] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-fs] target: es2024
+ℹ [@deepseek-ai/dsh-tool-fs] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-fs-search] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-fs-search] target: es2024
+ℹ [@deepseek-ai/dsh-tool-fs-search] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-str-replace-editor] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-str-replace-editor] target: es2024
+ℹ [@deepseek-ai/dsh-tool-str-replace-editor] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-cordis-host-runner] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-cordis-host-runner] target: es2024
+ℹ [@deepseek-ai/dsh-cordis-host-runner] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-cordis] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-cordis] target: es2024
+ℹ [@deepseek-ai/dsh-tool-cordis] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-command-feedback] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-command-feedback] target: es2024
+ℹ [@deepseek-ai/dsh-command-feedback] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-message-feedback] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-message-feedback] target: es2024
+ℹ [@deepseek-ai/dsh-message-feedback] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-command-goal] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-command-goal] target: es2024
+ℹ [@deepseek-ai/dsh-command-goal] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-goal] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-goal] target: es2024
+ℹ [@deepseek-ai/dsh-tool-goal] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-call-timeout-policy] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-call-timeout-policy] target: es2024
+ℹ [@deepseek-ai/dsh-tool-call-timeout-policy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-apiproxy] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-host-apiproxy] target: es2024
+ℹ [@deepseek-ai/dsh-host-apiproxy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-repeat-tool-reminder] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-repeat-tool-reminder] target: es2024
+ℹ [@deepseek-ai/dsh-repeat-tool-reminder] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-directory-picker] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-host-directory-picker] target: es2024
+ℹ [@deepseek-ai/dsh-host-directory-picker] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-directory-picker-auto] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-host-directory-picker-auto] target: es2024
+ℹ [@deepseek-ai/dsh-host-directory-picker-auto] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-frontend-static] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-host-frontend-static] target: es2024
+ℹ [@deepseek-ai/dsh-host-frontend-static] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-plugin-inventory] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-host-plugin-inventory] target: es2024
+ℹ [@deepseek-ai/dsh-host-plugin-inventory] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-host-webserver] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-host-webserver] target: es2024
+ℹ [@deepseek-ai/dsh-host-webserver] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-anonymous-user-id] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-anonymous-user-id] target: es2024
+ℹ [@deepseek-ai/dsh-anonymous-user-id] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-commands] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-commands] target: es2024
+ℹ [@deepseek-ai/dsh-commands] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-permission-presets] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-permission-presets] target: es2024
+ℹ [@deepseek-ai/dsh-permission-presets] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-ask-user] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-ask-user] target: es2024
+ℹ [@deepseek-ai/dsh-tool-ask-user] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-user-questions] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-user-questions] target: es2024
+ℹ [@deepseek-ai/dsh-user-questions] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-hook-protocol] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-hook-protocol] target: es2024
+ℹ [@deepseek-ai/dsh-hook-protocol] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-hooks-claude-code] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-hooks-claude-code] target: es2024
+ℹ [@deepseek-ai/dsh-hooks-claude-code] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-hooks-codex] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-hooks-codex] target: es2024
+ℹ [@deepseek-ai/dsh-hooks-codex] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-jobs] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-jobs] target: es2024
+ℹ [@deepseek-ai/dsh-jobs] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-jobs] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-jobs] target: es2024
+ℹ [@deepseek-ai/dsh-tool-jobs] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-jobs-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-jobs-local] target: es2024
+ℹ [@deepseek-ai/dsh-jobs-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-lsp] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-lsp] target: es2024
+ℹ [@deepseek-ai/dsh-lsp] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-lsp-stdio] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-lsp-stdio] target: es2024
+ℹ [@deepseek-ai/dsh-lsp-stdio] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-lsp] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-lsp] target: es2024
+ℹ [@deepseek-ai/dsh-tool-lsp] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-llm] target: es2024
+ℹ [@deepseek-ai/dsh-llm] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-deepseek] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-llm-deepseek] target: es2024
+ℹ [@deepseek-ai/dsh-llm-deepseek] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-pi-ai] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-llm-pi-ai] target: es2024
+ℹ [@deepseek-ai/dsh-llm-pi-ai] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-token-meter] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-token-meter] target: es2024
+ℹ [@deepseek-ai/dsh-token-meter] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-mcp-client] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-mcp-client] target: es2024
+ℹ [@deepseek-ai/dsh-mcp-client] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-plan-mode] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-plan-mode] target: es2024
+ℹ [@deepseek-ai/dsh-plan-mode] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-persona] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-persona] target: es2024
+ℹ [@deepseek-ai/dsh-persona] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-presets] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-agent-presets] target: es2024
+ℹ [@deepseek-ai/dsh-agent-presets] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sandbox] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-sandbox] target: es2024
+ℹ [@deepseek-ai/dsh-sandbox] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sandbox-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-sandbox-local] target: es2024
+ℹ [@deepseek-ai/dsh-sandbox-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-invariants] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-invariants] target: es2024
+ℹ [@deepseek-ai/dsh-invariants] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-client] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-sdk-client] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-client] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-protocol] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-sdk-protocol] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-protocol] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-server] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-server] target: es2024
+ℹ [@deepseek-ai/dsh-sdk-jsonrpc-server] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-persistence] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-persistence] target: es2024
+ℹ [@deepseek-ai/dsh-session-persistence] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-checkpoint-policy] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-checkpoint-policy] target: es2024
+ℹ [@deepseek-ai/dsh-session-checkpoint-policy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-persistence-sqlite] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-persistence-sqlite] target: es2024
+ℹ [@deepseek-ai/dsh-session-persistence-sqlite] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-persistence-jsonl] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-persistence-jsonl] target: es2024
+ℹ [@deepseek-ai/dsh-session-persistence-jsonl] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-projection] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-projection] target: es2024
+ℹ [@deepseek-ai/dsh-session-projection] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-stats] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-stats] target: es2024
+ℹ [@deepseek-ai/dsh-session-stats] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-projection-cache] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-projection-cache] target: es2024
+ℹ [@deepseek-ai/dsh-session-projection-cache] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-telemetry] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-telemetry] target: es2024
+ℹ [@deepseek-ai/dsh-session-telemetry] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-telemetry-otel] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-telemetry-otel] target: es2024
+ℹ [@deepseek-ai/dsh-session-telemetry-otel] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-title] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-title] target: es2024
+ℹ [@deepseek-ai/dsh-session-title] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-title-all-prompts-llm] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-title-all-prompts-llm] target: es2024
+ℹ [@deepseek-ai/dsh-session-title-all-prompts-llm] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-title-first-prompt-llm] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-title-first-prompt-llm] target: es2024
+ℹ [@deepseek-ai/dsh-session-title-first-prompt-llm] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-title-llm] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-title-llm] target: es2024
+ℹ [@deepseek-ai/dsh-session-title-llm] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-settings-file] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-settings-file] target: es2024
+ℹ [@deepseek-ai/dsh-settings-file] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-query] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-query] target: es2024
+ℹ [@deepseek-ai/dsh-session-query] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-session-query-sqlite] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-session-query-sqlite] target: es2024
+ℹ [@deepseek-ai/dsh-session-query-sqlite] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-session-query] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-session-query] target: es2024
+ℹ [@deepseek-ai/dsh-tool-session-query] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-bash-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-bash-local] target: es2024
+ℹ [@deepseek-ai/dsh-bash-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-bash-sandbox] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-bash-sandbox] target: es2024
+ℹ [@deepseek-ai/dsh-bash-sandbox] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-pwsh-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-pwsh-local] target: es2024
+ℹ [@deepseek-ai/dsh-pwsh-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-pwsh-sandbox] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-pwsh-sandbox] target: es2024
+ℹ [@deepseek-ai/dsh-pwsh-sandbox] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-shell] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-shell] target: es2024
+ℹ [@deepseek-ai/dsh-shell] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-shell-env] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-shell-env] target: es2024
+ℹ [@deepseek-ai/dsh-shell-env] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-bash] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-bash] target: es2024
+ℹ [@deepseek-ai/dsh-tool-bash] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-bash-persistent] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-bash-persistent] target: es2024
+ℹ [@deepseek-ai/dsh-tool-bash-persistent] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-pwsh] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-pwsh] target: es2024
+ℹ [@deepseek-ai/dsh-tool-pwsh] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-skill] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-skill] target: es2024
+ℹ [@deepseek-ai/dsh-skill] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-skill-badge] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-skill-badge] target: es2024
+ℹ [@deepseek-ai/dsh-skill-badge] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-skill-filesystem] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-skill-filesystem] target: es2024
+ℹ [@deepseek-ai/dsh-skill-filesystem] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-skill] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-skill] target: es2024
+ℹ [@deepseek-ai/dsh-tool-skill] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-spill] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-spill] target: es2024
+ℹ [@deepseek-ai/dsh-spill] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-spill-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-spill-local] target: es2024
+ℹ [@deepseek-ai/dsh-spill-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-spill-policy] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-spill-policy] target: es2024
+ℹ [@deepseek-ai/dsh-spill-policy] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-storage] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-storage] target: es2024
+ℹ [@deepseek-ai/dsh-storage] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-storage-domain] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-storage-domain] target: es2024
+ℹ [@deepseek-ai/dsh-storage-domain] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-storage-sqlite] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-storage-sqlite] target: es2024
+ℹ [@deepseek-ai/dsh-storage-sqlite] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent] target: es2024
+ℹ [@deepseek-ai/dsh-subagent] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-acp] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-acp] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-acp] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-storage-json] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-storage-json] target: es2024
+ℹ [@deepseek-ai/dsh-storage-json] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-claude-code] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-claude-code] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-claude-code] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-codex] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-codex] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-codex] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-dsh-sdk] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-dsh-sdk] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-dsh-sdk] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-fork-in-process] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-fork-in-process] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-fork-in-process] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-in-process-driver] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-in-process-driver] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-in-process-driver] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subagent-spawn-in-process] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subagent-spawn-in-process] target: es2024
+ℹ [@deepseek-ai/dsh-subagent-spawn-in-process] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-subagent] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-subagent] target: es2024
+ℹ [@deepseek-ai/dsh-tool-subagent] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-subagent-control] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-subagent-control] target: es2024
+ℹ [@deepseek-ai/dsh-tool-subagent-control] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-subagent-report] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-subagent-report] target: es2024
+ℹ [@deepseek-ai/dsh-tool-subagent-report] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subprocess] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subprocess] target: es2024
+ℹ [@deepseek-ai/dsh-subprocess] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-subprocess-local] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-subprocess-local] target: es2024
+ℹ [@deepseek-ai/dsh-subprocess-local] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-terminal] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-terminal] target: es2024
+ℹ [@deepseek-ai/dsh-terminal] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-terminal] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-terminal] target: es2024
+ℹ [@deepseek-ai/dsh-tool-terminal] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-terminal-bash] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-terminal-bash] target: es2024
+ℹ [@deepseek-ai/dsh-terminal-bash] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-acp-snapshot] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-acp-snapshot] target: es2024
+ℹ [@deepseek-ai/dsh-acp-snapshot] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-agent-loop-testkit] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-agent-loop-testkit] target: es2024
+ℹ [@deepseek-ai/dsh-agent-loop-testkit] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-llm-replay] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-llm-replay] target: es2024
+ℹ [@deepseek-ai/dsh-llm-replay] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-loader-smoke] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-loader-smoke] target: es2024
+ℹ [@deepseek-ai/dsh-loader-smoke] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-typert-loader] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-typert-loader] target: es2024
+ℹ [@deepseek-ai/dsh-typert-loader] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-typert-generator] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-typert-generator] target: es2024
+ℹ [@deepseek-ai/dsh-typert-generator] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-typert-protocol] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-typert-protocol] target: es2024
+ℹ [@deepseek-ai/dsh-typert-protocol] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-todo] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-todo] target: es2024
+ℹ [@deepseek-ai/dsh-tool-todo] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-atomic-write] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-atomic-write] target: es2024
+ℹ [@deepseek-ai/dsh-atomic-write] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-home-paths] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-home-paths] target: es2024
+ℹ [@deepseek-ai/dsh-home-paths] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-launch-environment] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-launch-environment] target: es2024
+ℹ [@deepseek-ai/dsh-launch-environment] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-native-command] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-native-command] target: es2024
+ℹ [@deepseek-ai/dsh-native-command] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-output-retention] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-output-retention] target: es2024
+ℹ [@deepseek-ai/dsh-output-retention] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-brand] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-brand] target: es2024
+ℹ [@deepseek-ai/dsh-brand] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-timeout] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-timeout] target: es2024
+ℹ [@deepseek-ai/dsh-timeout] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-ralph] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-ralph] target: es2024
+ℹ [@deepseek-ai/dsh-tool-ralph] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-workflow] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-workflow] target: es2024
+ℹ [@deepseek-ai/dsh-tool-workflow] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-workflow] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-workflow] target: es2024
+ℹ [@deepseek-ai/dsh-workflow] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-tool-web] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-tool-web] target: es2024
+ℹ [@deepseek-ai/dsh-tool-web] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-web] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-web] target: es2024
+ℹ [@deepseek-ai/dsh-web] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-web-fetch-http] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-web-fetch-http] target: es2024
+ℹ [@deepseek-ai/dsh-web-fetch-http] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-web-search-deepseek] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-web-search-deepseek] target: es2024
+ℹ [@deepseek-ai/dsh-web-search-deepseek] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-web-search-perplexity] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-web-search-perplexity] target: es2024
+ℹ [@deepseek-ai/dsh-web-search-perplexity] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-web-search-exa] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-web-search-exa] target: es2024
+ℹ [@deepseek-ai/dsh-web-search-exa] tsconfig: tsconfig.json
+ℹ [@deepseek-ai/dsh-workspace] entry: lib\types\index.js, lib\types\invariant.js
+ℹ [@deepseek-ai/dsh-workspace] target: es2024
+ℹ [@deepseek-ai/dsh-workspace] tsconfig: tsconfig.json
+ℹ Build start
+
+ ERROR  Error: Build failed with 2 errors:
+
+[31m[UNRESOLVED_ENTRY] [0mCannot resolve entry module lib/types/startup.js.
+
+[31m[UNRESOLVED_ENTRY] [0mCannot resolve entry module lib/types/runner.js.
+
+    at aggregateBindingErrorsIntoJsError (file:///D:/deepseek-harness/node_modules/.pnpm/rolldown@1.1.1/node_modules/rolldown/dist/shared/error-C0TrL0_H.mjs:48:18)
+    at unwrapBindingResult (file:///D:/deepseek-harness/node_modules/.pnpm/rolldown@1.1.1/node_modules/rolldown/dist/shared/error-C0TrL0_H.mjs:18:128)
+    at #build (file:///D:/deepseek-harness/node_modules/.pnpm/rolldown@1.1.1/node_modules/rolldown/dist/shared/rolldown-build-abS241_6.mjs:3288:34)
+    at async build (file:///D:/deepseek-harness/node_modules/.pnpm/rolldown@1.1.1/node_modules/rolldown/dist/index.mjs:42:22)
+    at async Promise.all (index 0)
+    at async buildSingle (file:///D:/deepseek-harness/node_modules/.pnpm/tsdown@0.22.2_oxc-resolver@_f113eb69000457c8d5954142d0822f52/node_modules/tsdown/dist/build-BxT2lm9L.mjs:791:19)
+    at async Promise.all (index 184)
+    at async buildWithConfigs (file:///D:/deepseek-harness/node_modules/.pnpm/tsdown@0.22.2_oxc-resolver@_f113eb69000457c8d5954142d0822f52/node_modules/tsdown/dist/build-BxT2lm9L.mjs:747:18)
+    at async CAC.<anonymous> (file:///D:/deepseek-harness/node_modules/.pnpm/tsdown@0.22.2_oxc-resolver@_f113eb69000457c8d5954142d0822f52/node_modules/tsdown/dist/run.mjs:21:2)
+    at async runCLI (file:///D:/deepseek-harness/node_modules/.pnpm/tsdown@0.22.2_oxc-resolver@_f113eb69000457c8d5954142d0822f52/node_modules/tsdown/dist/run.mjs:45:3)
+
+[ELIFECYCLE] Command failed with exit code 1.

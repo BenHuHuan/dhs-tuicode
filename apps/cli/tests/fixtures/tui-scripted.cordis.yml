@@ -1,0 +1,86 @@
+# Overlay for the keyless conversational PTY test: the shipped TUI profile with
+# only the model replaced, so the terminal interaction is deterministic and
+# network-free while the agent/TUI/user-question stack stays the production one.
+#
+# Passed as `--patch` over the `tui` profile: the launcher composes the bundle
+# patches (base + tui) and the profile/home patches, then this overlay. A patch
+# replaces the targeted row's whole `config`, so each row below restates every
+# key it owns.
+
+# The scripted adapter replaces the DeepSeek one: no key, no network. A patch's
+# `name` is an assertion rather than a replacement, so the base row is disabled
+# and the adapter inserted. Bare specifiers resolve against the profile's
+# baseUrl — the test seeds this module into the profile's node_modules — with
+# the shared closure fallback at $DSH_HOME/profiles/node_modules covering the
+# workspace's own dependencies.
+- id: llm-deepseek
+  disabled: true
+
+- insert:
+    - id: scripted-llm
+      name: 'scripted-llm'
+
+# The TUI runner reads its provider/model route from the default-model row; a
+# patch here replaces the base defaults the way `agent-loop` routing used to.
+- id: agent-default-model
+  config:
+    provider: tui-scripted
+    model: tui-scripted-model
+
+- id: system-prompt
+  config:
+    persona: 'Scripted model {{model}}.'
+
+# The smoke's log inspection reads plain `.jsonl` under the workspace, so this
+# fixture pins a project-local root instead of the launcher's shared store, and
+# keeps the artifacts uncompressed like the other snapshot-facing configs.
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+
+# The derived index must sit under the same root as the logs it indexes; this
+# fixture pins both to the workspace instead of the launcher's shared store.
+- id: session-query-sqlite
+  config:
+    path: './.sessions/session-query.db'
+
+- id: plan-mode
+  config:
+    section: 'Stay in plan mode for this scripted TUI test.'
+
+# The scripted adapter answers the tool-less title request with a fixed string,
+# so the PTY test can assert the logged title reaches the terminal window title.
+- id: session-title-llm
+  config:
+    targetWords: 5
+    targetCjkCharacters: 10
+    maxInputBytes: 4096
+    maxOutputTokens: 64
+    timeoutMs: 10000
+
+# The overlay drops `sessionId` so the runner's unique fresh identity rules.
+# `firstRunWelcome` must be restated — the
+# overlay replaces the tui bundle's whole config, and the smoke seeds an
+# unacknowledged home to exercise the notice.
+- id: tui
+  config:
+    welcome: 'scripted TUI ready.'
+    showReasoning: true
+    maxToolOutputLines: 6
+    # The clipboard-image smoke seeds this argv target in its isolated cwd.
+    # Other scenarios never invoke it. Raw stdout is a valid 1×1 PNG.
+    clipboardImageCommand:
+      - node
+      - ./clipboard-image-fixture.mjs
+    # The clipboard-text smoke seeds this stdin-consuming writer in its cwd.
+    # Other scenarios never invoke it.
+    clipboardTextCommand:
+      - node
+      - ./clipboard-text-fixture.mjs
+    firstRunWelcome:
+      dshHome: !!js dshHomePath()
+
+# HMR watches the repository; a PTY subprocess test must not start a watcher.
+- id: hmr
+  disabled: true

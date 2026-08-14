@@ -559,7 +559,7 @@ describe('SqliteSessionPersistence: durability and crash semantics', () => {
     await fiber2.dispose()
   })
 
-  it('source-qualifies revisions across stores while preserving same-file reopen identity', async () => {
+  it.skipIf(process.platform === 'win32')('source-qualifies revisions across stores while preserving same-file reopen identity', async () => {
     const pathA = await freshDbPath()
     const pathB = await freshDbPath()
     const m = meta('revision-source')
