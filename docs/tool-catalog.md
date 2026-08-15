@@ -30,6 +30,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
+| `@deepseek-ai/dsh-tool-allin` | `allin` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every child)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow compiles one goal into top-level tasks, runs dependency-ready lanes in parallel waves, and returns a coordinator synthesis; the model selects only the goal and an optional task cap. |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
 | `@deepseek-ai/dsh-tool-subagent` | `subagent` | `ctx.tools`, `ctx.subagents`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `child session events through the chosen provider` | `subagent`, `subagent_fork` | The registered tool name is the load-time `toolName` config (default `subagent`); the schema above is that default. The shipped compositions load this package once per subagent backend, so the model additionally sees `subagent_fork` bound to the fork backend. Each instance's description, `run_in_background` parameter, and system-prompt policy follow its own `backgroundMode` and `enableRunInBackground`, so the two shipped schemas are not identical: `subagent` is `continuable` and defaults omitted calls to background with automatic settlement delivery, while `subagent_fork` stays `one-shot` and defaults them to foreground — see `packages/bundle/base/cordis.patch.yml` and `examples/acp-agent/cordis.yml`. |
@@ -1207,6 +1208,37 @@ Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only
 Source: [`packages/workflow/tool-ralph/src/index.ts`](../packages/workflow/tool-ralph/src/index.ts)
 
 A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap.
+
+<a id="deepseek-aidsh-tool-allin"></a>
+
+## `@deepseek-ai/dsh-tool-allin`
+
+### `allin`
+
+Compile one large concrete goal into independent top-level tasks, run every dependency-ready task in parallel flash lanes, and return a pro-coordinator synthesis. Use only for an explicit allinluna-style multi-agent request or one big goal that spans independent work areas, not routine single-turn work. Plan and synthesis use the pro model; task lanes use flash and run several lanes at once. The call waits for the whole run.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "goal": {
+      "type": "string",
+      "description": "The one concrete completion goal the pro planner compiles into top-level tasks."
+    },
+    "maxTasks": {
+      "type": "number",
+      "description": "Optional positive safe-integer task cap, bounded by the deployment ceiling."
+    }
+  },
+  "required": [
+    "goal"
+  ]
+}
+```
+
+Source: [`packages/workflow/tool-allin/src/index.ts`](../packages/workflow/tool-allin/src/index.ts)
+
+A fixed foreground workflow compiles one goal into top-level tasks, runs dependency-ready lanes in parallel waves, and returns a coordinator synthesis; the model selects only the goal and an optional task cap.
 
 <a id="deepseek-aidsh-tool-skill"></a>
 

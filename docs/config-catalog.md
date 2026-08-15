@@ -363,10 +363,12 @@ export interface Config {
   maxSpillBytes?: number
   /** Grace period for kill escalation and inherited pipes; at most `MAX_TIMER_DELAY_MS`. */
   graceMs?: number
+  /** Register the shared live settings section (disable for an isolated secondary executor). */
+  settings?: boolean
 }
 ```
 
-Source: [`packages/shell/bash-local/src/index.ts:41`](../packages/shell/bash-local/src/index.ts)
+Source: [`packages/shell/bash-local/src/index.ts:87`](../packages/shell/bash-local/src/index.ts)
 
 <a id="deepseek-aidsh-bash-sandbox"></a>
 
@@ -2341,6 +2343,36 @@ export type TokenMeterConfig = Record<string, never>
 ```
 
 Source: [`packages/llm/token-meter/src/types.ts:12`](../packages/llm/token-meter/src/types.ts)
+
+<a id="deepseek-aidsh-tool-allin"></a>
+
+## `@deepseek-ai/dsh-tool-allin`
+
+Requires: `tools` · `workflowEngine` · `subagents` · `systemPrompt`
+
+```ts config-catalog
+/** Deployment policy for the fixed All in Luna-style workflow. */
+export interface Config {
+  /** Fresh structured-output provider used for every child (default `spawn`). */
+  subagentProvider?: string
+  /** Pro coordinator model for plan and synthesis (default `deepseek-v4-pro`). */
+  orchestratorModel?: string
+  /** Flash worker model for parallel task lanes (default `deepseek-v4-flash`). */
+  workerModel?: string
+  /** Default and deployment ceiling for one call's task count (default 8). */
+  maxTasks?: number
+  /** Default and deployment ceiling for one dependency wave's parallel lanes (default 8). */
+  maxParallelWorkers?: number
+  /** Maximum serialized characters in one planner result (default 16384). */
+  maxPlanChars?: number
+  /** Maximum serialized characters in one lane report (default 16384). */
+  maxReportChars?: number
+  /** Maximum characters in a successful parent-facing terminal text (default 50000). */
+  maxResultChars?: number
+}
+```
+
+Source: [`packages/workflow/tool-allin/src/index.ts:24`](../packages/workflow/tool-allin/src/index.ts)
 
 <a id="deepseek-aidsh-tool-bash"></a>
 

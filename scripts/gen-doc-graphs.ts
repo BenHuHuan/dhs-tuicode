@@ -495,8 +495,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Subagent provider and continuation service',
     mode: 'seam',
     implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp', 'subagent-codex', 'subagent-claude-code', 'subagent-dsh-sdk'],
-    consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph'],
-    note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
+    consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph', 'tool-allin'],
+    note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph/tool-allin require one fresh structured-output route.',
   },
   {
     key: 'jobs',
@@ -556,8 +556,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Workflow script engine',
     mode: 'seam',
     implementations: ['workflow-worker-thread'],
-    consumers: ['tool-workflow', 'tool-ralph'],
-    note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents.',
+    consumers: ['tool-workflow', 'tool-ralph', 'tool-allin'],
+    note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph/Allin consumers start runs whose agent() calls fan out through ctx.subagents.',
   },
   {
     key: 'lsp',

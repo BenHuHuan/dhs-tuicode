@@ -351,6 +351,8 @@ export interface Config {
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */
 export interface Config {
+  /** Bash executable or absolute path (default: `bash`). */
+  executable?: string
   /** Default working directory for commands (default: process.cwd()). */
   cwd?: string
   /** Default foreground timeout in milliseconds. */
@@ -363,10 +365,12 @@ export interface Config {
   maxSpillBytes?: number
   /** Grace period for kill escalation and inherited pipes; at most `MAX_TIMER_DELAY_MS`. */
   graceMs?: number
+  /** Register the shared live settings section (disable for an isolated secondary executor). */
+  settings?: boolean
 }
 ```
 
-来源：[`packages/shell/bash-local/src/index.ts:41`](../packages/shell/bash-local/src/index.ts)
+来源：[`packages/shell/bash-local/src/index.ts:87`](../packages/shell/bash-local/src/index.ts)
 
 <a id="deepseek-aidsh-bash-sandbox"></a>
 
@@ -862,6 +866,10 @@ export interface Config {
   thinking?: 'enabled' | 'disabled'
   /** Default thinking effort (default `high`); `off` disables thinking per request. */
   reasoningEffort?: 'off' | 'high' | 'max'
+  /** Default sampling temperature sent when a request does not override it. */
+  temperature?: number
+  /** Fixed nucleus-sampling probability sent on every request. */
+  topP?: number
   /** Default per-request output cap (default 256,000); a model's own cap and explicit request values win. */
   maxTokens?: number
   /** Positive context capacity used when the selected model has no exact value (default 1,000,000). */
@@ -1277,7 +1285,7 @@ export interface ReconnectConfig {
 }
 ```
 
-来源：[`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
+来源：[`packages/mcp/mcp-client/src/index.ts:106`](../packages/mcp/mcp-client/src/index.ts)
 
 <a id="deepseek-aidsh-message-feedback"></a>
 
@@ -1490,6 +1498,8 @@ export interface Config {
   runnerFailureSignatures?: string[]
   /** Positive timeout for each functional probe; zero would mean unbounded to Node. */
   probeTimeoutMs?: number
+  /** Existing or creatable parent for private Windows ACL temp directories. */
+  windowsTempRoot?: string
 }
 ```
 
@@ -2336,6 +2346,36 @@ export type TokenMeterConfig = Record<string, never>
 
 来源：[`packages/llm/token-meter/src/types.ts:12`](../packages/llm/token-meter/src/types.ts)
 
+<a id="deepseek-aidsh-tool-allin"></a>
+
+## `@deepseek-ai/dsh-tool-allin`
+
+需要：`tools` · `workflowEngine` · `subagents` · `systemPrompt`
+
+```ts config-catalog
+/** Deployment policy for the fixed All in Luna-style workflow. */
+export interface Config {
+  /** Fresh structured-output provider used for every child (default `spawn`). */
+  subagentProvider?: string
+  /** Pro coordinator model for plan and synthesis (default `deepseek-v4-pro`). */
+  orchestratorModel?: string
+  /** Flash worker model for parallel task lanes (default `deepseek-v4-flash`). */
+  workerModel?: string
+  /** Default and deployment ceiling for one call's task count (default 8). */
+  maxTasks?: number
+  /** Default and deployment ceiling for one dependency wave's parallel lanes (default 8). */
+  maxParallelWorkers?: number
+  /** Maximum serialized characters in one planner result (default 16384). */
+  maxPlanChars?: number
+  /** Maximum serialized characters in one lane report (default 16384). */
+  maxReportChars?: number
+  /** Maximum characters in a successful parent-facing terminal text (default 50000). */
+  maxResultChars?: number
+}
+```
+
+来源：[`packages/workflow/tool-allin/src/index.ts:24`](../packages/workflow/tool-allin/src/index.ts)
+
 <a id="deepseek-aidsh-tool-bash"></a>
 
 ## `@deepseek-ai/dsh-tool-bash`
@@ -2900,6 +2940,12 @@ export interface FirstRunWelcomeConfig {
 export interface TuiThemeConfig {
   /** Apply the built-in ANSI color palette. */
   color?: boolean
+  /**
+   * Palette style. `deepseek` uses blue/violet roles on dark terminals,
+   * `claude` keeps the terracotta reference palette, and `adaptive` follows
+   * the terminal's ANSI colors.
+   */
+  palette?: TuiPaletteStyle
   /** Paint the startup banner with the 24-bit DeepSeek brand gradient. */
   truecolor?: boolean
   /** Left-aligned template on the row above the editor. */
@@ -2911,9 +2957,12 @@ export interface TuiThemeConfig {
   /** Static placeholder shown in an empty editor while the agent is running. */
   inputPlaceholder?: string
 }
+
+/** Visual style of the built-in palette. */
+export type TuiPaletteStyle = 'deepseek' | 'claude' | 'adaptive'
 ```
 
-来源：[`packages/ui/tui/src/config.ts:186`](../packages/ui/tui/src/config.ts)
+来源：[`packages/ui/tui/src/config.ts:197`](../packages/ui/tui/src/config.ts)
 
 <a id="deepseek-aidsh-typert-loader"></a>
 

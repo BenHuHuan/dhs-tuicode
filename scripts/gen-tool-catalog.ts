@@ -62,6 +62,7 @@ import * as ToolSubagent from '@deepseek-ai/dsh-tool-subagent'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
+import * as ToolAllin from '@deepseek-ai/dsh-tool-allin'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
 import { githubSlug } from './verify-md-links.ts'
 
@@ -404,6 +405,21 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-allin',
+    dir: 'tool-allin',
+    source: 'packages/workflow/tool-allin/src/index.ts',
+    requires: ['ctx.tools', 'ctx.workflowEngine', 'ctx.subagents', 'ctx.systemPrompt', 'a calling Agent (exec.agent parents every child)'],
+    writes: ['tool/call', 'tool/result', 'workflow and child session events during execution'],
+    async mount(ctx) {
+      await ctx.plugin(SubagentRuntime)
+      registerCatalogSubagentProvider(ctx, 'mock')
+      await ctx.plugin(VmWorkflowEngine, { provider: 'mock' })
+      await ctx.plugin(ToolAllin, { subagentProvider: 'mock' })
+    },
+    note:
+      'A fixed foreground workflow compiles one goal into top-level tasks, runs dependency-ready lanes in parallel waves, and returns a coordinator synthesis; the model selects only the goal and an optional task cap.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-skill',

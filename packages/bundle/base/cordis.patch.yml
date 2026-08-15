@@ -402,6 +402,17 @@
         subagentProvider: spawn
         maxRounds: 64
 
+    # All in Luna-style multi-agent orchestration: pro plan + parallel flash
+    # task lanes in dependency waves + pro synthesis, over one fixed script.
+    - id: tool-allin
+      name: '@deepseek-ai/dsh-tool-allin'
+      config:
+        subagentProvider: spawn
+        orchestratorModel: deepseek-v4-pro
+        workerModel: deepseek-v4-flash
+        maxTasks: 16
+        maxParallelWorkers: 8
+
     - id: tool-str-replace-editor
       name: '@deepseek-ai/dsh-tool-str-replace-editor'
       config:

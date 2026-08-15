@@ -135,9 +135,13 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-base': ['cordis.patch.yml'],
   '@deepseek-ai/dsh-web-app': ['cordis.patch.yml'],
   '@deepseek-ai/dsh-headless': ['cordis.patch.yml'],
-  // The TUI bundle publishes its profile patch plus the process runner and
-  // model-visible prompt as dedicated Node bundles.
-  '@deepseek-ai/dsh-tui': ['lib/runner.js', 'lib/prompt.js', 'cordis.patch.yml'],
+  // The TUI bundle publishes its profile patch, model-visible prompt, and the
+  // process runners as dedicated Node bundles, plus its terminal branding assets.
+  '@deepseek-ai/dsh-tui': ['assets', 'lib/runner.js', 'lib/gitbash-executor.js', 'lib/prompt.js', 'cordis.patch.yml'],
+  // The tool registry publishes its generated bootstrap module beside the entry.
+  '@deepseek-ai/dsh-tools': ['lib/bootstrap.js'],
+  // The MCP client publishes its generated registry module beside the entry.
+  '@deepseek-ai/dsh-mcp-client': ['lib/registry.js'],
   '@deepseek-ai/dsh-client-ui-theme': ['lib/styles'],
   // The Python runtime uses a distinct closed-resolution bin; the public CLI
   // keeps config-owned bare-package resolution through lib/bin.js.

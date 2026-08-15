@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tui",
   "description": "Interactive pi-tui terminal front door for DeepSeek Harness agents",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
@@ -43,11 +43,10 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "assets/deepseek-whale-girl-chibi.png",
-    "assets/deepseek-whale-girl-brick-v2.png",
     "lib/index.js",
     "lib/invariant.js",
     "lib/startup.js",
+    "assets",
     "lib/runner.js",
     "lib/gitbash-executor.js",
     "lib/prompt.js",

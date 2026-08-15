@@ -64,7 +64,7 @@ flowchart LR
   cfg --> plugin_dsh_base_pwsh_sandbox
   plugin_dsh_base_approval["approval<br/>@deepseek-ai/dsh-user-approval"]
   cfg --> plugin_dsh_base_approval
-  plugin_dsh_base_permission["permission<br/>@deepseek-ai/dsh-permission-presets"]
+  plugin_dsh_base_permission["permission<br/>Flow"]
   cfg --> plugin_dsh_base_permission
   plugin_dsh_base_shell_env["shell-env<br/>@deepseek-ai/dsh-shell-env"]
   cfg --> plugin_dsh_base_shell_env
@@ -144,6 +144,8 @@ flowchart LR
   cfg --> plugin_dsh_base_tool_goal
   plugin_dsh_base_tool_ralph["tool-ralph<br/>@deepseek-ai/dsh-tool-ralph"]
   cfg --> plugin_dsh_base_tool_ralph
+  plugin_dsh_base_tool_allin["tool-allin<br/>@deepseek-ai/dsh-tool-allin"]
+  cfg --> plugin_dsh_base_tool_allin
   plugin_dsh_base_tool_str_replace_editor["tool-str-replace-editor<br/>@deepseek-ai/dsh-tool-str-replace-editor"]
   cfg --> plugin_dsh_base_tool_str_replace_editor
   plugin_dsh_base_repeat_tool_reminder["repeat-tool-reminder<br/>@deepseek-ai/dsh-repeat-tool-reminder"]
@@ -196,7 +198,7 @@ flowchart LR
 | `bash-sandbox` | `@deepseek-ai/dsh-bash-sandbox` |
 | `pwsh-sandbox` | `@deepseek-ai/dsh-pwsh-sandbox` |
 | `approval` | `@deepseek-ai/dsh-user-approval` |
-| `permission` | `@deepseek-ai/dsh-permission-presets` |
+| `permission` | `Flow` |
 | `shell-env` | `@deepseek-ai/dsh-shell-env` |
 | `tool-bash` | `@deepseek-ai/dsh-tool-bash` |
 | `tool-pwsh` | `@deepseek-ai/dsh-tool-pwsh` |
@@ -236,6 +238,7 @@ flowchart LR
 | `tool-todo` | `@deepseek-ai/dsh-tool-todo` |
 | `tool-goal` | `@deepseek-ai/dsh-tool-goal` |
 | `tool-ralph` | `@deepseek-ai/dsh-tool-ralph` |
+| `tool-allin` | `@deepseek-ai/dsh-tool-allin` |
 | `tool-str-replace-editor` | `@deepseek-ai/dsh-tool-str-replace-editor` |
 | `repeat-tool-reminder` | `@deepseek-ai/dsh-repeat-tool-reminder` |
 | `web` | `@deepseek-ai/dsh-web` |

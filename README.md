@@ -1,20 +1,20 @@
 # DeepSeek Code TUI
 
-[![Release](https://img.shields.io/badge/release-v0.1.0-2563eb)](https://github.com/BenHuHuan/dhscode-tui/releases) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](#platform-support) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v0.2.0-2563eb)](https://github.com/BenHuHuan/dhscode-tui/releases) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](#platform-support) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
 
 English | [中文](README.zh.md)
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI v0.1.0 preview">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI preview">
 </p>
 
-**DeepSeek Code TUI v0.1.0** is a terminal-native coding agent built on the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It keeps Harness's Cordis plugin architecture and adds an opinionated, Claude-Code-style workflow for DeepSeek V4 Pro/Flash on Windows, Linux, servers, and SSH sessions.
+**DeepSeek Code TUI v0.2.0** is a terminal-native coding agent built on the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It keeps Harness's Cordis plugin architecture and adds an opinionated, Claude-Code-style workflow for DeepSeek V4 Pro/Flash on Windows, Linux, servers, and SSH sessions.
 
 Enter `deepseek` in a project to get a persistent coding workspace with a compact first prompt, tools on demand, permission modes, MCP visibility, continuable agents, checkpoints, and a TUI that does not require a browser.
 
 > Independent community distribution; not an official DeepSeek product and not affiliated with Anthropic. Claude Code is referenced only as a UX comparison.
 
-## v0.1.0 highlights
+## v0.2.0 highlights
 
 - **One-command TUI:** bare `deepseek` or `dsh` opens the current directory.
 - **DeepSeek-first defaults:** V4 Pro, max reasoning effort, and a Minimal first request that promotes the full coding tool catalog on demand.
@@ -29,6 +29,7 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 - **Workspace safety:** interactive diff, named checkpoints, and rewind/fork.
 - **MCP and agents:** inspect/reload MCP and manage durable subagents in the TUI.
 - **Skills:** discover skill catalogs and invoke `/skill:<name>`.
+- **Multi-agent orchestration (`allin`):** one V4 Pro coordinator plans and synthesizes while parallel V4 Flash lanes execute dependency-ready tasks, allinluna-style.
 - **Terminal media:** clipboard-image input and inline rendering, with an ANSI pixel fallback for Windows Terminal.
 - **Polished interaction:** mouse scrolling, jump-to-bottom, blue selection, OSC 52 copy, width-safe rendering, and composable multiline paste blocks.
 
@@ -44,7 +45,7 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 
 ## Install from source
 
-v0.1.0 is currently distributed from source:
+v0.2.0 is currently distributed from source:
 
 ```bash
 git clone https://github.com/BenHuHuan/dhscode-tui.git
@@ -103,7 +104,7 @@ Switch profiles with `/mode minimal` or `/mode router`. This profile selector is
 
 ### Windows Git Bash behavior
 
-The v0.1.0 Windows backend gives agent tool calls real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. Minimal is the default V4 Pro profile; Router keeps the same Bash backend but is tuned mainly for V4 Flash. In local V4 Pro max-effort Minimal runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
+The v0.2.0 Windows backend gives agent tool calls real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. Minimal is the default V4 Pro profile; Router keeps the same Bash backend but is tuned mainly for V4 Flash. In local V4 Pro max-effort Minimal runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
 
 <p align="center">
   <img src="docs/assets/gitbash-reasoning-before-v2.png" alt="V4 Pro reasoning sample using Git Bash" width="100%"><br>
@@ -150,7 +151,7 @@ Type `/` for scrollable command completion. Skill commands load asynchronously f
 
 ### Windows
 
-Windows Terminal is the primary v0.1.0 desktop target. Minimal and Router requests use fresh Git Bash processes instead of the unsupported Windows persistent-PTY path. DeepSeek Code detects `DSH_BASH_PATH`, `GIT_BASH`, standard Git for Windows installations, and then `PATH`. Because the MSYS runtime cannot create its signal pipes inside the Windows restricted-token sandbox, Bash calls require a one-call full-access approval or `/bypass on`; safe modes retain PowerShell for confined commands.
+Windows Terminal is the primary v0.2.0 desktop target. Minimal and Router requests use fresh Git Bash processes instead of the unsupported Windows persistent-PTY path. DeepSeek Code detects `DSH_BASH_PATH`, `GIT_BASH`, standard Git for Windows installations, and then `PATH`. Because the MSYS runtime cannot create its signal pipes inside the Windows restricted-token sandbox, Bash calls require a one-call full-access approval or `/bypass on`; safe modes retain PowerShell for confined commands.
 
 For mixed Chinese/English sessions, select **Sarasa Mono SC** (or another verified CJK monospace font) in the Windows Terminal Git Bash profile. A proportional CJK fallback can make Chinese glyphs appear at inconsistent widths even when the TUI's terminal-column calculations are correct.
 
@@ -181,7 +182,7 @@ DeepSeek Code remains a DeepSeek Harness distribution, not a monolithic CLI. Cor
 - [Development guide](docs/development.md)
 - [Testing](docs/testing.md)
 
-## Known v0.1.0 limitations
+## Known v0.2.0 limitations
 
 - Source release only; no npm, MSI, Homebrew, or standalone binary yet.
 - Terminals differ in mouse reporting, OSC 52 clipboard, and image protocols.
@@ -202,7 +203,7 @@ Keyless E2E fixtures need no API key; real model calls do. Report bugs through [
 
 ## Release status
 
-**v0.1.0 — first public release.** The terminal coding loop is usable for early adopters; APIs and configuration remain pre-1.0.
+**v0.2.0 — second public release.** The terminal coding loop is usable for early adopters; APIs and configuration remain pre-1.0.
 
 ## License
 

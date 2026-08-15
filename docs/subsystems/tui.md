@@ -37,7 +37,7 @@ The concrete provider retains pi-tui, focus, and terminal lifecycle state. Plugi
 abstract openOverlay(request: TuiOverlayRequest): TuiOverlaySession
 ```
 
-Source: [`packages/ui/tui/src/index.ts:413`](../../packages/ui/tui/src/index.ts)
+Source: [`packages/ui/tui/src/index.ts:434`](../../packages/ui/tui/src/index.ts)
 
 <a id="ctxtuiagent--tuiagentservice"></a>
 
@@ -68,8 +68,10 @@ async swap(resumeSessionId: SessionId): Promise<void>
  * resumable, while the ready payload carries reasoning effort that is not an
  * AgentOptions field.
  * @param selection - model target selected by the current TUI.
+ * @param cwd - optional workspace for the new conversation.
+ * @param routingProfile - prompt/tool routing profile for the fresh session.
  */
-async fresh(selection: ModelSelection | undefined): Promise<void>
+async fresh( selection: ModelSelection | undefined, cwd?: string, routingProfile: 'anchored' | 'suite' = 'anchored', ): Promise<void>
 
 /**
  * Replace the live channel with a child session seeded through one completed
@@ -84,7 +86,7 @@ async fork(boundary: number, selection: ModelSelection | undefined, initialNotic
 
 Types: [ModelSelection](core.md) · [SessionId](core.md)
 
-Source: [`packages/ui/tui/src/runner.ts:78`](../../packages/ui/tui/src/runner.ts)
+Source: [`packages/ui/tui/src/runner.ts:82`](../../packages/ui/tui/src/runner.ts)
 
 <a id="ctxtuiprompt--tuipromptservice"></a>
 
@@ -149,5 +151,5 @@ The runner settled on the agent the TUI renders. Fires after every create or res
 
 Types: [ModelSelection](core.md) · [SessionId](core.md)
 
-Source: [`packages/ui/tui/src/runner.ts:58`](../../packages/ui/tui/src/runner.ts)
+Source: [`packages/ui/tui/src/runner.ts:62`](../../packages/ui/tui/src/runner.ts)
 <!-- END GENERATED cordis-surface -->

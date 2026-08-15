@@ -1,20 +1,20 @@
 # DeepSeek Code TUI
 
-[![Release](https://img.shields.io/badge/release-v0.1.0-2563eb)](https://github.com/BenHuHuan/dhscode-tui/releases) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](#platform-support) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v0.2.0-2563eb)](https://github.com/BenHuHuan/dhscode-tui/releases) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](#platform-support) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
 
 [English](README.md) | 中文
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI v0.1.0 预览">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI 预览">
 </p>
 
-**DeepSeek Code TUI v0.1.0** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pro/Flash 加入适用于 Windows、Linux、服务器与 SSH 的类 Claude Code 工作流。
+**DeepSeek Code TUI v0.2.0** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pro/Flash 加入适用于 Windows、Linux、服务器与 SSH 的类 Claude Code 工作流。
 
 在项目目录输入 `deepseek`，即可获得包含极简首轮提示、按需工具、权限模式、MCP、可继续 Agent、检查点和持久会话的纯终端编码工作区。
 
 > 本项目是独立社区发行版，不是 DeepSeek 官方产品，也与 Anthropic 无关。文中提到 Claude Code 仅用于说明交互体验。
 
-## v0.1.0 亮点
+## v0.2.0 亮点
 
 - **一条命令启动：** `deepseek` 或 `dsh` 默认打开当前目录。
 - **DeepSeek 优先：** V4 Pro、max 推理强度、Minimal 极简首轮工具目录，随后按需恢复完整工具。
@@ -29,6 +29,7 @@
 - **工作区安全：** 交互式 diff、命名 checkpoint、rewind 与会话分支。
 - **MCP 与多 Agent：** 可直接在 TUI 中查看、重载和管理。
 - **Skills：** 浏览可用技能目录并通过 `/skill:<name>` 调用。
+- **多智能体编排（`allin`）：** V4 Pro 协调者负责规划与汇总，多个 V4 Flash 车道并行执行依赖就绪的任务，风格与 allinluna 一致。
 - **图片与粘贴：** 剪贴板图片、终端图片、Windows ANSI 像素回退、多段长文本粘贴块。
 - **终端交互：** 鼠标滚动、回到底部、蓝色拖选、OSC 52 复制和行宽防崩溃。
 
@@ -101,7 +102,7 @@ deepseek --dangerously-skip-permissions
 
 ### Windows Git Bash 行为
 
-v0.1.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。Minimal 是 V4 Pro 的默认 Profile；Router 使用同一个 Bash 后端，但主要针对 V4 Flash。本机 V4 Pro max-effort Minimal 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
+v0.2.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。Minimal 是 V4 Pro 的默认 Profile；Router 使用同一个 Bash 后端，但主要针对 V4 Flash。本机 V4 Pro max-effort Minimal 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
 
 <p align="center">
   <img src="docs/assets/gitbash-reasoning-before-v2.png" alt="V4 Pro 使用 Git Bash 的推理样例" width="100%"><br>
@@ -150,7 +151,7 @@ v0.1.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 
 
 ### Windows
 
-Windows Terminal 是 v0.1.0 的主要桌面目标。Minimal 与 Router 请求使用独立的 Git Bash 进程，不再进入 Windows 不支持的持久 PTY 路径。DeepSeek Code 会依次探测 `DSH_BASH_PATH`、`GIT_BASH`、Git for Windows 常见安装目录与 `PATH`。由于 MSYS 无法在 Windows 受限令牌沙箱中创建信号管道，Bash 调用需要单次完整权限批准或 `/bypass on`；安全模式仍保留 PowerShell 来执行受限命令。
+Windows Terminal 是 v0.2.0 的主要桌面目标。Minimal 与 Router 请求使用独立的 Git Bash 进程，不再进入 Windows 不支持的持久 PTY 路径。DeepSeek Code 会依次探测 `DSH_BASH_PATH`、`GIT_BASH`、Git for Windows 常见安装目录与 `PATH`。由于 MSYS 无法在 Windows 受限令牌沙箱中创建信号管道，Bash 调用需要单次完整权限批准或 `/bypass on`；安全模式仍保留 PowerShell 来执行受限命令。
 
 中英文混合会话建议在 Windows Terminal 的 Git Bash Profile 中选择 **Sarasa Mono SC（更纱黑体等宽 SC）** 或其他经过验证的 CJK 等宽字体。若终端回退到比例中文字体，即使 TUI 的列宽计算正确，中文字符看起来仍可能大小不一或错列。
 
@@ -181,7 +182,7 @@ DeepSeek Code 仍是 DeepSeek Harness 的发行形态，而非单体 CLI。模�
 - [开发指南](docs/development.md)
 - [测试](docs/testing.md)
 
-## v0.1.0 已知限制
+## v0.2.0 已知限制
 
 - 当前仅源码发布，暂无 npm、MSI、Homebrew 或独立二进制。
 - 不同终端对鼠标、OSC 52 剪贴板与图片协议的支持不同。
@@ -202,7 +203,7 @@ Keyless E2E 不需要真实 API Key；真实模型请求需要。请通过 [GitH
 
 ## 发布状态
 
-**v0.1.0 — 第一个公开版本。** 核心终端编码循环已可供早期用户使用；API 与配置仍在 1.0 前快速迭代。
+**v0.2.0 — 第二个公开版本。** 核心终端编码循环已可供早期用户使用；API 与配置仍在 1.0 前快速迭代。
 
 ## 许可证
 

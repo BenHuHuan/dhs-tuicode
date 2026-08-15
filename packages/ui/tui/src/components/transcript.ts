@@ -152,7 +152,7 @@ export class HeaderComponent implements Component {
     const name = this.gradient
       ? this.palette.bold(gradientText('DEEPSEEK'))
       : this.palette.bold(this.palette.accent('DEEPSEEK'))
-    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.1.0')}`
+    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.2.0')}`
     const model = displayText(this.agent.options.model ?? 'model unset')
     const cwd = displayText(this.agent.session.header.cwd ?? process.cwd())
     const detail = displayText(this.agent.session.id)

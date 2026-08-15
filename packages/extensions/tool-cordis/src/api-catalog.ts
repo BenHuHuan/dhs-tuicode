@@ -1999,9 +1999,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'resumeSessionId', description: 'persisted session to load as the live agent.' }],
       },
       {
-        signature: 'async fresh(selection: ModelSelection | undefined): Promise<void>',
+        signature: 'async fresh( selection: ModelSelection | undefined, cwd?: string, routingProfile: \'anchored\' | \'suite\' = \'anchored\', ): Promise<void>',
         description: 'Replace the live agent with a newly-created conversation in the current workspace. A unique identity keeps the previous persisted session resumable, while the ready payload carries reasoning effort that is not an AgentOptions field.',
-        parameters: [{ name: 'selection', description: 'model target selected by the current TUI.' }],
+        parameters: [{ name: 'selection', description: 'model target selected by the current TUI.' }, { name: 'cwd', description: 'optional workspace for the new conversation.' }, { name: 'routingProfile', description: 'prompt/tool routing profile for the fresh session.' }],
       },
       {
         signature: 'async fork(boundary: number, selection: ModelSelection | undefined, initialNotice?: string): Promise<void>',
