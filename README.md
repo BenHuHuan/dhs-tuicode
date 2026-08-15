@@ -5,7 +5,7 @@
 English | [中文](README.zh.md)
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview.png" alt="DeepSeek Code TUI v0.1.0 preview">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260815.png" alt="DeepSeek Code TUI v0.1.0 preview">
 </p>
 
 **DeepSeek Code TUI v0.1.0** is a terminal-native coding agent built on the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It keeps Harness's Cordis plugin architecture and adds an opinionated, Claude-Code-style workflow for DeepSeek V4 Pro/Flash on Windows, Linux, servers, and SSH sessions.

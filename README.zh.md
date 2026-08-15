@@ -5,7 +5,7 @@
 [English](README.md) | 中文
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview.png" alt="DeepSeek Code TUI v0.1.0 预览">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260815.png" alt="DeepSeek Code TUI v0.1.0 预览">
 </p>
 
 **DeepSeek Code TUI v0.1.0** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pro/Flash 加入适用于 Windows、Linux、服务器与 SSH 的类 Claude Code 工作流。
