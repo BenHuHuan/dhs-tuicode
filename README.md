@@ -18,7 +18,7 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 
 - **One-command TUI:** bare `deepseek` or `dsh` opens the current directory.
 - **DeepSeek-first defaults:** V4 Pro, max reasoning effort, and a minimal first request that promotes the full coding tool catalog on demand.
-- **Windows + Linux:** native PowerShell support, Git Bash preference in Windows bypass mode, and Bash on Linux/server environments.
+- **Windows + Linux:** native PowerShell support plus an automatically detected Git Bash backend for Minimal/Router requests, and Bash on Linux/server environments.
 - **Persistent authentication:** `/login` securely saves or replaces the DeepSeek API token.
 - **Visible work modes:** Build, Flow, Inspect, and Blueprint/Plan each have distinct colors, prompt glyphs, permissions, and footer state.
 - **Permission control:** `/bypass` and `--dangerously-skip-permissions` enable full access without preconfiguring an environment variable.
@@ -36,7 +36,7 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 - pnpm `11.7+`
 - Git and a DeepSeek API key
 - A modern terminal such as Windows Terminal, WezTerm, Kitty, or iTerm2
-- Optional on Windows: Git for Windows for the Linux-like Bash tool
+- Recommended on Windows: Git for Windows; required for the Bash-backed Minimal and Router profiles
 
 <a id="run"></a><a id="run-from-source"></a>
 
@@ -94,6 +94,16 @@ The standard agent begins with a small stable prompt and minimal catalog (`shell
 
 The default effort is max. DeepSeek profiles support sampling values such as `temperature=1.0` and `top_p=0.95`. Prompt anchoring improves consistency, but cannot guarantee a particular hidden chain-of-thought prefix.
 
+### Windows Git Bash behavior
+
+The v0.1.0 Windows backend now gives Minimal and Router requests real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. In local V4 Pro max-effort runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
+
+<p align="center">
+  <img src="docs/assets/gitbash-reasoning-before.png" alt="V4 Pro reasoning sample using Git Bash" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-could.png" alt="V4 Pro reasoning sample beginning with We could" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-should.png" alt="V4 Pro reasoning sample using Should we and We should" width="100%">
+</p>
+
 ## Main commands
 
 | Command | Purpose |
@@ -133,7 +143,7 @@ Type `/` for scrollable command completion. Skill commands load asynchronously f
 
 ### Windows
 
-Windows Terminal + PowerShell is the primary v0.1.0 desktop target. Sandboxed modes use PowerShell. With bypass enabled, DeepSeek Code can prefer Git Bash at the standard Git for Windows location for a more Linux-like tool environment.
+Windows Terminal is the primary v0.1.0 desktop target. Minimal and Router requests use fresh Git Bash processes instead of the unsupported Windows persistent-PTY path. DeepSeek Code detects `DSH_BASH_PATH`, `GIT_BASH`, standard Git for Windows installations, and then `PATH`. Because the MSYS runtime cannot create its signal pipes inside the Windows restricted-token sandbox, Bash calls require a one-call full-access approval or `/bypass on`; safe modes retain PowerShell for confined commands.
 
 ```powershell
 $env:DSH_BASH_PATH = 'C:\Program Files\Git\bin\bash.exe'

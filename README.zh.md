@@ -18,7 +18,7 @@
 
 - **一条命令启动：** `deepseek` 或 `dsh` 默认打开当前目录。
 - **DeepSeek 优先：** V4 Pro、max 推理强度、极简首轮工具目录，随后按需恢复完整工具。
-- **Windows + Linux：** 原生 PowerShell、Windows bypass 下优先 Git Bash、Linux 使用 Bash。
+- **Windows + Linux：** 原生 PowerShell，Minimal/Router 请求自动使用 Git Bash 后端，Linux/服务器使用 Bash。
 - **持久登录：** `/login` 安全保存或替换 API Token，无需每次设置环境变量。
 - **四种可视模式：** Build、Flow、Inspect、Blueprint/Plan 拥有不同颜色、提示符与权限。
 - **快速完整权限：** `/bypass` 或 `--dangerously-skip-permissions`。
@@ -36,7 +36,7 @@
 - pnpm `11.7+`
 - Git 与 DeepSeek API Key
 - Windows Terminal、WezTerm、Kitty、iTerm2 等现代终端
-- Windows 可选 Git for Windows，用于 Linux 风格 Bash 工具
+- Windows 推荐安装 Git for Windows；Minimal 与 Router 的 Bash 后端需要它
 
 <a id="run"></a><a id="run-from-source"></a>
 
@@ -92,6 +92,16 @@ deepseek --dangerously-skip-permissions
 
 默认推理强度为 max，DeepSeek Profile 支持 `temperature=1.0`、`top_p=0.95` 等采样配置。提示锚定可以提高一致性，但不能保证隐藏思维链固定以某个单词开头。
 
+### Windows Git Bash 行为
+
+v0.1.0 的 Windows 后端现在会让 Minimal 与 Router 请求使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。本机 V4 Pro max-effort 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
+
+<p align="center">
+  <img src="docs/assets/gitbash-reasoning-before.png" alt="V4 Pro 使用 Git Bash 的推理样例" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-could.png" alt="V4 Pro 使用 We could 的推理样例" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-should.png" alt="V4 Pro 使用 Should we 与 We should 的推理样例" width="100%">
+</p>
+
 ## 主要命令
 
 | 命令 | 用途 |
@@ -133,7 +143,7 @@ deepseek --dangerously-skip-permissions
 
 ### Windows
 
-Windows Terminal + PowerShell 是 v0.1.0 的主要桌面目标。沙箱模式使用 PowerShell；bypass 模式发现 Git for Windows 后可优先使用 Git Bash，以获得更接近 Linux 的环境。
+Windows Terminal 是 v0.1.0 的主要桌面目标。Minimal 与 Router 请求使用独立的 Git Bash 进程，不再进入 Windows 不支持的持久 PTY 路径。DeepSeek Code 会依次探测 `DSH_BASH_PATH`、`GIT_BASH`、Git for Windows 常见安装目录与 `PATH`。由于 MSYS 无法在 Windows 受限令牌沙箱中创建信号管道，Bash 调用需要单次完整权限批准或 `/bypass on`；安全模式仍保留 PowerShell 来执行受限命令。
 
 ```powershell
 $env:DSH_BASH_PATH = 'C:\Program Files\Git\bin\bash.exe'

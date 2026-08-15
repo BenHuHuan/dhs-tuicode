@@ -57,6 +57,7 @@
     - id: minimal-persistent-shell
       name: cordis:group
       group: true
+      disabled: !!js process.platform === 'win32'
       isolate:
         terminals: true
       config:
@@ -71,6 +72,26 @@
           name: '@deepseek-ai/dsh-tool-bash-persistent'
           config:
             timeoutMs: 300000
+
+    # Git for Windows is not a POSIX PTY: node-pty cannot provide the process
+    # inspection contract the persistent backend requires on win32. Use the
+    # same model-facing `bash` tool with fresh `bash -c` processes instead.
+    - id: minimal-windows-gitbash-shell
+      name: cordis:group
+      group: true
+      disabled: !!js process.platform !== 'win32'
+      isolate:
+        shell: true
+      config:
+        - id: gitbash-executor
+          name: '@deepseek-ai/dsh-tui/gitbash-executor'
+          config:
+            executable: auto
+            settings: false
+            timeoutMs: 300000
+            maxTimeoutMs: 600000
+        - id: gitbash-tool
+          name: '@deepseek-ai/dsh-tool-bash'
 
     # Durable KV backend for the projection cache below: same storage root the
     # web surface uses, so checkpoint rows written by either surface serve both.

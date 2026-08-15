@@ -99,10 +99,16 @@
       "path": "../../shell/shell"
     },
     {
+      "path": "../../shell/bash-local"
+    },
+    {
       "path": "../../shell/shell-env"
     },
     {
       "path": "../../sandbox/sandbox-policy"
+    },
+    {
+      "path": "../../sandbox/sandbox"
     },
     {
       "path": "../../subprocess/subprocess"

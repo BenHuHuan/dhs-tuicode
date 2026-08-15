@@ -3,12 +3,27 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { LocalBashExecutor } from '@deepseek-ai/dsh-bash-local'
+import { LocalBashExecutor, resolveBashExecutable, toHostBashPath } from '@deepseek-ai/dsh-bash-local'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import type { ShellProcess } from '@deepseek-ai/dsh-shell'
 
 const spillDir = mkdtempSync(join(tmpdir(), 'dsh-bash-exec-spec-'))
+
+describe('Windows Git Bash compatibility', () => {
+  it('converts only MSYS drive paths to native host paths', () => {
+    expect(toHostBashPath('/d/work/tree', 'win32')).toBe('D:\\work\\tree')
+    expect(toHostBashPath('/d', 'win32')).toBe('D:\\')
+    expect(toHostBashPath('/usr/bin', 'win32')).toBe('/usr/bin')
+    expect(toHostBashPath('/d/work/tree', 'linux')).toBe('/d/work/tree')
+  })
+
+  it('keeps explicit executables and gives auto a portable fallback', () => {
+    expect(resolveBashExecutable('C:/custom/bash.exe', {}, 'win32')).toBe('C:/custom/bash.exe')
+    expect(resolveBashExecutable('auto', {}, 'win32')).toBe('bash')
+    expect(resolveBashExecutable('auto', {}, 'linux')).toBe('bash')
+  })
+})
 
 async function setup(config: ConstructorParameters<typeof LocalBashExecutor>[1] = {}) {
   const ctx = new Context()

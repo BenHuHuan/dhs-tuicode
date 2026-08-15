@@ -9,6 +9,8 @@
  * @module @deepseek-ai/dsh-bash-local
  */
 
+import { existsSync } from 'node:fs'
+import { delimiter } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { SHELL_SETTINGS_NAMESPACE, ShellExecutor } from '@deepseek-ai/dsh-shell'
@@ -30,6 +32,50 @@ export const ENV_OVERRIDES = {
   PAGER: 'cat',
   GIT_PAGER: 'cat',
 } as const
+
+/** Convert the MSYS drive form accepted by Git Bash into a host cwd path. */
+export function toHostBashPath(value: string, platform: NodeJS.Platform = process.platform): string {
+  if (platform !== 'win32') return value
+  const match = /^\/([A-Za-z])(?:$|\/(.*))$/.exec(value)
+  if (match === null) return value
+  const driveLetter = match[1]
+  if (driveLetter === undefined) return value
+  const drive = `${driveLetter.toUpperCase()}:`
+  const rest = match[2] ?? ''
+  return rest.length === 0 ? `${drive}\\` : `${drive}\\${rest.replaceAll('/', '\\')}`
+}
+
+function envValue(env: NodeJS.ProcessEnv, key: string): string | undefined {
+  const exact = env[key]
+  if (exact !== undefined) return exact
+  const normalized = key.toUpperCase()
+  return Object.entries(env).find(([name]) => name.toUpperCase() === normalized)?.[1]
+}
+
+/** Resolve `auto` to Git for Windows' bash, while leaving explicit executables untouched. */
+export function resolveBashExecutable(
+  executable: string,
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): string {
+  if (executable !== 'auto') return toHostBashPath(executable, platform)
+  if (platform !== 'win32') return 'bash'
+  const candidates = [
+    envValue(env, 'DSH_BASH_PATH'),
+    envValue(env, 'GIT_BASH'),
+    ...['ProgramFiles', 'ProgramFiles(x86)', 'LOCALAPPDATA'].flatMap((key) => {
+      const root = envValue(env, key)
+      if (root === undefined || root.length === 0) return []
+      return key === 'LOCALAPPDATA'
+        ? [`${root}\\Programs\\Git\\bin\\bash.exe`, `${root}\\Programs\\Git\\usr\\bin\\bash.exe`]
+        : [`${root}\\Git\\bin\\bash.exe`, `${root}\\Git\\usr\\bin\\bash.exe`]
+    }),
+    ...(envValue(env, 'PATH') ?? '').split(platform === 'win32' ? ';' : delimiter)
+      .filter(Boolean)
+      .map(directory => `${directory}\\bash.exe`),
+  ]
+  return candidates.find(candidate => candidate !== undefined && existsSync(candidate)) ?? 'bash'
+}
 
 /** Default SIGTERM→SIGKILL grace period (the `graceMs` config; matches OpenCode's 3s). */
 const DEFAULT_GRACE_MS = 3_000
@@ -53,6 +99,8 @@ export interface Config {
   maxSpillBytes?: number
   /** Grace period for kill escalation and inherited pipes; at most `MAX_TIMER_DELAY_MS`. */
   graceMs?: number
+  /** Register the shared live settings section (disable for an isolated secondary executor). */
+  settings?: boolean
 }
 
 /** The shape after schemastery applied the defaults (cwd has none). */
@@ -115,6 +163,7 @@ export class LocalBashExecutor extends ShellExecutor {
     maxOutputBytes: z.number().default(64_000),
     maxSpillBytes: z.number().default(DEFAULT_MAX_SPILL_BYTES),
     graceMs: z.number().default(DEFAULT_GRACE_MS),
+    settings: z.boolean().default(true),
   })
 
   /** The currently authoritative config: the settings section, or the composition entry. */
@@ -131,15 +180,17 @@ export class LocalBashExecutor extends ShellExecutor {
     const entry = config as ResolvedConfig
     assertServiceableBashConfig(entry)
     this.source = () => entry
-    installSettingsSection(ctx, SHELL_SETTINGS_NAMESPACE, LocalBashExecutor.Config, entry, {
-      validate: assertServiceableBashConfig,
-      setSource: (current) => {
-        this.source = current as () => ResolvedConfig
-      },
-      // Every field is read through the getter at each command, so nothing
-      // derived from the source needs rebuilding when the document changes.
-      onChange: () => {},
-    })
+    if (entry.settings) {
+      installSettingsSection(ctx, SHELL_SETTINGS_NAMESPACE, LocalBashExecutor.Config, entry, {
+        validate: assertServiceableBashConfig,
+        setSource: (current) => {
+          this.source = current as () => ResolvedConfig
+        },
+        // Every field is read through the getter at each command, so nothing
+        // derived from the source needs rebuilding when the document changes.
+        onChange: () => {},
+      })
+    }
   }
 
   /**
@@ -160,7 +211,7 @@ export class LocalBashExecutor extends ShellExecutor {
     assertPositiveFinite('request.stdoutMaxBytes', stdoutMaxBytes)
     return {
       command: request.command,
-      workdir: request.workdir ?? this.config.cwd ?? process.cwd(),
+      workdir: toHostBashPath(request.workdir ?? this.config.cwd ?? process.cwd()),
       timeoutMs,
       stdoutMaxBytes,
       ...request.signal ? { signal: request.signal } : {},
@@ -178,7 +229,7 @@ export class LocalBashExecutor extends ShellExecutor {
 
   /** Exact shell argv shared by direct and sandbox-wrapped execution. */
   protected bashArgv(command: string): readonly string[] {
-    return [this.config.executable, '-c', command]
+    return [resolveBashExecutable(this.config.executable), '-c', command]
   }
 
   /** Map one resolved bash spec and explicit argv onto a fully-specified subprocess spawn. */

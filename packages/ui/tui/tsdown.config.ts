@@ -7,6 +7,7 @@ export default defineConfig({
     'lib/types/index.js',
     'lib/types/startup.js',
     'lib/types/runner.js',
+    'lib/types/gitbash-executor.js',
     'lib/types/invariant.js',
     'lib/types/prompt.js',
   ],
