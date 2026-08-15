@@ -106,9 +106,9 @@ Switch profiles with `/mode minimal` or `/mode router`. This profile selector is
 The v0.1.0 Windows backend gives agent tool calls real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. Minimal is the default V4 Pro profile; Router keeps the same Bash backend but is tuned mainly for V4 Flash. In local V4 Pro max-effort Minimal runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
 
 <p align="center">
-  <img src="docs/assets/gitbash-reasoning-before.png" alt="V4 Pro reasoning sample using Git Bash" width="100%"><br>
-  <img src="docs/assets/gitbash-reasoning-we-could.png" alt="V4 Pro reasoning sample beginning with We could" width="100%"><br>
-  <img src="docs/assets/gitbash-reasoning-we-should.png" alt="V4 Pro reasoning sample using Should we and We should" width="100%">
+  <img src="docs/assets/gitbash-reasoning-before-v2.png" alt="V4 Pro reasoning sample using Git Bash" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-could-v2.png" alt="V4 Pro reasoning sample beginning with We could" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-should-v2.png" alt="V4 Pro reasoning sample using Should we and We should" width="100%">
 </p>
 
 ## Main commands

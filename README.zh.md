@@ -104,9 +104,9 @@ deepseek --dangerously-skip-permissions
 v0.1.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。Minimal 是 V4 Pro 的默认 Profile；Router 使用同一个 Bash 后端，但主要针对 V4 Flash。本机 V4 Pro max-effort Minimal 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
 
 <p align="center">
-  <img src="docs/assets/gitbash-reasoning-before.png" alt="V4 Pro 使用 Git Bash 的推理样例" width="100%"><br>
-  <img src="docs/assets/gitbash-reasoning-we-could.png" alt="V4 Pro 使用 We could 的推理样例" width="100%"><br>
-  <img src="docs/assets/gitbash-reasoning-we-should.png" alt="V4 Pro 使用 Should we 与 We should 的推理样例" width="100%">
+  <img src="docs/assets/gitbash-reasoning-before-v2.png" alt="V4 Pro 使用 Git Bash 的推理样例" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-could-v2.png" alt="V4 Pro 使用 We could 的推理样例" width="100%"><br>
+  <img src="docs/assets/gitbash-reasoning-we-should-v2.png" alt="V4 Pro 使用 Should we 与 We should 的推理样例" width="100%">
 </p>
 
 ## 主要命令
