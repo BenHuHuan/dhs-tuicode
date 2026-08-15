@@ -5,7 +5,7 @@
 [English](README.md) | 中文
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260815.png" alt="DeepSeek Code TUI v0.1.0 预览">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI v0.1.0 预览">
 </p>
 
 **DeepSeek Code TUI v0.1.0** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pro/Flash 加入适用于 Windows、Linux、服务器与 SSH 的类 Claude Code 工作流。
@@ -17,8 +17,10 @@
 ## v0.1.0 亮点
 
 - **一条命令启动：** `deepseek` 或 `dsh` 默认打开当前目录。
-- **DeepSeek 优先：** V4 Pro、max 推理强度、极简首轮工具目录，随后按需恢复完整工具。
-- **Windows + Linux：** 原生 PowerShell，Minimal/Router 请求自动使用 Git Bash 后端，Linux/服务器使用 Bash。
+- **DeepSeek 优先：** V4 Pro、max 推理强度、Minimal 极简首轮工具目录，随后按需恢复完整工具。
+- **两种模型 Profile：** `/mode minimal` 保留面向 V4 Pro 的锚定路径；`/mode router` 提供任务感知的首轮工具路由，主要面向 V4 Flash。
+- **Windows + Linux：** Windows 下 Minimal/Router 的 Agent 工具自动使用 Git Bash，Linux/服务器直接使用 Bash；Windows 安全操作仍可使用 PowerShell。
+- **中文等宽显示：** Git Bash 配合 Sarasa Mono SC 等真正的 CJK 等宽字体时，中英文字符可保持列宽一致。
 - **持久登录：** `/login` 安全保存或替换 API Token，无需每次设置环境变量。
 - **四种可视模式：** Build、Flow、Inspect、Blueprint/Plan 拥有不同颜色、提示符与权限。
 - **快速完整权限：** `/bypass` 或 `--dangerously-skip-permissions`。
@@ -86,15 +88,20 @@ deepseek --dangerously-skip-permissions
 
 仅在可信工作区使用 bypass，它允许 Agent 不经确认执行命令和修改文件。
 
-## 极简首轮与工具恢复
+## 模型 Profile、极简首轮与工具恢复
 
 标准 Agent 以小型稳定提示词和最小工具集合（`shell` + `read`）开始。第一次持久工具调用或助手回复后，完整编码工具目录立即恢复。这样首轮尽量接近 DeepSeek Harness Minimal Mode，后续又保留完整 Coding Agent 能力。
 
 默认推理强度为 max，DeepSeek Profile 支持 `temperature=1.0`、`top_p=0.95` 等采样配置。提示锚定可以提高一致性，但不能保证隐藏思维链固定以某个单词开头。
 
+- **Minimal（V4 Pro 推荐）：** 保留锚定的 Minimal system prompt，第一次持久动作后才恢复完整工具目录。
+- **Router（主要面向 V4 Flash）：** 适配 [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite) 的任务感知路由思路，按任务缩小首轮可见工具面，之后再恢复完整目录。Routing Suite 作者说明该 Profile 主要为 Flash 设计；Pro 用户除非专门评估路由行为，否则建议保持 Minimal。
+
+使用 `/mode minimal` 或 `/mode router` 切换。它与 Build、Flow、Inspect、Plan 这些权限/工作模式相互独立。
+
 ### Windows Git Bash 行为
 
-v0.1.0 的 Windows 后端现在会让 Minimal 与 Router 请求使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。本机 V4 Pro max-effort 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
+v0.1.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。Minimal 是 V4 Pro 的默认 Profile；Router 使用同一个 Bash 后端，但主要针对 V4 Flash。本机 V4 Pro max-effort Minimal 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
 
 <p align="center">
   <img src="docs/assets/gitbash-reasoning-before.png" alt="V4 Pro 使用 Git Bash 的推理样例" width="100%"><br>
@@ -144,6 +151,8 @@ v0.1.0 的 Windows 后端现在会让 Minimal 与 Router 请求使用真实的 G
 ### Windows
 
 Windows Terminal 是 v0.1.0 的主要桌面目标。Minimal 与 Router 请求使用独立的 Git Bash 进程，不再进入 Windows 不支持的持久 PTY 路径。DeepSeek Code 会依次探测 `DSH_BASH_PATH`、`GIT_BASH`、Git for Windows 常见安装目录与 `PATH`。由于 MSYS 无法在 Windows 受限令牌沙箱中创建信号管道，Bash 调用需要单次完整权限批准或 `/bypass on`；安全模式仍保留 PowerShell 来执行受限命令。
+
+中英文混合会话建议在 Windows Terminal 的 Git Bash Profile 中选择 **Sarasa Mono SC（更纱黑体等宽 SC）** 或其他经过验证的 CJK 等宽字体。若终端回退到比例中文字体，即使 TUI 的列宽计算正确，中文字符看起来仍可能大小不一或错列。
 
 ```powershell
 $env:DSH_BASH_PATH = 'C:\Program Files\Git\bin\bash.exe'

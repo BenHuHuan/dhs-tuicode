@@ -5,7 +5,7 @@
 English | [中文](README.zh.md)
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260815.png" alt="DeepSeek Code TUI v0.1.0 preview">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI v0.1.0 preview">
 </p>
 
 **DeepSeek Code TUI v0.1.0** is a terminal-native coding agent built on the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It keeps Harness's Cordis plugin architecture and adds an opinionated, Claude-Code-style workflow for DeepSeek V4 Pro/Flash on Windows, Linux, servers, and SSH sessions.
@@ -17,8 +17,10 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 ## v0.1.0 highlights
 
 - **One-command TUI:** bare `deepseek` or `dsh` opens the current directory.
-- **DeepSeek-first defaults:** V4 Pro, max reasoning effort, and a minimal first request that promotes the full coding tool catalog on demand.
-- **Windows + Linux:** native PowerShell support plus an automatically detected Git Bash backend for Minimal/Router requests, and Bash on Linux/server environments.
+- **DeepSeek-first defaults:** V4 Pro, max reasoning effort, and a Minimal first request that promotes the full coding tool catalog on demand.
+- **Two model profiles:** `/mode minimal` keeps the anchored V4 Pro path; `/mode router` enables task-aware initial tool routing, primarily for V4 Flash.
+- **Windows + Linux:** automatic Git Bash execution for Minimal/Router agent tools on Windows, with native Bash on Linux and servers; PowerShell remains available for Windows-safe operations.
+- **CJK-friendly terminal text:** Chinese and Latin glyphs stay column-aligned in Git Bash when using a true CJK monospace font such as Sarasa Mono SC.
 - **Persistent authentication:** `/login` securely saves or replaces the DeepSeek API token.
 - **Visible work modes:** Build, Flow, Inspect, and Blueprint/Plan each have distinct colors, prompt glyphs, permissions, and footer state.
 - **Permission control:** `/bypass` and `--dangerously-skip-permissions` enable full access without preconfiguring an environment variable.
@@ -88,15 +90,20 @@ deepseek --dangerously-skip-permissions
 
 Use bypass only in a trusted workspace: it permits shell commands and file changes without approval prompts.
 
-## Minimal-first bootstrap
+## Model profiles and minimal-first bootstrap
 
 The standard agent begins with a small stable prompt and minimal catalog (`shell` + `read`). After the first durable tool call or assistant reply, the complete coding catalog becomes available. This keeps the initial request near the official DeepSeek Harness minimal-mode shape while preserving a full coding agent for the rest of the session.
 
 The default effort is max. DeepSeek profiles support sampling values such as `temperature=1.0` and `top_p=0.95`. Prompt anchoring improves consistency, but cannot guarantee a particular hidden chain-of-thought prefix.
 
+- **Minimal (recommended for V4 Pro):** preserves the anchored Minimal system prompt and promotes the complete catalog only after the first durable action.
+- **Router (primarily for V4 Flash):** adapts the task-aware routing approach from [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite). It narrows the first visible tool surface by task, then restores the complete catalog. The routing-suite author describes this profile as mainly intended for Flash; Pro users should keep Minimal unless they specifically want to evaluate routing behavior.
+
+Switch profiles with `/mode minimal` or `/mode router`. This profile selector is independent from Build/Flow/Inspect/Plan permission modes.
+
 ### Windows Git Bash behavior
 
-The v0.1.0 Windows backend now gives Minimal and Router requests real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. In local V4 Pro max-effort runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
+The v0.1.0 Windows backend gives agent tool calls real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. Minimal is the default V4 Pro profile; Router keeps the same Bash backend but is tuned mainly for V4 Flash. In local V4 Pro max-effort Minimal runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
 
 <p align="center">
   <img src="docs/assets/gitbash-reasoning-before.png" alt="V4 Pro reasoning sample using Git Bash" width="100%"><br>
@@ -144,6 +151,8 @@ Type `/` for scrollable command completion. Skill commands load asynchronously f
 ### Windows
 
 Windows Terminal is the primary v0.1.0 desktop target. Minimal and Router requests use fresh Git Bash processes instead of the unsupported Windows persistent-PTY path. DeepSeek Code detects `DSH_BASH_PATH`, `GIT_BASH`, standard Git for Windows installations, and then `PATH`. Because the MSYS runtime cannot create its signal pipes inside the Windows restricted-token sandbox, Bash calls require a one-call full-access approval or `/bypass on`; safe modes retain PowerShell for confined commands.
+
+For mixed Chinese/English sessions, select **Sarasa Mono SC** (or another verified CJK monospace font) in the Windows Terminal Git Bash profile. A proportional CJK fallback can make Chinese glyphs appear at inconsistent widths even when the TUI's terminal-column calculations are correct.
 
 ```powershell
 $env:DSH_BASH_PATH = 'C:\Program Files\Git\bin\bash.exe'

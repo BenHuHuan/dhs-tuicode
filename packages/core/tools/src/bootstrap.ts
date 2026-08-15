@@ -11,7 +11,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
+import type { UserMessage } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 
@@ -40,17 +40,7 @@ const SPEC_TASK = new RegExp([
   '审查', 'review', 'fix', 'debug', 'refactor', 'maintain', 'repair', 'broken', 'break',
   '为什么', '异常', '故障', '迁移', '升级', '兼容',
 ].join('|'), 'giu')
-const COMPLEX_TASK = new RegExp([
-  '重构', '架构', '全面', '详细', '设计', '系统', '优化', '分析',
-  'survey', 'overview', 'architecture', 'refactor', 'comprehensive', 'detailed',
-  'design', 'system', 'optimize', 'analyze',
-].join('|'), 'iu')
 const RESEARCH_TASK = /\u641c\u7d22|\u67e5\u627e|\u8c03\u67e5|\u7814\u7a76|search|investigate|research|inspect/iu
-
-const ROUTER_PERSONAS = {
-  spec: MINIMAL_SYSTEM_PROMPT,
-  react: 'You are a hands-on software engineer who delivers working output fast.\nWork directly: write or edit code, then verify it by reading and running. Keep the loop tight — produce, verify, fix — and do not build test harnesses, scaffolding, or ceremony the user did not ask for. Finish with a usable deliverable and a short summary.',
-} as const
 
 const ROUTER_FIRST_TOOLS: Record<RouterTaskMode, readonly string[]> = {
   spec: ['bash', 'read', 'edit', 'glob', 'grep'],
@@ -61,7 +51,7 @@ const ROUTER_FIRST_TOOLS: Record<RouterTaskMode, readonly string[]> = {
 /**
  * Classify one task exactly like Router Standard, without its unstable mixed region.
  * @param text - First user task text to route.
- * @returns The stable Router task class used to select the initial persona and tools.
+ * @returns The stable Router task class used to select the initial tool surface.
  */
 export function classifyRouterTask(text: string): RouterTaskMode {
   if (RESEARCH_TASK.test(text)) return 'spec'
@@ -93,20 +83,6 @@ function firstTaskText(agent: { session?: { events: readonly unknown[] } } | und
     }
   }
   return ''
-}
-
-function routerPersona(mode: RouterTaskMode, model: string | undefined): string {
-  if (mode !== 'weak') return ROUTER_PERSONAS[mode]
-  const review = 'Before acting, decide the task type (build or fix) and adopt the matching style: build → hands-on production; fix → inspect-and-plan.'
-  if (!model?.toLowerCase().includes('flash')) return `${MINIMAL_SYSTEM_PROMPT}\n${review}`
-  return `${MINIMAL_SYSTEM_PROMPT}\n${review}\nBefore acting, briefly review what you have already done in this session and continue from where you left off; do not repeat completed steps. Do not run environment checks (echo, whoami, uname, node --version, date) or exhaustive grep/glob scans.`
-}
-
-function routerGuidance(text: string): string {
-  const lead = 'Router: classify this task (build or fix) now, then adopt the matching style — build: direct production; fix: inspect-first.'
-  return text.length > 120 || COMPLEX_TASK.test(text)
-    ? `${lead} Think deeply about the architecture, edge cases, and integration points. Do not spend reasoning on the environment or tooling. Produce when your information is complete. End each reasoning block with a decision or an information need.`
-    : `${lead} Think deeply first, then commit and act.`
 }
 
 /** Cordis plugin name. */
@@ -194,23 +170,26 @@ export function apply(ctx: Context, config: Config): void {
     const assembled = await next()
     if (isRoutingSuite(context.agent)) {
       const mode = suiteMode(context.agent)
+      const planSection = assembled.sections.find(section => /plan/i.test(section.name))
       const routed = {
         ...assembled,
+        // Match Router Standard's RL-shaped request: the complete system
+        // prompt is the minimal sentence alone. Plan mode is the one explicit
+        // boundary retained when its section is active.
         sections: [
-          { name: `router-suite:${mode}`, text: routerPersona(mode, context.agent?.options.model) },
-          ...assembled.sections.filter(section =>
-            section.name !== 'harness:identity'
-            && section.name !== 'deployment:persona'
-            && section.name !== 'anchored:minimal'
-            && !section.name.startsWith('router-suite:'),
-          ),
+          ...(planSection === undefined ? [] : [planSection]),
+          { name: `router-suite:${mode}`, text: MINIMAL_SYSTEM_PROMPT },
         ],
         contexts: [],
       }
       // Router Standard promotes only after a real tool call. A text-only
       // assistant reply must not silently change the selected trajectory.
       const suitePromoted = context.agent?.session.events.some(event => event.type === 'tool/call') === true
-      if (suitePromoted) return routed
+      if (suitePromoted) {
+        // The Windows TUI's `bash` tool is backed by Git for Windows. Keep
+        // Router on one Bash dialect after promotion as well.
+        return { ...routed, tools: routed.tools.filter(tool => tool.name !== 'pwsh') }
+      }
       const wanted = new Set(ROUTER_FIRST_TOOLS[mode])
       const selected = routed.tools.filter(tool => wanted.has(tool.name))
       if (selected.length > 0) return { ...routed, tools: selected }
@@ -255,19 +234,9 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('agent/pre-step', async (payload, next) => {
     const decision = await next()
     if (decision.kind === 'reject') return decision
-    if (isRoutingSuite(payload.agent)) {
-      const task = payload.messages.find(message => message.source.kind === 'user')
-      if (task === undefined) return decision
-      const text = textOfMessage(task)
-      if (text.trim() === '') return decision
-      return {
-        ...decision,
-        messages: [...decision.messages, createUserMessage({
-          source: { kind: 'plugin', plugin: 'router-suite', form: 'instructions' },
-          content: [{ type: 'text', text: routerGuidance(text) }],
-        })],
-      }
-    }
+    // Classify Router requests through the selected tools only. A synthetic
+    // near-field user instruction overpowers the minimal system anchor on Pro.
+    if (isRoutingSuite(payload.agent)) return decision
     if (isPromoted(payload.agent)) return decision
     const messages = decision.messages.filter(
       message => !suppressedContextSources.has(message.source.kind),

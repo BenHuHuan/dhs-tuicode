@@ -100,6 +100,8 @@ describe('anchored tool bootstrap', () => {
     const input = { type: 'tui/input', data: { text: '创建一个新项目' } }
     const first = await assemble(register(), [input], { routingSuite: true })
     expect(first.sections[0]?.name).toBe('router-suite:react')
+    expect(first.sections[0]?.text).toBe(MINIMAL_SYSTEM_PROMPT)
+    expect(renderPrompt(first)).toBe(MINIMAL_SYSTEM_PROMPT)
     expect(first.tools.map(tool => tool.name)).toEqual(['bash', 'read', 'write'])
     expect(first.contexts).toEqual([])
 
@@ -107,6 +109,13 @@ describe('anchored tool bootstrap', () => {
     expect(textOnly.tools.map(tool => tool.name)).toEqual(['bash', 'read', 'write'])
 
     const promoted = await assemble(register(), [input, { type: 'tool/call' }], { routingSuite: true })
-    expect(promoted.tools.map(tool => tool.name)).toEqual(['bash', 'grep', 'pwsh', 'read', 'str_replace_editor', 'write'])
+    expect(promoted.tools.map(tool => tool.name)).toEqual(['bash', 'grep', 'read', 'str_replace_editor', 'write'])
+  })
+
+  it('keeps every Router task class on the minimal spec persona', async () => {
+    for (const text of ['创建一个新项目', '修复 Windows 崩溃', 'explain this repository']) {
+      const result = await assemble(register(), [{ type: 'tui/input', data: { text } }], { routingSuite: true })
+      expect(result.sections[0]?.text).toBe(MINIMAL_SYSTEM_PROMPT)
+    }
   })
 })
