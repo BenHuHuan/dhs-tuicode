@@ -1,104 +1,105 @@
 terminal 92x32 buffer=normal length=32 base=0 viewport=0
 lifecycle started=1 stopped=0 progress=inactive
 title "DSH snapshot"
-cursor hidden column=7 viewportRow=28 bufferRow=28
+cursor hidden column=4 viewportRow=27 bufferRow=27
 buffer
 0| " DEEPSEEK HARNESS"
-  style 1-8 fg=bright-magenta bold
+  style 1-8 fg=yellow bold
   style 10-16 bold
 1| " Snapshot agent ready."
   style 1-21 dim
 2| " main-session"
   style 1-12 dim
 3| <blank>
-4| "You                                                                                         "
-  style 0-2 fg=bright-magenta bold underline
-5| "Inspect context usage.                                                                      "
-6| <blank>
-7| "Assistant                                                                                   "
-  style 0-8 fg=bright-magenta bold underline
-8| "Context inspected.                                                                          "
-9| "Model wait 0.0s                                                                             "
+4| "❯ Inspect context usage.                                                                    "
+  style 0-0 fg=yellow bold
+5| <blank>
+6| "Context inspected.                                                                          "
+7| "Model wait 0.0s                                                                             "
   style 0-14 dim
-10| <blank>
-11| "╭─ Context usage ──────────────────────────────────────────────────────────────────────────╮"
+8| <blank>
+9| "╭─ Context usage ──────────────────────────────────────────────────────────────────────────╮"
   style 0-2 dim
-  style 3-15 fg=bright-magenta bold
+  style 3-15 fg=yellow bold
   style 16-91 dim
-12| "│  Pressure:       [█████░░░░░░░░░░░] 33% used (42,000 / 128,000)                          │"
+10| "│  Pressure:       [█████░░░░░░░░░░░] 33% used (42,000 / 128,000)                          │"
   style 0-0 dim
   style 3-16 dim
   style 19-19 dim
-  style 20-24 fg=bright-magenta
+  style 20-24 fg=yellow
   style 25-36 dim
   style 91-91 dim
-13| "│  Source:         Provider usage anchored + live surface delta                            │"
+11| "│  Source:         Provider usage anchored + live surface delta                            │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-14| "│                                                                                          │"
+12| "│                                                                                          │"
   style 0-0 dim
   style 91-91 dim
-15| "│  Composition:    [████████████████] S system · T tools · M messages                      │"
+13| "│  Composition:    [████████████████] S system · T tools · M messages                      │"
   style 0-0 dim
   style 3-16 dim
   style 19-19 dim
-  style 20-23 fg=bright-magenta
-  style 24-27 fg=yellow
-  style 28-35 fg=green
+  style 20-23 fg=yellow
+  style 24-27 fg=bright-yellow
+  style 28-35 fg=bright-green
   style 36-36 dim
-  style 38-38 fg=bright-magenta
+  style 38-38 fg=yellow
   style 39-48 dim
-  style 49-49 fg=yellow
+  style 49-49 fg=bright-yellow
   style 50-58 dim
-  style 59-59 fg=green
+  style 59-59 fg=bright-green
   style 60-68 dim
   style 91-91 dim
-16| "│  System prompt:  ≈ 10,000 tokens                                                         │"
+14| "│  System prompt:  ≈ 10,000 tokens                                                         │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-17| "│  Tool schemas:   ≈ 12,000 tokens                                                         │"
+15| "│  Tool schemas:   ≈ 12,000 tokens                                                         │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-18| "│  Conversation:   ≈ 20,000 tokens                                                         │"
+16| "│  Conversation:   ≈ 20,000 tokens                                                         │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-19| "│  Estimate:       Component figures use a fixed heuristic and may not sum to anchored     │"
+17| "│  Estimate:       Component figures use a fixed heuristic and may not sum to anchored     │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-20| "│                  pressure                                                                │"
+18| "│                  pressure                                                                │"
   style 0-0 dim
   style 91-91 dim
-21| "│                                                                                          │"
+19| "│                                                                                          │"
   style 0-0 dim
   style 91-91 dim
-22| "│  Surface items:  2 model-visible messages                                                │"
-  style 0-0 dim
-  style 3-16 dim
-  style 91-91 dim
-23| "│  #2:             User prompt · ≈ 8,000 tokens                                            │"
+20| "│  Surface items:  2 model-visible messages                                                │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-24| "│  #3:             Assistant response · ≈ 12,000 tokens                                    │"
+21| "│  #2:             User prompt · ≈ 8,000 tokens                                            │"
   style 0-0 dim
   style 3-16 dim
   style 91-91 dim
-25| "╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+22| "│  #3:             Assistant response · ≈ 12,000 tokens                                    │"
+  style 0-0 dim
+  style 3-16 dim
+  style 91-91 dim
+23| "╰──────────────────────────────────────────────────────────────────────────────────────────╯"
   style 0-91 dim
-26| <blank>
-27| "/workspace/project (tui-staging)  deepseek-v4-flash  ↑0 ↓0  33% context"
-  style 0-17 fg=bright-magenta bold
+24| <blank>
+25| "/workspace/project (tui-staging)  deepseek-v4-flash  ↑0 ↓0  33% context"
+  style 0-17 fg=yellow bold
   style 18-31 dim
   style 34-50 dim
   style 53-57 dim
   style 60-70 dim
-28| " dsh >                                                                                      "
-  style 1-3 fg=bright-magenta bold
-  style 5-6 dim
-  style 7-7 inverse
+26| "╭──────────────────────────────────────────────────────────────────────────────────────────╮"
+  style 0-91 dim
+27| " ❯                                                                                          "
+  style 1-1 fg=yellow bold
+  style 2-3 dim
+  style 4-4 inverse
+28| "╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+  style 0-91 dim
 29-31| <blank>

@@ -882,6 +882,26 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'mcpConnections',
+    summary: 'Redacted directory of MCP connections in the current Cordis app.',
+    description: 'Redacted directory of MCP connections in the current Cordis app. Connection instances register one namespaced row and must dispose it with their own lifecycle; the directory itself owns neither transport nor tool disposal.',
+    methods: [
+      {
+        signature: 'snapshot(): readonly McpConnectionSnapshot[]',
+        description: 'Read redacted server state in stable namespace order.',
+        parameters: [],
+        returns: 'detached snapshots safe for human-facing rendering.',
+      },
+      {
+        signature: 'register(serverName: string, transport: McpConnectionTransport): McpConnectionRegistration',
+        description: 'Reserve and publish one server row.',
+        parameters: [{ name: 'serverName', description: 'unique MCP namespace within this app.' }, { name: 'transport', description: 'non-secret transport family to display.' }],
+        returns: 'an instance-owned update and disposal handle.',
+        throws: ['when another live MCP client already owns `serverName`.'],
+      },
+    ],
+  },
+  {
     key: 'messageFeedback',
     summary: 'Storage-domain sidecar service.',
     description: 'Storage-domain sidecar service. It inspects persisted Session history and never creates or resumes an Agent or Session.',
@@ -1983,6 +2003,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Replace the live agent with a newly-created conversation in the current workspace. A unique identity keeps the previous persisted session resumable, while the ready payload carries reasoning effort that is not an AgentOptions field.',
         parameters: [{ name: 'selection', description: 'model target selected by the current TUI.' }],
       },
+      {
+        signature: 'async fork(boundary: number, selection: ModelSelection | undefined, initialNotice?: string): Promise<void>',
+        description: 'Replace the live channel with a child session seeded through one completed source-log boundary. The source session stays durable and resumable; this is a branch, never an in-place mutation of conversation history.',
+        parameters: [{ name: 'boundary', description: 'Inclusive source event sequence selected by `/rewind`.' }, { name: 'selection', description: 'Model target preserved from the current TUI when set.' }, { name: 'initialNotice', description: 'Terminal-local child-mount notice, never persisted into model context.' }],
+      },
     ],
   },
   {
@@ -2469,6 +2494,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'options', description: 'the full request. A LOOP-built request carries the process-local {@link markAgentLoopRequest} identity and arrives deep-frozen (mutation throws): its content is a pure function of the session log (the reconstructability Agent Note), so listeners read it, never rewrite it. Hand-built calls do not carry that marker; their messages already obey the immutable creation contract.' }],
   },
   {
+    name: 'mcp-connections/change',
+    mode: 'emit',
+    signature: '\'mcp-connections/change\'(): void',
+    summary: 'The redacted MCP connection directory changed.',
+    description: 'The redacted MCP connection directory changed.',
+    parameters: [],
+  },
+  {
     name: 'session-telemetry/record',
     mode: 'waterfall',
     signature: '\'session-telemetry/record\'(record: SessionTelemetryRecord, next: () => SessionTelemetryRecord): SessionTelemetryRecord',
@@ -2631,7 +2664,7 @@ export const EVENT_API: readonly EventApiEntry[] = [
   {
     name: 'tui-agent/ready',
     mode: 'emit',
-    signature: '\'tui-agent/ready\'(payload: { sessionId: SessionId; selection?: ModelSelection }): void',
+    signature: '\'tui-agent/ready\'(payload: { sessionId: SessionId; selection?: ModelSelection; initialNotice?: string }): void',
     summary: 'The runner settled on the agent the TUI renders.',
     description: 'The runner settled on the agent the TUI renders. Fires after every create or resume; the TUI composition mounts (or, after a resume swap, remounts) on this signal, because cordis effects do not re-run on plain service property mutation.',
     parameters: [{ name: 'payload', description: '.sessionId - identity of the settled agent\'s session.' }],
@@ -3439,6 +3472,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ManualCompactAgentContext',
     declaration: 'export interface ManualCompactAgentContext extends CompactionAgentContext {\n    runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T>;\n}',
+  },
+  {
+    name: 'McpConnectionRegistration',
+    declaration: 'export interface McpConnectionRegistration {\n    update(update: McpConnectionUpdate): void;\n    dispose(): void;\n}',
+  },
+  {
+    name: 'McpConnectionSnapshot',
+    declaration: 'export interface McpConnectionSnapshot {\n    readonly serverName: string;\n    readonly transport: McpConnectionTransport;\n    readonly state: McpConnectionState;\n    readonly toolNames: readonly string[];\n    readonly reconnectAttempt?: number;\n}',
+  },
+  {
+    name: 'McpConnectionState',
+    declaration: 'export type McpConnectionState = \'connecting\' | \'connected\' | \'reconnecting\' | \'failed\';',
+  },
+  {
+    name: 'McpConnectionTransport',
+    declaration: 'export type McpConnectionTransport = \'stdio\' | \'streamable-http\';',
+  },
+  {
+    name: 'McpConnectionUpdate',
+    declaration: 'export interface McpConnectionUpdate {\n    readonly state?: McpConnectionState;\n    readonly toolNames?: readonly string[];\n    readonly reconnectAttempt?: number | undefined;\n}',
   },
   {
     name: 'Message',

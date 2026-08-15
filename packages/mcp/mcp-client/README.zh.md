@@ -68,6 +68,7 @@ MCP 客户端桥接插件：连接外部 [Model Context Protocol](https://modelc
 - Native／模型渲染保留现有文本投影：文本块以换行连接，图片、音频、资源和不受支持的块会变成占位符。
 - 断开／崩溃时：supervisor 以指数退避（`reconnect.initialDelayMs` 逐次翻倍，上限 `reconnect.maxDelayMs`）重启原始服务器配置，成功后重新执行发现——恢复的世代会替换前一个，因此工具既不会重复也不会泄漏。中断期间最后一个正常世代保持注册；针对它的调用在恢复前会失败。
 - 重连按中断预算控制：连续失败达到 `reconnect.maxAttempts` 次后，该服务器的工具会被注销，重连停止，直到 HMR 重载或重启 Host。连接存活超过 `maxDelayMs` 会重置预算，因此偶尔崩溃的服务器可以无限恢复，而崩溃循环的服务器——即使短暂连接成功——仍会耗尽上限而非永远重启。
+- 当组合挂载 `@deepseek-ai/dsh-mcp-client/registry` 时，每个存活 client 都会发布一条经过脱敏的目录记录，其中只有配置的服务器名称、传输方式、生命周期状态、重连尝试次数和公开工具名称。该记录绝不保留 endpoint、命令、环境变量值、请求头或失败文本；`dsh-tui` 用它实现 `/mcp`。
 - 重连状态在日志中对用户可见：reconnecting（warn，含尝试次数和延迟）、recovered（info）、最终失败和 disabled-loss（error）。dispose（资源释放）会取消任何待执行的重连。设置 `reconnect.enabled: false` 时，连接丢失后工具保持注册但调用失败，直到重载——即手动恢复行为。
 
 ## 消费的服务
@@ -75,6 +76,7 @@ MCP 客户端桥接插件：连接外部 [Model Context Protocol](https://modelc
 | 服务 | 用途 |
 |---|---|
 | `ctx.tools` | 注册／注销 MCP 工具 |
+| `ctx.mcpConnections`（可选） | 发布供人工目录使用的脱敏连接状态和公开工具名称 |
 
 ## 模型体验
 
@@ -113,3 +115,4 @@ MCP 客户端桥接插件：连接外部 [Model Context Protocol](https://modelc
 - **重连在传输关闭时触发**：崩溃的 stdio 子进程会触发重连；Streamable HTTP 失败通过每次请求以及 SDK 传输自身的 SSE（Server-Sent Events）流恢复机制暴露，因此不可达的 HTTP 服务器会按调用重试，而非由 supervisor 重新 spawn。
 - **Native 非文本渲染有损**：图片、音频与资源载荷在模型上下文中会变成占位符，即使执行局部的规范值保留了其 JSON 块。更丰富的 Native 多媒体投影暂缓实现。
 - **不强制执行不受支持的 MCP 输出 schema**：已声明 schema 使用 harness 子集之外的词汇时，`structuredContent` 会回退到 `JsonValue`。
+- **连接目录是只读的**：`/mcp` 只报告脱敏状态，并可调用 Loader 既有的重载路径；单个连接、重试和配置的编辑仍不属于终端 UI。

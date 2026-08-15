@@ -4,53 +4,56 @@ title "DSH snapshot"
 cursor hidden column=0 viewportRow=31 bufferRow=31
 buffer
 0| " DEEPSEEK HARNESS"
-  style 1-8 fg=bright-magenta bold
+  style 1-8 fg=yellow bold
   style 10-16 bold
 1| " Snapshot agent ready."
   style 1-21 dim
 2| " main-session"
   style 1-12 dim
 3| <blank>
-4| "Assistant                                                                                   "
-  style 0-8 fg=bright-magenta bold underline
-5| "Use the typed helper below.                                                                 "
-6| "                                                                                            "
-7| "ts                                                                                          "
+4| "Use the typed helper below.                                                                 "
+5| "                                                                                            "
+6| "ts                                                                                          "
   style 0-1 dim
-8| "  const answer: number = 42                                                                 "
-  style 2-26 fg=cyan
+7| "  const answer: number = 42                                                                 "
+  style 2-26 fg=bright-magenta
+8| "                                                                                            "
 9| "                                                                                            "
-10| "                                                                                            "
-11| "Then run it.                                                                                "
-12| "        ╭ Copy response #1 ────────────────────────────────────────────────────────╮        "
-  style 8-83 fg=bright-magenta
-13| "sh      │ → Full response                   99 characters                          │        "
+10| "Then run it.                                                                                "
+11| "                                                                                            "
+12| "sh      ╭ Copy response #1 ────────────────────────────────────────────────────────╮        "
   style 0-1 dim
-  style 8-8 fg=bright-magenta
-  style 10-56 fg=bright-magenta inverse
-  style 83-83 fg=bright-magenta
-14| "  pnpm t│   Code block 1                    ts · const answer: number = 42         │        "
-  style 2-7 fg=cyan
-  style 8-8 fg=bright-magenta
+  style 8-83 fg=yellow
+13| "  pnpm t│ → Full response                   99 characters                          │        "
+  style 2-7 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 10-56 fg=yellow inverse
+  style 83-83 fg=yellow
+14| "        │   Code block 1                    ts · const answer: number = 42         │        "
+  style 8-8 fg=yellow
   style 24-73 dim
-  style 83-83 fg=bright-magenta
-15| "        │   Code block 2                    sh · pnpm test                         │        "
-  style 8-8 fg=bright-magenta
-  style 24-57 dim
-  style 83-83 fg=bright-magenta
-16| "Model wa│                                                                          │        "
+  style 83-83 fg=yellow
+15| "Model wa│   Code block 2                    sh · pnpm test                         │        "
   style 0-7 dim
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
-17| "        │ ↑/↓ move · Enter copy · w write file · Esc cancel                        │        "
-  style 8-8 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 24-57 dim
+  style 83-83 fg=yellow
+16| "        │                                                                          │        "
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
+17| "/workspa│ ↑/↓ move · Enter copy · w write file · Esc cancel                        │        "
+  style 0-7 fg=yellow bold
+  style 8-8 fg=yellow
   style 10-58 dim
-  style 83-83 fg=bright-magenta
-18| "/workspa╰──────────────────────────────────────────────────────────────────────────╯        "
-  style 0-7 fg=bright-magenta bold
-  style 8-83 fg=bright-magenta
-19| " dsh >                                                                                      "
-  style 1-3 fg=bright-magenta bold
-  style 5-6 dim
-  style 7-7 inverse
-20-31| <blank>
+  style 83-83 fg=yellow
+18| "╭───────╰──────────────────────────────────────────────────────────────────────────╯───────╮"
+  style 0-7 dim
+  style 8-83 fg=yellow
+  style 84-91 dim
+19| " ❯                                                                                          "
+  style 1-1 fg=yellow bold
+  style 2-3 dim
+  style 4-4 inverse
+20| "╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+  style 0-91 dim
+21-31| <blank>

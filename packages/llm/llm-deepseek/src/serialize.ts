@@ -15,6 +15,8 @@ import type { WireMessage, WireRequest, WireTool } from './types.ts'
 export interface RequestDefaults {
   thinking?: 'enabled' | 'disabled' | undefined
   reasoningEffort?: 'off' | 'high' | 'max' | undefined
+  temperature?: number | undefined
+  topP?: number | undefined
 }
 
 interface ResolvedThinking {
@@ -169,6 +171,7 @@ export function serializeRequest(
   // A short title budget must produce visible text; conversation and
   // compaction calls continue to inherit the adapter's thinking defaults.
   const resolvedThinking = resolveThinking(options, defaults)
+  const temperature = options.temperature ?? defaults.temperature
 
   return {
     model: options.model,
@@ -180,7 +183,8 @@ export function serializeRequest(
       ? { reasoning_effort: resolvedThinking.reasoningEffort }
       : {},
     ...tools !== undefined && tools.length > 0 ? { tools } : {},
-    ...options.temperature !== undefined ? { temperature: options.temperature } : {},
+    ...temperature === undefined ? {} : { temperature },
+    ...defaults.topP === undefined ? {} : { top_p: defaults.topP },
     ...options.maxTokens === undefined ? {} : { max_tokens: options.maxTokens },
     ...options.stop !== undefined ? { stop: options.stop } : {},
   }

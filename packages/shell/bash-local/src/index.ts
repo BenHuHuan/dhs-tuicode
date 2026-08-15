@@ -39,6 +39,8 @@ const DEFAULT_MAX_SPILL_BYTES = 64 * 1024 * 1024
 
 /** Plugin config (all optional — `static Config` supplies the defaults). */
 export interface Config {
+  /** Bash executable or absolute path (default: `bash`). */
+  executable?: string
   /** Default working directory for commands (default: process.cwd()). */
   cwd?: string
   /** Default foreground timeout in milliseconds. */
@@ -82,6 +84,9 @@ function assertPositiveFinite(name: string, value: number): void {
  */
 export function assertServiceableBashConfig(config: Config): void {
   const resolved = config as ResolvedConfig
+  if (resolved.executable.trim().length === 0) {
+    throw new Error('bash-local: executable must be non-empty')
+  }
   assertPositiveFinite('timeoutMs', resolved.timeoutMs)
   assertPositiveFinite('maxTimeoutMs', resolved.maxTimeoutMs)
   assertPositiveFinite('maxOutputBytes', resolved.maxOutputBytes)
@@ -103,6 +108,7 @@ export class LocalBashExecutor extends ShellExecutor {
   static inject = ['subprocess']
 
   static Config: z<Config> = z.object({
+    executable: z.string().default('bash'),
     cwd: z.string(),
     timeoutMs: z.number().default(120_000),
     maxTimeoutMs: z.number().default(600_000),
@@ -170,6 +176,11 @@ export class LocalBashExecutor extends ShellExecutor {
     }
   }
 
+  /** Exact shell argv shared by direct and sandbox-wrapped execution. */
+  protected bashArgv(command: string): readonly string[] {
+    return [this.config.executable, '-c', command]
+  }
+
   /** Map one resolved bash spec and explicit argv onto a fully-specified subprocess spawn. */
   // XXX(stateful-shell): evaluate persistent cwd or PTY sessions when workflows require shell state.
   private spawnSpec(
@@ -209,7 +220,7 @@ export class LocalBashExecutor extends ShellExecutor {
   }
 
   async run(spec: ShellExecSpec): Promise<ShellRunResult> {
-    return this.runArgv(spec, ['bash', '-c', spec.command])
+    return this.runArgv(spec, this.bashArgv(spec.command))
   }
 
   /**
@@ -240,7 +251,7 @@ export class LocalBashExecutor extends ShellExecutor {
   }
 
   start(spec: ShellExecSpec): ShellProcess {
-    return this.startArgv(spec, ['bash', '-c', spec.command])
+    return this.startArgv(spec, this.bashArgv(spec.command))
   }
 
   /**

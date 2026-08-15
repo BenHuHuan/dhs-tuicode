@@ -270,6 +270,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Registers capabilities, owns Code Mode transport, and routes calls through pre-policy, monotonic guards, around dispatch, post-policy, and final-result observation.',
   },
   {
+    key: 'mcpConnections',
+    pkg: 'mcp-client',
+    title: 'Redacted MCP connection directory',
+    mode: 'core',
+    consumers: ['mcp-client', 'tui'],
+    note: 'MCP client instances publish only public namespaces, transport family, lifecycle state, and tool names; the terminal reads the process-local directory for `/mcp` without receiving endpoints, commands, or credentials.',
+  },
+  {
     key: 'userQuestions',
     pkg: 'user-questions',
     title: 'Human question/answer seam',

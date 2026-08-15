@@ -53,6 +53,13 @@ describe('bash settings section', () => {
     await bench.ctx.fiber.dispose()
   })
 
+  it('retains an explicit bash executable path', async () => {
+    const bench = await boot({ executable: 'C:/Program Files/Git/bin/bash.exe' })
+
+    expect(bench.bash.config.executable).toBe('C:/Program Files/Git/bin/bash.exe')
+    await bench.ctx.fiber.dispose()
+  })
+
   it('refuses a stored value the constructor would have rejected', async () => {
     const bench = await boot()
 

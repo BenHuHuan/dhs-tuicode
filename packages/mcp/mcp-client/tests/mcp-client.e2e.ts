@@ -23,6 +23,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { CallId } from '@deepseek-ai/dsh-llm'
 import { apply } from '@deepseek-ai/dsh-mcp-client/src/index.ts'
+import McpConnectionRegistry from '@deepseek-ai/dsh-mcp-client/src/registry.ts'
 import { publicToolName } from '@deepseek-ai/dsh-mcp-client/src/tools.ts'
 import type { Config } from '@deepseek-ai/dsh-mcp-client'
 
@@ -40,6 +41,7 @@ async function mountRegistry(): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(McpConnectionRegistry)
   return ctx
 }
 
@@ -179,7 +181,7 @@ describe('fixture server — duplicate serverName', () => {
 describe('fixture server — disposal', () => {
   it('disposes cleanly without error', async () => {
     const ctx = await mountRegistry()
-    await apply(ctx, {
+    const fiber = ctx.plugin({ name: 'mcp-client', inject: ['tools'], apply }, {
       transport: 'stdio',
       serverName: 'fixture',
       command: process.execPath,
@@ -190,11 +192,22 @@ describe('fixture server — disposal', () => {
       failOnStartupError: false,
     })
 
+    await vi.waitFor(() => { expect(ctx.tools.get('mcp__fixture__add')).toBeDefined() }, { timeout: 20_000 })
+
     // Tools are registered before dispose.
     expect(ctx.tools.get('mcp__fixture__add')).toBeDefined()
     expect(ctx.tools.schemas().length).toBeGreaterThanOrEqual(4)
+    const connections = ctx.mcpConnections.snapshot()
+    expect(connections).toHaveLength(1)
+    const connection = connections[0]
+    expect(connection?.serverName).toBe('fixture')
+    expect(connection?.transport).toBe('stdio')
+    expect(connection?.state).toBe('connected')
+    expect(connection?.toolNames).toContain('mcp__fixture__add')
 
-    // Dispose should complete without throwing.
+    // Unloading the real client fiber removes its redacted directory row.
+    await fiber.dispose()
+    expect(ctx.mcpConnections.snapshot()).toEqual([])
     await ctx.fiber.dispose()
     await sleep(200)
   }, 30_000)

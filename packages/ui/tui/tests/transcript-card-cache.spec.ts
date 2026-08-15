@@ -9,7 +9,7 @@ const palette = createPalette(false)
 const mdTheme = markdownTheme(palette)
 
 function toolCard(): ToolCardComponent {
-  return new ToolCardComponent('bash', parseArguments('{"command":"ls"}'), undefined, 10, 2_000, palette, mdTheme)
+  return new ToolCardComponent('bash', parseArguments('{"command":"ls"}'), undefined, 10, 2_000, palette, mdTheme, 0)
 }
 
 function toolResult(text: string): Extract<SessionEvent, { type: 'tool/result' }>['data'] {
@@ -36,10 +36,10 @@ describe('transcript card render caches', () => {
   it('tool card: result, visibility, and invalidate() each drop the cache', () => {
     const card = toolCard()
     const pending = card.render(80)
-    card.updateResult(toolResult('output line'))
+    card.updateResult(toolResult('output line'), 1_000)
     const settled = card.render(80)
     expect(settled).not.toBe(pending)
-    expect(settled.join('\n')).toContain('●')
+    expect(settled.join('\n')).toContain('›')
 
     card.setVisibility('hidden')
     expect(card.render(80)).toEqual([])

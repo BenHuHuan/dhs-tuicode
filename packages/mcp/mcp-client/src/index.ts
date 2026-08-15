@@ -18,11 +18,19 @@ import z from '@deepseek-ai/schemastery'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { RECONNECT_DEFAULTS, resolveReconnectPolicy, startConnection } from './connection.ts'
 import type { ReconnectConfig } from './connection.ts'
+import type {} from './registry.ts'
 // Side-effect type import: declaration-merges `ctx.tools` onto Context.
 import type {} from '@deepseek-ai/dsh-tools'
 
 export type { McpResult } from './tools.ts'
 export type { ReconnectConfig, ResolvedReconnectPolicy } from './connection.ts'
+export type {
+  McpConnectionRegistration,
+  McpConnectionSnapshot,
+  McpConnectionState,
+  McpConnectionTransport,
+  McpConnectionUpdate,
+} from './registry.ts'
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'mcp-client'
@@ -160,10 +168,16 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     return () => void names.delete(config.serverName)
   }, 'mcp-client.serverName')
 
+  // The optional directory is a human-facing read model. It receives only
+  // the public namespace, transport kind, lifecycle state, and public tool
+  // names; credentials and server diagnostics stay out of this surface.
+  const registration = ctx.get('mcpConnections')?.register(config.serverName, config.transport)
+  ctx.effect(() => () => { registration?.dispose() }, 'mcp-client.connectionDirectory')
+
   // The supervisor owns the client/transport generations, the reconnect
   // loop, and the live tool registrations; disposal stops reconnection,
   // quiesces in-flight work, and unregisters the current generation.
-  const connection = startConnection(ctx, config, reconnect)
+  const connection = startConnection(ctx, config, reconnect, registration)
 
   ctx.effect(() => {
     return () => connection.dispose()

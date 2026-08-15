@@ -45,11 +45,16 @@ const tsconfigPath = fileURLToPath(new URL('../../../tsconfig.json', import.meta
 const firstRunSnapshots = fileURLToPath(new URL('./tui-first-run-snapshots/', import.meta.url))
 const synchronizedFrameEnd = '\x1b[?2026l'
 // Artifact mode gives the inner PTY driver 60 seconds and its execa owner a
-// five-second backstop. Keep Vitest outside both deadlines so the harness can
-// report its own marker, exit, and cleanup failure instead of being cut off.
-const PTY_SMOKE_TEST_TIMEOUT_MS = process.env.DSH_EXAMPLE_MODE === 'lib'
+// five-second backstop. On Windows, the zero-build source plane must resolve
+// and transform the complete workspace graph under `tsx`; a cold ConPTY boot
+// consistently reaches the TUI after the former 25-second inner deadline.
+// Keep Vitest outside either deadline so the harness can report its own
+// marker, exit, and cleanup failure instead of being cut off.
+const artifactMode = resolveExampleMode() === 'lib'
+const windowsSourcePlane = process.platform === 'win32' && !artifactMode
+const PTY_SMOKE_TEST_TIMEOUT_MS = artifactMode
   ? 75_000
-  : LOADER_SMOKE_TEST_TIMEOUT_MS
+  : windowsSourcePlane ? 105_000 : LOADER_SMOKE_TEST_TIMEOUT_MS
 
 /**
  * Seed the isolated process workspace: ordinary files land in `cwd`, personal
@@ -184,8 +189,10 @@ function smoke(overrides: Partial<TuiPtySmokeOptions> & {
       TERM: 'xterm-256color',
       ...env,
     },
-    // Artifact CI builds and smokes concurrently on a contended runner.
-    ...(process.env.DSH_EXAMPLE_MODE === 'lib' ? { timeoutMs: 60_000 } : {}),
+    // Artifact CI builds and smokes concurrently on a contended runner. The
+    // Windows source plane has a separately measured cold-start allowance;
+    // it still runs the real source bin and fails if no marker arrives.
+    ...(artifactMode ? { timeoutMs: 60_000 } : windowsSourcePlane ? { timeoutMs: 90_000 } : {}),
     ...options,
     prepare: async (cwd) => {
       if (!showFirstRunWelcome) await acknowledgeTuiFirstRunWelcome(join(cwd, '.dsh'))
@@ -373,7 +380,7 @@ describe('dsh TUI keyless smoke (real Loader tree in a PTY)', () => {
         configPath: scriptedConfigPath,
         showFirstRunWelcome: true,
         expectedExitCode: 0,
-        actions: [{ waitFor: 'dsh', send: '\x03\x03' }],
+        actions: [{ waitFor: '❯', send: '\x03\x03' }],
       })
       expect(second).not.toContain(firstRunOpeningSentence)
       expect(second).not.toContain(`Enter  ${firstRunCopy.continueLabel}`)
@@ -463,7 +470,7 @@ describe('dsh TUI keyless smoke (real Loader tree in a PTY)', () => {
     const output = await smoke({
       label: 'dsh boot',
       actions: [
-        { waitFor: 'dsh', send: '/plan' },
+        { waitFor: '❯', send: '/plan' },
         { waitFor: '[off|message] — Enter or leave plan mode', send: '\r' },
         { waitFor: 'Plan mode on. Use /plan off to leave.', send: '/exit\r' },
       ],
@@ -473,9 +480,28 @@ describe('dsh TUI keyless smoke (real Loader tree in a PTY)', () => {
     expect(output).toMatch(/session-[0-9a-f-]+/u)
     expect(output).toContain('[off|message] — Enter or leave plan mode')
     expect(output).toContain('Plan mode on. Use /plan off to leave.')
-    // Borderless: no box-drawing frame around the banner.
-    expect(output).not.toContain('╭')
-    expect(output).not.toContain('╮')
+    // Borderless: the banner rows carry no frame of their own; the input rail's
+    // `╭`/`╮` corners belong to the Claude Code editor below the transcript.
+    expect(output).toContain('DEEPSEEK')
+    expect(output).not.toContain('╭ DEEPSEEK')
+    expect(output).toContain('\u001B[?2004l')
+  }, PTY_SMOKE_TEST_TIMEOUT_MS)
+
+  it('loads the terminal MCP and durable subagent directories through the shipped profile', async () => {
+    const output = await smoke({
+      label: 'dsh MCP and subagent directories',
+      tempDirPrefix: 'dsh-tui-control-planes-',
+      configPath: scriptedConfigPath,
+      actions: [
+        { waitFor: 'scripted TUI ready.', send: '/mcp\r' },
+        { waitFor: 'No MCP servers are configured.', send: '/agents\r' },
+        { waitFor: 'No durable subagents. Start one with /agents start <task>.', send: '/exit\r' },
+      ],
+    })
+    expect(output).toContain('MCP servers')
+    expect(output).toContain('No MCP servers are configured.')
+    expect(output).toContain('Subagents')
+    expect(output).toContain('No durable subagents. Start one with /agents start <task>.')
     expect(output).toContain('\u001B[?2004l')
   }, PTY_SMOKE_TEST_TIMEOUT_MS)
 
@@ -944,7 +970,7 @@ describe('dsh TUI keyless smoke (real Loader tree in a PTY)', () => {
         },
       }),
       actions: [
-        { waitFor: 'dsh', send: '@tsc' },
+        { waitFor: '❯', send: '@tsc' },
         { waitFor: 'File · terminal-special-case.t', send: '\t' },
         { waitFor: '@src/terminal-special-case.ts', send: '\x03/exit\r' },
       ],
@@ -1021,12 +1047,12 @@ describe('dsh CLI keyless smoke (apps/cli through the same PTY)', () => {
       label: 'dsh default boot',
       tempDirPrefix: 'dsh-default-boot-',
       binScript: dshBinScript,
-      actions: [{ waitFor: 'dsh', send: '/exit\r' }],
+      actions: [{ waitFor: '❯', send: '/exit\r' }],
     })
     expect(output).toContain('DEEPSEEK')
     expect(output).toMatch(/session-[0-9a-f-]+/u)
-    expect(output).not.toContain('╭')
-    expect(output).not.toContain('╮')
+    expect(output).toContain('❯')
+    expect(output).not.toContain('╭ DEEPSEEK')
     expect(output).toContain('\u001B[?2004l')
   }, PTY_SMOKE_TEST_TIMEOUT_MS)
 

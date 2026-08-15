@@ -19,6 +19,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { Context } from '@deepseek-ai/cordis'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
+import type { McpConnectionRegistration } from './registry.ts'
 import { createTransport } from './transport.ts'
 import { syncTools } from './tools.ts'
 import type { ToolBridgeOptions, ToolDisposers } from './tools.ts'
@@ -118,9 +119,15 @@ export interface ConnectionHandle {
  * @param ctx - Cordis context providing the `tools` registry and logger.
  * @param config - Resolved plugin config selecting the transport and server identity.
  * @param policy - Resolved reconnect policy from {@link resolveReconnectPolicy}.
+ * @param registration - optional redacted human-facing connection-directory row.
  * @returns Handle with a `ready` promise for startup-await and a `dispose` for teardown.
  */
-export function startConnection(ctx: Context, config: Config, policy: ResolvedReconnectPolicy): ConnectionHandle {
+export function startConnection(
+  ctx: Context,
+  config: Config,
+  policy: ResolvedReconnectPolicy,
+  registration?: McpConnectionRegistration,
+): ConnectionHandle {
   const label = `mcp-client(${config.serverName})`
   const opts: ToolBridgeOptions = {
     registrationFailure: 'contain',
@@ -163,6 +170,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
     const run = syncChain.then(async () => {
       if (!isCurrent(generation)) return
       disposers = await syncTools(generation, ctx, syncOpts, disposers)
+      registration?.update({ toolNames: [...disposers.keys()] })
     })
     // The chain tail must survive a failed sync; the enqueuing caller owns reporting.
     syncChain = run.catch(() => {})
@@ -196,6 +204,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
         ? 'connection lost and reconnect is disabled — registered tools will fail until an HMR reload or Host restart'
         : 'connection failed and reconnect is disabled — no tools were registered; reload the plugin or restart the Host to connect'
       ctx.logger.error(`${label}: ${message}`)
+      registration?.update({ state: 'failed', reconnectAttempt: undefined })
       return
     }
     // A connection that stayed up past the stability window (= maxDelayMs, the
@@ -209,6 +218,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
       syncChain = syncChain.then(() => {
         for (const dispose of disposers.values()) dispose()
         disposers = new Map()
+        registration?.update({ state: 'failed', toolNames: [], reconnectAttempt: undefined })
       })
       ctx.logger.error(`${label}: giving up after ${policy.maxAttempts} consecutive failed reconnect attempts — tools unregistered; reload the plugin or restart the Host to reconnect`)
       return
@@ -216,6 +226,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
     const delayMs = Math.min(policy.maxDelayMs, policy.initialDelayMs * 2 ** (failedAttempts - 1))
     const action = lostEstablishedConnection ? 'connection lost; reconnecting' : 'connection failed; retrying'
     ctx.logger.warn(`${label}: ${action} in ${delayMs}ms (attempt ${failedAttempts}/${policy.maxAttempts})`)
+    registration?.update({ state: 'reconnecting', reconnectAttempt: failedAttempts })
     reconnectTimer = setTimeout(() => {
       reconnectTimer = undefined
       settling = connectGeneration(false)
@@ -288,6 +299,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
       if (!quiesced) {
         client = undefined
         clientClosed = undefined
+        registration?.update({ state: 'failed', reconnectAttempt: undefined })
         ctx.logger.error(`${label}: failed generation did not close within ${GENERATION_CLOSE_TIMEOUT_MS}ms — reconnect stopped to avoid overlapping server processes; reload the plugin or restart the Host to retry`)
         return
       }
@@ -301,6 +313,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
     }
     if (!isCurrent(generation)) return
     connectedAt = Date.now()
+    registration?.update({ state: 'connected', reconnectAttempt: undefined })
     if (failedAttempts > 0) ctx.logger.info(`${label}: reconnected and re-synced tools (attempt ${failedAttempts}/${policy.maxAttempts})`)
   }
 

@@ -13,6 +13,7 @@ import { Service, type Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type { AppExit } from '@deepseek-ai/dsh-cmdline'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
+import type {} from '@deepseek-ai/dsh-permission-presets'
 import {
   type Agent,
   type AgentHandle,
@@ -33,10 +34,13 @@ export const inject = ['agentDefaultModel', 'agents']
 export interface Config {
   /** The session to resume in place; absent starts a uniquely identified fresh session. */
   resumeSessionId?: string
+  /** Explicit startup opt-in for the full-access/never-ask preset. */
+  dangerouslySkipPermissions?: boolean
 }
 
 export const Config: z<Config> = z.object({
   resumeSessionId: z.string(),
+  dangerouslySkipPermissions: z.boolean(),
 })
 
 /** Service provided by this plugin and consumed by the TUI composition. */
@@ -55,7 +59,7 @@ declare module '@deepseek-ai/cordis' {
      * @param payload.sessionId - identity of the settled agent's session.
      * @mode emit
      */
-    'tui-agent/ready'(payload: { sessionId: SessionId; selection?: ModelSelection }): void
+    'tui-agent/ready'(payload: { sessionId: SessionId; selection?: ModelSelection; initialNotice?: string }): void
   }
 }
 
@@ -133,7 +137,7 @@ export class TuiAgentService extends Service {
    * AgentOptions field.
    * @param selection - model target selected by the current TUI.
    */
-  async fresh(selection: ModelSelection | undefined): Promise<void> {
+  async fresh(selection: ModelSelection | undefined, cwd?: string): Promise<void> {
     const settleContext = this.settleContext
     if (settleContext === undefined) {
       throw new Error('tui-runner: no settled agent to replace with a fresh session')
@@ -145,29 +149,77 @@ export class TuiAgentService extends Service {
       : { ...baseOptions, provider: selection.provider, model: selection.model }
     const handle = await settleContext.agents.create({
       sessionId: freshSessionId(),
-      meta: { cwd: current?.session.header.cwd ?? process.cwd() },
+      meta: { cwd: cwd ?? current?.session.header.cwd ?? process.cwd() },
       agentOptions,
     })
     await this.replace(handle, selection)
   }
 
+  /**
+   * Replace the live channel with a child session seeded through one completed
+   * source-log boundary. The source session stays durable and resumable; this
+   * is a branch, never an in-place mutation of conversation history.
+   * @param boundary - Inclusive source event sequence selected by `/rewind`.
+   * @param selection - Model target preserved from the current TUI when set.
+   * @param initialNotice - Terminal-local child-mount notice, never persisted into model context.
+   */
+  async fork(boundary: number, selection: ModelSelection | undefined, initialNotice?: string): Promise<void> {
+    const settleContext = this.settleContext
+    const current = this.current
+    if (settleContext === undefined || current === undefined) {
+      throw new Error('tui-runner: no settled agent to fork')
+    }
+    if (!Number.isSafeInteger(boundary) || boundary < 0) {
+      throw new Error(`tui-runner: invalid fork boundary ${String(boundary)}`)
+    }
+    const boundaryIndex = current.session.events.findIndex(event => event.seq === boundary)
+    if (boundaryIndex < 0) {
+      throw new Error(`tui-runner: fork boundary ${String(boundary)} is not present in the current session`)
+    }
+    const seed = current.session.events.slice(0, boundaryIndex + 1)
+    const lastTurnBoundary = seed.findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
+    if (lastTurnBoundary?.type === 'turn/start') {
+      throw new Error(`tui-runner: fork boundary ${String(boundary)} ends inside an active turn`)
+    }
+    const baseOptions = current.options ?? settleContext.agentOptions
+    const agentOptions: AgentOptions = selection === undefined
+      ? baseOptions
+      : { ...baseOptions, provider: selection.provider, model: selection.model }
+    const handle = await settleContext.agents.create({
+      sessionId: freshSessionId(),
+      meta: {
+        cwd: current.session.header.cwd ?? process.cwd(),
+        parentSession: current.session.id,
+        seedLength: seed.length,
+      },
+      seed,
+      agentOptions,
+    })
+    await this.replace(
+      handle,
+      selection,
+      initialNotice ?? `Opened a child session at checkpoint event ${String(boundary)}. The original session remains resumable.`,
+    )
+  }
+
   /** Commit a prepared replacement, rolling it back if the old owner cannot retire. */
-  private async replace(handle: AgentHandle, selection?: ModelSelection): Promise<void> {
+  private async replace(handle: AgentHandle, selection?: ModelSelection, initialNotice?: string): Promise<void> {
     try {
       await this.handle?.dispose()
     } catch (error: unknown) {
       await handle.dispose()
       throw error
     }
-    this.commit(handle, selection)
+    this.commit(handle, selection, initialNotice)
   }
 
-  private commit(handle: AgentHandle, selection?: ModelSelection): void {
+  private commit(handle: AgentHandle, selection?: ModelSelection, initialNotice?: string): void {
     this.handle = handle
     this.current = handle.agent
     this.ctx.emit('tui-agent/ready', {
       sessionId: handle.agent.session.id,
       ...selection === undefined ? {} : { selection },
+      ...initialNotice === undefined ? {} : { initialNotice },
     })
   }
 }
@@ -211,5 +263,14 @@ export function apply(ctx: Context, config: Config): void {
       agentOptions: { provider: selection.provider, model: selection.model },
     }
     await service.settle(config.resumeSessionId, settleContext)
+    if (config.dangerouslySkipPermissions === true) {
+      const permission = ctx.get('permissionPresets')
+      if (permission === undefined || !permission.names.includes('danger-full-access')) {
+        throw new Error('tui-runner: --dangerously-skip-permissions requires the danger-full-access permission preset')
+      }
+      const current = service.current
+      if (current === undefined) throw new Error('tui-runner: bypass mode could not find the settled agent')
+      permission.set(current.session, 'danger-full-access')
+    }
   })().catch((error: unknown) => { fail(exit, error) })
 }

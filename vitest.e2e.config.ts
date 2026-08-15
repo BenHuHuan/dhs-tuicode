@@ -13,6 +13,13 @@ try {
   // No .env — fine, the environment may already carry the variables.
 }
 
+// E2E acceptance exercises the same plain-Node artifacts an installed user
+// runs. A caller can still select the zero-build source plane explicitly for
+// loader diagnostics; an explicit `.env` or process value always wins.
+if (process.env.DSH_EXAMPLE_MODE === undefined || process.env.DSH_EXAMPLE_MODE === '') {
+  process.env.DSH_EXAMPLE_MODE = 'lib'
+}
+
 const DEFAULT_E2E_MAX_WORKERS = 4
 
 function positiveIntFromEnv(name: string, fallback: number): number {

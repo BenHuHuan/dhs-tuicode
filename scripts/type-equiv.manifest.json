@@ -1924,6 +1924,31 @@
       "doc": "docs/subsystems/feedback.md",
       "symbol": "MessageFeedbackDeleteResult",
       "source": "packages/feedback/message-feedback/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionTransport",
+      "source": "packages/mcp/mcp-client/src/registry.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionState",
+      "source": "packages/mcp/mcp-client/src/registry.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionSnapshot",
+      "source": "packages/mcp/mcp-client/src/registry.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionUpdate",
+      "source": "packages/mcp/mcp-client/src/registry.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp.md",
+      "symbol": "McpConnectionRegistration",
+      "source": "packages/mcp/mcp-client/src/registry.ts"
     }
   ]
 }

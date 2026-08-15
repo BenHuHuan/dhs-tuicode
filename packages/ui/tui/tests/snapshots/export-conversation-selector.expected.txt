@@ -1,0 +1,58 @@
+terminal 92x32 buffer=normal length=32 base=0 viewport=0
+lifecycle started=1 stopped=0 progress=inactive
+title "DSH snapshot"
+cursor hidden column=0 viewportRow=31 bufferRow=31
+buffer
+0| " DEEPSEEK HARNESS"
+  style 1-8 fg=yellow bold
+  style 10-16 bold
+1| " Snapshot agent ready."
+  style 1-21 dim
+2| " main-session"
+  style 1-12 dim
+3| <blank>
+4| "❯ Include this in the export.                                                               "
+  style 0-0 fg=yellow bold
+5| <blank>
+6| "And this answer.                                                                            "
+7| "Model wait 0.0s                                                                             "
+  style 0-14 dim
+8| <blank>
+9| "/workspace/project (tui-staging)  deepseek-v4-flash  ↑0 ↓0  0% context"
+  style 0-17 fg=yellow bold
+  style 18-31 dim
+  style 34-50 dim
+  style 53-57 dim
+  style 60-69 dim
+10| "╭──────────────────────────────────────────────────────────────────────────────────────────╮"
+  style 0-91 dim
+11| " ❯                                                                                          "
+  style 1-1 fg=yellow bold
+  style 2-3 dim
+  style 4-4 inverse
+12| "╰───────╭ Export conversation ─────────────────────────────────────────────────────╮───────╯"
+  style 0-7 dim
+  style 8-83 fg=yellow
+  style 84-91 dim
+13| "        │ → Copy to clipboard               Copy the complete readable conversat   │        "
+  style 8-8 fg=yellow
+  style 10-79 fg=yellow inverse
+  style 83-83 fg=yellow
+14| "        │   Save to file                    dsh-session-main-session.txt           │        "
+  style 8-8 fg=yellow
+  style 24-71 dim
+  style 83-83 fg=yellow
+15| "        │                                                                          │        "
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
+16| "        │ Save uses dsh-session-main-session.txt; /export <filename> chooses anoth │        "
+  style 8-8 fg=yellow
+  style 10-81 dim
+  style 83-83 fg=yellow
+17| "        │ ↑/↓ move · Enter select · Esc cancel                                     │        "
+  style 8-8 fg=yellow
+  style 10-45 dim
+  style 83-83 fg=yellow
+18| "        ╰──────────────────────────────────────────────────────────────────────────╯        "
+  style 8-83 fg=yellow
+19-31| <blank>

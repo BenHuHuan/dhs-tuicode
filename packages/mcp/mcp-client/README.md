@@ -68,6 +68,7 @@ Every MCP tool has two names: the raw MCP name (sent on the wire in `tools/call`
 - Native/model rendering keeps the existing text projection: text blocks join with newlines while image, audio, resource, and unsupported blocks become placeholders.
 - On disconnect/crash: the supervisor restarts the original server config with exponential backoff (`reconnect.initialDelayMs` doubling up to `reconnect.maxDelayMs`) and re-runs discovery on success — the recovered generation replaces the previous one, so tools neither duplicate nor leak. During the outage the last good generation stays registered; calls against it fail until recovery.
 - Reconnection is budgeted per outage: after `reconnect.maxAttempts` consecutive failures the server's tools are unregistered and reconnection stops until an HMR reload or Host restart. A connection that survives past `maxDelayMs` resets the budget, so an occasionally-crashing server recovers indefinitely while a crash-looping one — even with briefly successful connects — still exhausts the cap instead of restarting forever.
+- When the composition mounts `@deepseek-ai/dsh-mcp-client/registry`, each live client publishes a redacted directory row containing its configured server name, transport, lifecycle state, reconnect attempt, and public tool names. The row never retains an endpoint, command, environment value, request header, or failure text; `dsh-tui` consumes it for `/mcp`.
 - Reconnect states are user-visible in logs: reconnecting (warn, with attempt count and delay), recovered (info), final failure and disabled-loss (error). Disposal cancels any pending reconnect. With `reconnect.enabled: false`, a lost connection keeps tools registered but failing until a reload — the manual-recovery behavior.
 
 ## Services consumed
@@ -75,6 +76,7 @@ Every MCP tool has two names: the raw MCP name (sent on the wire in `tools/call`
 | Service | Usage |
 |---|---|
 | `ctx.tools` | Register/unregister MCP tools |
+| `ctx.mcpConnections` (optional) | Publish redacted connection status and public tool names for a human-facing directory |
 
 ## Model Experience
 
@@ -113,3 +115,4 @@ Append-only; newly visible content follows the reusable request prefix and does 
 - **Reconnect triggers on transport close** — a crashed stdio child fires it; Streamable HTTP failures surface per request and through the SDK transport's own SSE-stream recovery, so an unreachable HTTP server is retried per call rather than respawned by the supervisor.
 - **Native non-text rendering is lossy** — image, audio, and resource payloads become placeholders in model context even though the execution-local canonical value preserves their JSON blocks. Richer Native multimedia projection is deferred.
 - **Unsupported MCP output schemas are not enforced** — `structuredContent` falls back to `JsonValue` when the advertised schema uses vocabulary outside the harness subset.
+- **The connection directory is read-only** — `/mcp` reports redacted state and may invoke the Loader's existing reload path, but individual connection, retry, and configuration edits remain outside the terminal UI.

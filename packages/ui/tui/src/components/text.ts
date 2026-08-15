@@ -8,7 +8,12 @@
 const TERMINAL_CONTROL_PATTERN = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/gu
 const TERMINAL_OSC_PATTERN = /(?:\u001B\]|\u009D)(?:(?!\u0007|\u001B\\)[\s\S])*(?:\u0007|\u001B\\|$)/gu
 const TERMINAL_CSI_PATTERN = /(?:\u001B\[|\u009B)[0-?]*[ -/]*[@-~]/gu
+// DCS/SOS/PM/APC strings end with ST. pi-tui's private cursor marker is an
+// APC-shaped sequence (`ESC _ pi:c BEL`), so accept BEL as a defensive
+// terminator too: a rendered screen snapshot must never expose `pi:c` as text.
+const TERMINAL_STRING_PATTERN = /(?:\u001B[P^_X]|[\u0090\u0098\u009e\u009f])(?:(?!\u0007|\u001B\\)[\s\S])*(?:\u0007|\u001B\\|$)/gu
 const TERMINAL_ESCAPE_PATTERN = /\u001B[@-_]/gu
+const PIXEL_GLYPH_PATTERN = /[\u2580-\u259f]/gu
 
 /** Bracketed-paste start marker emitted by terminals around pasted content. */
 export const BRACKETED_PASTE_START = '\u001B[200~'
@@ -43,7 +48,17 @@ export function displayInlineText(text: string): string {
 export function sanitizePastedText(text: string): string {
   return text
     .replace(TERMINAL_OSC_PATTERN, '')
+    .replace(TERMINAL_STRING_PATTERN, '')
     .replace(TERMINAL_CSI_PATTERN, '')
     .replace(TERMINAL_ESCAPE_PATTERN, '')
     .replace(TERMINAL_CONTROL_PATTERN, '')
+}
+
+/**
+ * Convert an application-rendered terminal line into copyable screen text.
+ * Pixel/image cells contribute whitespace, matching terminal selection rather
+ * than leaking half-block glyphs into the clipboard.
+ */
+export function copyableScreenText(text: string): string {
+  return sanitizePastedText(text).replace(PIXEL_GLYPH_PATTERN, ' ')
 }

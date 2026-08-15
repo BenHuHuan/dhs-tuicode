@@ -15,8 +15,9 @@ export const name = 'mcp-client-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: MCP generations contribute through the tool registry, but the bridge
- * exposes no independent server-to-tool snapshot after an asynchronous resync.
+ * No runtime invariant: the optional connection directory is a redacted
+ * human-facing projection of supervisor-owned lifecycle and tool state. It
+ * neither owns nor records an independent durable MCP lifecycle.
  */
 const install: InvariantInstaller = () => {}
 

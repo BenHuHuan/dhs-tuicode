@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tui",
   "description": "Interactive pi-tui terminal front door for DeepSeek Harness agents",
-  "version": "0.1.0-rc.5",
+  "version": "0.0.1",
   "publishConfig": {
     "access": "public"
   },
@@ -39,6 +39,8 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets/deepseek-whale-girl-chibi.png",
+    "assets/deepseek-whale-girl-brick-v2.png",
     "lib/index.js",
     "lib/invariant.js",
     "lib/startup.js",
@@ -56,11 +58,14 @@
   "dependencies": {
     "@deepseek-ai/dsh-app-boot": "workspace:^",
     "@deepseek-ai/dsh-cmdline": "workspace:^",
+    "@deepseek-ai/dsh-home-paths": "workspace:^",
+    "@deepseek-ai/dsh-mcp-client": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
     "@earendil-works/pi-tui": "0.80.7",
     "commander": "^15.0.0",
     "diff": "^9.0.0",
-    "saxes": "6.0.0"
+    "saxes": "6.0.0",
+    "sharp": "0.35.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
@@ -69,8 +74,10 @@
     "@deepseek-ai/dsh-agent-default-model": "workspace:^",
     "@deepseek-ai/dsh-agent-loop": "workspace:^",
     "@deepseek-ai/dsh-attachment": "workspace:^",
+    "@deepseek-ai/dsh-brand": "workspace:^",
     "@deepseek-ai/dsh-commands": "workspace:^",
     "@deepseek-ai/dsh-compaction": "workspace:^",
+    "@deepseek-ai/dsh-credentials": "workspace:^",
     "@deepseek-ai/dsh-goal": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-llm": "workspace:^",
@@ -151,8 +158,10 @@
     "@deepseek-ai/dsh-agent-loop": "workspace:^",
     "@deepseek-ai/dsh-agent-spine-demo": "workspace:^",
     "@deepseek-ai/dsh-attachment": "workspace:^",
+    "@deepseek-ai/dsh-brand": "workspace:^",
     "@deepseek-ai/dsh-commands": "workspace:^",
     "@deepseek-ai/dsh-compaction": "workspace:^",
+    "@deepseek-ai/dsh-credentials": "workspace:^",
     "@deepseek-ai/dsh-goal": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-llm": "workspace:^",

@@ -6,16 +6,21 @@
  */
 
 import { randomUUID } from 'node:crypto'
+import { readFile, stat } from 'node:fs/promises'
+import { resolve as resolvePath } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   CombinedAutocompleteProvider,
   Container,
+  CURSOR_MARKER,
   Key,
   Spacer,
   Text,
   TUI,
   ProcessTerminal,
   matchesKey,
+  sliceByColumn,
+  truncateToWidth,
   visibleWidth,
   type Component,
   type EditorTheme,
@@ -35,15 +40,20 @@ import {
 import type {} from '@deepseek-ai/dsh-agent-loop'
 // Declaration-merges the optional durable attachment store onto Context. Text
 // chat remains usable without it; clipboard image intake then degrades visibly.
-import type {} from '@deepseek-ai/dsh-attachment'
+import { AttachmentId, type ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type {} from '@deepseek-ai/dsh-token-meter'
-import type { CommandResult } from '@deepseek-ai/dsh-commands'
+import type { CommandId, CommandResult } from '@deepseek-ai/dsh-commands'
+import { credentialRef } from '@deepseek-ai/dsh-credentials'
 // Declaration-merges the optional background-job registry onto Context. The
 // TUI remains usable without it; only Ctrl+B promotion and /tasks are absent.
 import type {} from '@deepseek-ai/dsh-jobs'
 import { CallId, createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, MessageId } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-llm-retry'
+// Declaration-merges the optional redacted MCP connection directory onto
+// Context. The TUI remains usable without it; only `/mcp` is unavailable.
+import type {} from '@deepseek-ai/dsh-mcp-client/registry'
+import type { McpConnectionSnapshot } from '@deepseek-ai/dsh-mcp-client/registry'
 // Declaration-merge the two optional mode services onto Context. A minimal
 // embedding may omit either one; the mode controller degrades independently.
 import type {} from '@deepseek-ai/dsh-permission-presets'
@@ -77,7 +87,10 @@ import type SessionQueryEngine from '@deepseek-ai/dsh-session-query'
 import type { SkillRegistry } from '@deepseek-ai/dsh-skill'
 // Declaration-merges the optional continuable-subagent runtime. The shipped
 // profile mounts it; minimal embeddings retain one-shot job control alone.
-import type {} from '@deepseek-ai/dsh-subagent'
+import type {
+  SubagentDescendantListEntry,
+  SubagentListEntry,
+} from '@deepseek-ai/dsh-subagent'
 // Type import declaration-merges the `userQuestions` service onto `Context`;
 // the ask-user-question queue is registered by ./chat/questions.
 import type {} from '@deepseek-ai/dsh-user-questions'
@@ -93,12 +106,25 @@ import {
 } from './prompt.ts'
 import type {
   TuiOverlayRequest,
+  TuiOverlayOptions,
   TuiOverlaySession,
   TuiTheme,
 } from './extension/types.ts'
-import { displayInlineText, displayText } from './components/text.ts'
-import { brandText, createPalette, markdownTheme, renderPalette, selectTheme } from './components/theme.ts'
+import { copyableScreenText, displayInlineText, displayText } from './components/text.ts'
+import {
+  brandText,
+  clipboardNoticeText,
+  createPalette,
+  modeAccentText,
+  modeBadgeText,
+  markdownTheme,
+  renderPalette,
+  selectTheme,
+  type Palette,
+  type ModeTone,
+} from './components/theme.ts'
 import { contentText, parseArguments } from './components/content.ts'
+import { createInlineImageFactory } from './components/inline-image.ts'
 import {
   cacheHitRate,
   formatTokens,
@@ -129,7 +155,9 @@ import {
 import {
   ContextCardComponent,
   type ToolCardVisibility,
+  EditorFrameComponent,
   HeaderComponent,
+  StatusToastComponent,
   StreamingAssistantComponent,
   ToolCardComponent,
   TodoComponent,
@@ -158,6 +186,19 @@ import {
   type CopyResponseAction,
   type CopyResponseSelection,
 } from './components/copy-response.ts'
+import {
+  ConversationExportDialog,
+  type ConversationExportAction,
+} from './components/export-conversation.ts'
+import { CredentialLoginDialog } from './components/credential-login.ts'
+import {
+  WorkspaceCheckpointPickerDialog,
+  WorkspaceDiffDialog,
+  WorkspaceRewindActionDialog,
+  WorkspaceRewindConfirmDialog,
+  type WorkspaceRewindAction,
+  type WorkspaceRewindCapabilities,
+} from './components/workspace-history.ts'
 import {
   HistorySearchDialog,
   type HistorySearchAcceptance,
@@ -196,7 +237,12 @@ import {
 import { createQuestionQueue } from './chat/questions.ts'
 import { createResumeController } from './chat/resume.ts'
 import { editTextInExternalEditor, ExternalEditorShortcut, latestAssistantResponse } from './external-editor.ts'
-import type { TextFileWriteResult, TuiRuntime } from './runtime.ts'
+import type {
+  TextFileWriteResult,
+  TuiRuntime,
+  WorkspaceCheckpoint,
+  WorkspaceDiff,
+} from './runtime.ts'
 import { WorkspaceFileSearch } from './chat/file-autocomplete.ts'
 import { UserShellHistory } from './chat/shell-autocomplete.ts'
 import { PromptHistory, type PromptHistoryEntry } from './chat/prompt-history.ts'
@@ -206,21 +252,42 @@ import {
   assistantCodeBlocks,
   visibleAssistantResponses,
 } from './chat/assistant-responses.ts'
+import {
+  defaultConversationExportFilename,
+  exportConversationText,
+} from './chat/export.ts'
 import { contextUsageGroups } from './chat/context-usage.ts'
 import {
   stopRunningBackgroundSubagents,
   SubagentKillShortcut,
 } from './chat/subagent-control.ts'
 import { readImageFromClipboard } from './clipboard-image.ts'
-import { writeTextToClipboard } from './clipboard-text.ts'
+import { readTextFromClipboard, writeTextToClipboard } from './clipboard-text.ts'
 import { writeTextFile as writeResponseTextFile } from './text-file.ts'
+import { LocalWorkspaceHistory } from './workspace-history.ts'
 
 const IDLE_EXIT_CONFIRMATION_MS = 800
 const CLEAR_CONVERSATION_CONFIRMATION_MS = 2_000
 const SUBAGENT_KILL_CONFIRMATION_MS = 3_000
 const CLIPBOARD_IMAGE_TIMEOUT_MS = 5_000
 const CLIPBOARD_TEXT_TIMEOUT_MS = 5_000
+const MAX_MCP_DISPLAY_TOOLS = 20
+type SubagentChildEntry = Extract<SubagentListEntry, { kind: 'child' }>
 type IdleExitKey = 'ctrl-c' | 'ctrl-d'
+
+/**
+ * Find the inclusive event boundary through which a session may be forked.
+ * A checkpoint never branches an active turn because that would leave the
+ * child with an unmatched request/tool lifecycle.
+ * @param events - Complete current session log.
+ * @returns The latest stable event sequence, or `undefined` before/inside a turn.
+ */
+function stableForkBoundary(events: readonly SessionEvent[]): number | undefined {
+  const last = events.at(-1)
+  if (last === undefined) return undefined
+  const turnBoundary = events.findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
+  return turnBoundary?.type === 'turn/start' ? undefined : last.seq
+}
 
 interface EditorRuntimeState {
   lines: string[]
@@ -293,6 +360,7 @@ function restoreEditorDraft(editor: HintEditor, draft: StashedEditorDraft): void
 
 export { TuiPromptService } from './prompt.ts'
 export { renderSkillInvocation } from './chat/skill-invocation.ts'
+export { WorkspaceCheckpointId } from './runtime.ts'
 export type {
   ClipboardImage,
   ClipboardImageRequest,
@@ -301,7 +369,17 @@ export type {
   TextFileWriteRequest,
   TextFileWriteResult,
   TuiRuntime,
+  WorkspaceCheckpoint,
+  WorkspaceCheckpointListRequest,
+  WorkspaceCheckpointRequest,
+  WorkspaceDiff,
+  WorkspaceDiffRequest,
+  WorkspaceHistory,
+  WorkspaceRestoreRequest,
+  WorkspaceRestoreResult,
 } from './runtime.ts'
+export { LocalWorkspaceHistory } from './workspace-history.ts'
+export type { LocalWorkspaceHistoryOptions } from './workspace-history.ts'
 export {
   resolveTuiConfig,
   resolveTuiUserSettings,
@@ -463,7 +541,7 @@ export function createTuiChat(
   if (agent === undefined) throw new Error(`ui-tui: session "${sessionId}" is not running`)
   const resolved = resolveTuiConfig(config)
   let userSettings = runtime.readSettings?.() ?? resolveTuiUserSettings(config)
-  const palette = createPalette(resolved.theme.color)
+  const palette = createPalette(resolved.theme.color, 'dark', resolved.theme.palette, resolved.theme.truecolor)
   const mdTheme = markdownTheme(palette)
   const ui = new TUI(runtime.terminal, resolved.showHardwareCursor)
   const chat = new Container()
@@ -488,6 +566,7 @@ export function createTuiChat(
   let showTaskChecklist = true
   const compactionStatusLine = new Text('', 0, 0)
   const editorStatusLine = new Text('', 0, 0)
+  const footerLine = new Text('', 0, 0)
   let showReasoning = userSettings.showReasoning
   // Ctrl+O cycles collapsed -> expanded -> hidden. Codex-style: hidden drops
   // tool cards entirely, collapsed previews, expanded shows full bodies.
@@ -498,8 +577,8 @@ export function createTuiChat(
   // replay of the whole log is quadratic on a long resumed session.
   const stepTimingTracker = new StepTimingTracker()
   // Assistant step components in model order per turn, for hidden-mode folding:
-  // with tool cards hidden, a turn keeps one Assistant header and later steps
-  // render as headerless continuations (see applyTurnFolding).
+  // with tool cards hidden, the first step with a visible body keeps its spacing
+  // and later steps render as continuations (see applyTurnFolding).
   const assistantSteps = new Map<number, StreamingAssistantComponent[]>()
   let runningStatus: RunningStatus | undefined
   let fadingStatus: FadingStatus | undefined
@@ -552,7 +631,32 @@ export function createTuiChat(
     ctx.get('permissionPresets'),
     ctx.get('planMode'),
   )
+  const modeTone = (): ModeTone => {
+    const mode = modeController.current()
+    if (mode?.dangerous === true) return 'danger'
+    if (mode?.kind === 'plan') return 'plan'
+    if (mode?.id === 'permission:read-only') return 'inspect'
+    if (mode?.id === 'permission:workspace-auto') return 'flow'
+    if (mode?.id === 'permission:workspace-write') return 'build'
+    return 'normal'
+  }
+  // Claude Code input rail: rounded top/bottom borders only. Plan mode paints
+  // the rail warning, always-approve paints it error, and the prompt glyph dims
+  // while the agent runs — the frame itself stays on the normal chrome tone.
+  const editorFramePaint = (): Palette['accent'] => {
+    const tone = modeTone()
+    return text => modeAccentText(text, tone, resolved.theme.color)
+  }
+  const editorTopFrame = new EditorFrameComponent(true, palette.dim)
+  const editorBottomFrame = new EditorFrameComponent(false, palette.dim)
   const skillAbort = new AbortController()
+  // Slash completion is synchronous, while skill discovery is asynchronous.
+  // Keep the last complete catalog here so both completion and /help expose
+  // the same set of user-invocable skills.
+  let skillCommands: SlashCommand[] = []
+  let skillCommandScan = 0
+  let skillCommandRetry: ReturnType<typeof setTimeout> | undefined
+  let skillCommandRetryCount = 0
   const tokens = sessionTokens(agent.session)
   const toolCards = new Map<string, ToolCardComponent>()
   const allToolCards = new Set<ToolCardComponent>()
@@ -582,11 +686,38 @@ export function createTuiChat(
   // A configured subtitle renders as a banner line; when absent, the banner has
   // no subtitle. The banner itself sweeps in on start (see startBannerReveal).
   let sessionTitle = foldSessionTitle(agent.session.events)?.title
+  const brandImageRef: ImageAttachmentRef = {
+    attachmentId: AttachmentId('tui-brand-deepseek-whale-girl-brick-v2'),
+    mediaType: 'image/png',
+    bytes: 1_006_186,
+    width: 1_312,
+    height: 1_199,
+    name: 'deepseek-whale-girl-brick-v2.png',
+  }
+  const brandImage = createInlineImageFactory(
+    async () => ({
+      ref: brandImageRef,
+      data: await readFile(fileURLToPath(new URL('../assets/deepseek-whale-girl-brick-v2.png', import.meta.url))),
+    }),
+    () => { if (!disposed) ui.requestRender() },
+    palette,
+    {
+      maxWidthCells: 56,
+      maxHeightCells: 26,
+      hideFallback: true,
+      preferAnsiPixels: true,
+      // HeaderComponent owns centering inside the left card column. Keeping
+      // the raster origin at zero avoids applying a second center offset and
+      // clipping the mascot against the middle divider.
+      ansiAlignment: 'left',
+    },
+  )({ type: 'image', attachment: brandImageRef })
   const header = new HeaderComponent(
     agent,
     () => sessionTitle ?? config.welcome,
     palette,
     resolved.theme.color && resolved.theme.truecolor,
+    brandImage,
   )
   const formattedCwd = displayText(runtime.formatCwd?.(agent.session.header.cwd) ?? formatCwd(agent.session.header.cwd))
   const branch = runtime.gitBranch?.(cwd) ?? gitBranch(cwd)
@@ -598,8 +729,8 @@ export function createTuiChat(
     ctx.tuiPrompt.register('context'),
     ctx.tuiPrompt.register('mode'),
     ctx.tuiPrompt.register('queued'),
-    ctx.tuiPrompt.register('symbol', palette.bold(palette.accent('dsh'))),
-    ctx.tuiPrompt.register('indicator', palette.dim('> ')),
+    ctx.tuiPrompt.register('symbol', palette.bold(palette.accent('>'))),
+    ctx.tuiPrompt.register('indicator', palette.dim(' ')),
   ]
   const [cwdValue, gitValue, tokenValue, modelValue, contextValue, modeValue, queuedValue, symbolValue, indicatorValue] = promptValues
   /* v8 ignore next -- the fixed built-in registration list always supplies each handle. */
@@ -624,22 +755,36 @@ export function createTuiChat(
     if (mode === undefined) {
       modeValue.set(undefined)
     } else {
-      const icon = mode.kind === 'plan' ? '⏸' : mode.dangerous ? '⏵⏵' : '⏵'
+      const icon = mode.kind === 'plan' ? '◇'
+        : mode.dangerous ? '⚡'
+          : mode.id === 'permission:read-only' ? '◉'
+            : mode.id === 'permission:workspace-auto' ? '▶'
+              : '◆'
       const suffix = mode.pending ? ' (pending)' : ''
       const text = `${icon} ${displayInlineText(mode.label)}${suffix}`
-      const paint = mode.dangerous ? palette.warning : mode.kind === 'plan' ? palette.accent : palette.dim
+      const tone = modeTone()
+      const paint: Palette['accent'] = text => modeAccentText(text, tone, resolved.theme.color)
       modeValue.set(`  ${paint(text)}`)
     }
     const queued = runningStatus === undefined ? undefined : formatQueuedStatus(pendingSteering.size)
     queuedValue.set(queued === undefined ? undefined : palette.dim(queued))
-    symbolValue.set(palette.bold(palette.accent('dsh')))
+    const promptGlyph = mode?.dangerous === true ? '⚡'
+      : mode?.kind === 'plan' ? '◇'
+        : mode?.id === 'permission:read-only' ? '◉'
+          : mode?.id === 'permission:workspace-auto' ? '▶'
+            : '◆'
+    const tone = modeTone()
+    const promptPaint: Palette['accent'] = text => modeAccentText(text, tone, resolved.theme.color)
+    symbolValue.set(palette.bold(promptPaint(promptGlyph)))
+    editorTopFrame.setPaint(editorFramePaint())
+    editorBottomFrame.setPaint(editorFramePaint())
     compactionStatusLine.setText(compacting === undefined
       ? ''
       : palette.dim(`Context being compacted ${formatStatusDuration(renderTime - compacting.startedAt)}`))
     // `${indicator}` owns the caret column and its trailing gap before the
-    // cursor. The active status glyph replaces the `>` caret in place — same
-    // width every frame — fading in when work starts, throbbing while it runs,
-    // and fading out after it ends before the plain `>` returns. Only the gray
+    // cursor. Idle it is one blank cell after the `❯` rail; while work runs the
+    // active phase glyph occupies that cell — same width every frame — fading
+    // in, throbbing, and fading out before the blank returns. Only the gray
     // brightness changes, so the cursor never shifts.
     const statusGlyph = runningPhaseGlyph(
       agent.session.events,
@@ -660,7 +805,7 @@ export function createTuiChat(
         ? { glyph: fadingStatus.glyph, level: Math.max(0, 1 - (renderTime - fadingStatus.endedAt) / STATUS_FADE_MS) }
         : undefined
     const caret = envelope === undefined
-      ? palette.dim('>')
+      ? palette.dim(' ')
       : fadeGlyph(
         envelope.glyph,
         palette,
@@ -670,22 +815,57 @@ export function createTuiChat(
         envelope.level >= 0.5,
       )
     indicatorValue.set(`${caret}${palette.dim(' ')}`)
+    const modeIdentity = mode?.dangerous === true
+      ? { badge: 'UNLOCKED', detail: 'full access', tone: 'danger' as const }
+      : mode?.kind === 'plan'
+        ? { badge: 'BLUEPRINT', detail: 'plan only', tone: 'plan' as const }
+        : mode?.id === 'permission:read-only'
+          ? { badge: 'INSPECT', detail: 'read only', tone: 'inspect' as const }
+          : mode?.id === 'permission:workspace-write'
+            ? { badge: 'BUILD', detail: 'workspace tools', tone: 'build' as const }
+            : mode?.id === 'permission:workspace-auto'
+              ? { badge: 'FLOW', detail: 'workspace autonomous', tone: 'flow' as const }
+              : { badge: 'CHAT', detail: 'standard', tone: 'normal' as const }
+    footerLine.setText(
+      `${modeBadgeText(`└─ ${modeIdentity.badge}`, modeIdentity.tone, resolved.theme.color)}${palette.dim(`  ${modeIdentity.detail} · ? help · 1 agent`)}`,
+    )
   }
   const promptContext = new PromptContextComponent(
     parseTuiPromptTemplate(displayInlineText(resolved.theme.leftPrompt)),
     parseTuiPromptTemplate(displayInlineText(resolved.theme.rightPrompt)),
     valueName => ctx.tuiPrompt.get(valueName),
   )
-  ui.addChild(header)
-  ui.addChild(chat)
+  const statusToast = new StatusToastComponent(
+    palette,
+    text => clipboardNoticeText(text, resolved.theme.color),
+  )
+  let statusToastTimer: ReturnType<typeof setTimeout> | undefined
+  // Keep the transcript as one measured prefix. The render seam below can
+  // then viewport this prefix while leaving the prompt, overlays, and footer
+  // pinned to the bottom of the terminal.
+  const transcript = new Container()
+  let transcriptLineCount = 0
+  const originalTranscriptRender = transcript.render.bind(transcript)
+  transcript.render = (width: number): string[] => {
+    const lines = originalTranscriptRender(width)
+    transcriptLineCount = lines.length
+    return lines
+  }
+  transcript.addChild(header)
+  transcript.addChild(chat)
+  ui.addChild(transcript)
   ui.addChild(new Spacer(1))
   todoContainer.addChild(todo)
   ui.addChild(todoContainer)
   ui.addChild(compactionStatusLine)
   ui.addChild(promptContext)
   ui.addChild(questionContainer)
+  ui.addChild(statusToast)
+  ui.addChild(editorTopFrame)
   ui.addChild(editor)
+  ui.addChild(editorBottomFrame)
   ui.addChild(editorStatusLine)
+  ui.addChild(footerLine)
   ui.setFocus(editor)
   const updateTerminalTitle = (): void => {
     runtime.terminal.setTitle(displayText(
@@ -703,6 +883,21 @@ export function createTuiChat(
     promptContext.invalidate()
     ui.requestRender()
   }
+  const showCopyToast = (text: string): void => {
+    if (statusToastTimer !== undefined) clearTimeout(statusToastTimer)
+    const count = Array.from(text).length
+    statusToast.setMessage(` copied ${String(count)} char${count === 1 ? '' : 's'} to clipboard `)
+    requestRender()
+    statusToastTimer = setTimeout(() => {
+      statusToastTimer = undefined
+      statusToast.setMessage(undefined)
+      requestRender()
+    }, 4_000)
+  }
+  const attachmentStore = ctx.get('attachments')
+  const inlineImage = attachmentStore === undefined
+    ? undefined
+    : createInlineImageFactory(ref => attachmentStore.readImage(ref), requestRender, palette)
 
   const toggleTaskChecklist = (): void => {
     showTaskChecklist = !showTaskChecklist
@@ -715,6 +910,8 @@ export function createTuiChat(
   let freshSwapInFlight = false
   let externalEditorInFlight = false
   let transferOperation: 'reading' | 'admitting' | 'copying' | 'writing' | undefined
+  let transferSubject = 'assistant response'
+  let workspaceOperation: 'diff' | 'checkpoint' | 'rewind' | undefined
   const externalEditorShortcut = new ExternalEditorShortcut()
   const subagentKillShortcut = new SubagentKillShortcut()
   let subagentKillInFlight = false
@@ -743,18 +940,24 @@ export function createTuiChat(
         : transferOperation === 'admitting'
           ? palette.dim('Saving clipboard image…')
           : transferOperation === 'copying'
-            ? palette.dim('Copying assistant response…')
+            ? palette.dim(`Copying ${transferSubject}…`)
             : transferOperation === 'writing'
-              ? palette.dim('Writing assistant response…')
-              : freshSwapInFlight
-                ? palette.dim('Starting a new conversation…')
-                : subagentKillInFlight
-                  ? palette.dim('Stopping background subagents…')
-                  : subagentKillConfirmation !== undefined
-                    ? palette.dim('Press Ctrl+X Ctrl+K again within 3s to stop all running background subagents')
-                    : clearConversationConfirmation === undefined
-                      ? ''
-                      : palette.dim('Press Ctrl+L again to run /clear'))
+              ? palette.dim(`Writing ${transferSubject}…`)
+              : workspaceOperation === 'diff'
+                ? palette.dim('Reading workspace diff…')
+                : workspaceOperation === 'checkpoint'
+                  ? palette.dim('Creating workspace checkpoint…')
+                  : workspaceOperation === 'rewind'
+                    ? palette.dim('Restoring workspace checkpoint…')
+                    : freshSwapInFlight
+                      ? palette.dim('Starting a new conversation…')
+                      : subagentKillInFlight
+                        ? palette.dim('Stopping background subagents…')
+                        : subagentKillConfirmation !== undefined
+                          ? palette.dim('Press Ctrl+X Ctrl+K again within 3s to stop all running background subagents')
+                          : clearConversationConfirmation === undefined
+                            ? ''
+                            : palette.dim('Press Ctrl+L again to run /clear'))
     editor.hint = agent.status === 'running'
       ? palette.dim(displayInlineText(resolved.theme.inputPlaceholder))
       : idleExitConfirmation !== undefined
@@ -1189,6 +1392,7 @@ export function createTuiChat(
       resolved.maxDiffEditLength,
       palette,
       mdTheme,
+      event.time,
     )
     card.setVisibility(toolsVisibility)
     toolCards.set(event.data.callId, card)
@@ -1198,9 +1402,8 @@ export function createTuiChat(
 
   /**
    * Re-derive hidden-mode folding for one turn: the first step with a visible
-   * body owns the turn's single Assistant header, every other step renders as a
-   * headerless continuation (empty ones render nothing). Any other visibility
-   * restores the per-step headers.
+   * body keeps its leading spacing, every other step renders as a continuation
+   * (empty ones render nothing). Any other visibility restores per-step spacing.
    */
   const applyTurnFolding = (turn: number): void => {
     const steps = assistantSteps.get(turn)
@@ -1279,6 +1482,7 @@ export function createTuiChat(
       showReasoning,
       palette,
       mdTheme,
+      inlineImage,
     )
     registerAssistantStep(streaming)
     chat.addChild(streaming)
@@ -1323,10 +1527,14 @@ export function createTuiChat(
           }
           break
         }
-        const text = displayText(contentText(event.data.content).trim())
-        if (text) {
+        const images = event.data.content.filter((block): block is Extract<ContentBlock, { type: 'image' }> => block.type === 'image')
+        const text = displayText(contentText(event.data.content.filter(block => block.type !== 'image')).trim())
+        if (text || images.length > 0) {
           chat.addChild(new Spacer(1))
-          chat.addChild(new UserMessageComponent(text, palette, mdTheme))
+          if (text) chat.addChild(new UserMessageComponent(text, palette, mdTheme))
+          for (const image of images) {
+            chat.addChild(inlineImage?.(image) ?? new Text(palette.dim(contentText([image])), 0, 0))
+          }
         }
         break
       }
@@ -1383,12 +1591,13 @@ export function createTuiChat(
             resolved.maxDiffEditLength,
             palette,
             mdTheme,
+            event.time,
           )
           card.setVisibility(toolsVisibility)
           chat.addChild(card)
           allToolCards.add(card)
         }
-        card.updateResult(event.data)
+        card.updateResult(event.data, event.time)
         toolCards.delete(callId)
         trailStreamingTiming()
         break
@@ -1645,7 +1854,7 @@ export function createTuiChat(
   }
 
   const hasActiveConversationWork = (): boolean =>
-    foregroundShell !== undefined || agent.status !== 'idle'
+    foregroundShell !== undefined || agent.status !== 'idle' || workspaceOperation !== undefined
 
   /** Persist one explicit user title without duplicating its raw input in command lifecycle events. */
   const renameSession = (rawInput: string, usage: string): CommandResult => {
@@ -1700,7 +1909,7 @@ export function createTuiChat(
   }
 
   /** Flush the current log and atomically replace this channel with a fresh session. */
-  const startFreshConversation = (): void => {
+  const startFreshConversation = (nextCwd?: string): void => {
     clearIdleExitConfirmation(false)
     clearConversationConfirmationState(false)
     if (freshSwapInFlight) return
@@ -1729,7 +1938,7 @@ export function createTuiChat(
       }
       await runtime.terminal.drainInput(100, 20)
       if (isDisposed()) return
-      await swapFresh(selection)
+      await swapFresh(selection, nextCwd)
     })().catch((error: unknown) => {
       if (!isDisposed()) appendNotice(`Clear failed: ${errorChain(error)}`, 'error')
     }).finally(() => {
@@ -1759,6 +1968,26 @@ export function createTuiChat(
     return { kind: 'success' }
   }
 
+  /** Switch workspace by atomically remounting a fresh session at a validated directory. */
+  const runWorkdir = async (rawInput: string): Promise<CommandResult> => {
+    const requested = rawInput.trim()
+    if (requested === '') return { kind: 'success', text: `Current workspace: ${displayText(cwd)}` }
+    if (freshSwapInFlight) return { kind: 'error', text: 'A workspace transition is already starting.' }
+    if (hasActiveConversationWork()) {
+      return { kind: 'error', text: 'Finish or cancel active work before switching workspace.' }
+    }
+    const nextCwd = resolvePath(cwd, requested)
+    try {
+      if (!(await stat(nextCwd)).isDirectory()) {
+        return { kind: 'error', text: `Not a directory: ${displayText(nextCwd)}` }
+      }
+    } catch {
+      return { kind: 'error', text: `Workspace does not exist: ${displayText(nextCwd)}` }
+    }
+    startFreshConversation(nextCwd)
+    return { kind: 'success', text: `Switching workspace to ${displayText(nextCwd)}.` }
+  }
+
   /** Open the picker when bare, or hand one exact id/title to the shared resume preflight. */
   const runResume = async (rawInput: string, signal: AbortSignal): Promise<CommandResult> => {
     const reference = rawInput.trim()
@@ -1774,14 +2003,14 @@ export function createTuiChat(
     }
   }
 
-  let copyOverlay: TuiOverlaySession | undefined
+  let transferOverlay: TuiOverlaySession | undefined
 
-  /** Resolve one value through the serialized response-copy overlay family. */
-  const chooseCopyOverlay = <Value>(
+  /** Resolve one value through the serialized clipboard/file transfer overlay family. */
+  const chooseTransferOverlay = <Value>(
     create: (done: (value: Value) => void, cancel: () => void) => Component,
     signal: AbortSignal,
   ): Promise<Value | undefined> => {
-    void copyOverlay?.close()
+    void transferOverlay?.close()
     return new Promise((resolve) => {
       let settled = false
       const finish = (value: Value | undefined): void => {
@@ -1800,9 +2029,9 @@ export function createTuiChat(
         },
         signal,
       })
-      copyOverlay = session
+      transferOverlay = session
       void session.closed.then(() => {
-        if (copyOverlay === session) copyOverlay = undefined
+        if (transferOverlay === session) transferOverlay = undefined
         finish(undefined)
       })
       requestRender()
@@ -1815,7 +2044,7 @@ export function createTuiChat(
     codeBlocks: ReturnType<typeof assistantCodeBlocks>,
     ordinal: number,
     signal: AbortSignal,
-  ): Promise<CopyResponseAction | undefined> => chooseCopyOverlay(
+  ): Promise<CopyResponseAction | undefined> => chooseTransferOverlay(
     (done, cancel) => new CopyResponseDialog(
       responseText,
       codeBlocks,
@@ -1832,7 +2061,7 @@ export function createTuiChat(
   const chooseCopyFilePath = (
     selection: CopyResponseSelection,
     signal: AbortSignal,
-  ): Promise<string | undefined> => chooseCopyOverlay(
+  ): Promise<string | undefined> => chooseTransferOverlay(
     (done, cancel) => new CopyResponsePathDialog(selection, cwd, palette, done, cancel),
     signal,
   )
@@ -1841,7 +2070,7 @@ export function createTuiChat(
   const confirmCopyFileOverwrite = (
     path: string,
     signal: AbortSignal,
-  ): Promise<boolean | undefined> => chooseCopyOverlay(
+  ): Promise<boolean | undefined> => chooseTransferOverlay(
     (done, cancel) => new CopyResponseOverwriteDialog(
       path,
       palette,
@@ -1851,10 +2080,30 @@ export function createTuiChat(
     signal,
   )
 
-  /** Write one already-selected target while retaining cancellable host ownership. */
+  /** Choose whether a complete conversation goes to the clipboard or its default file. */
+  const chooseConversationExport = (
+    filename: string,
+    signal: AbortSignal,
+  ): Promise<ConversationExportAction | undefined> => chooseTransferOverlay(
+    (done, cancel) => new ConversationExportDialog(
+      filename,
+      resolved.maxModelOptions,
+      palette,
+      {
+        copy: runtime.writeClipboardText !== undefined,
+        write: runtime.writeTextFile !== undefined,
+      },
+      done,
+      cancel,
+    ),
+    signal,
+  )
+
+  /** Copy one already-selected target while retaining cancellable host ownership. */
   const copySelection = async (
     selection: CopyResponseSelection,
     signal: AbortSignal,
+    subject = 'assistant response',
   ): Promise<void> => {
     const writeClipboardText = runtime.writeClipboardText
     if (writeClipboardText === undefined) {
@@ -1873,17 +2122,20 @@ export function createTuiChat(
     const restoreSubmitDisabled = editor.disableSubmit
     transferControllers.add(controller)
     transferOperation = 'copying'
+    transferSubject = subject
     editor.disableSubmit = true
     updateEditorHint()
     requestRender()
     try {
       await writeClipboardText({ text: selection.text, signal: controller.signal, cwd })
+      showCopyToast(selection.text)
     } finally {
       clearTimeout(timeout)
       signal.removeEventListener('abort', abort)
       transferControllers.delete(controller)
       if (!disposed) {
         transferOperation = undefined
+        transferSubject = 'assistant response'
         editor.disableSubmit = restoreSubmitDisabled
         updateEditorHint()
         requestRender()
@@ -1891,12 +2143,13 @@ export function createTuiChat(
     }
   }
 
-  /** Attempt one guarded response-text file write through the host boundary. */
+  /** Attempt one guarded selected-text file write through the host boundary. */
   const writeSelectionToFile = async (
     selection: CopyResponseSelection,
     path: string,
     overwrite: boolean,
     signal: AbortSignal,
+    subject = 'assistant response',
   ): Promise<TextFileWriteResult> => {
     const writeTextFile = runtime.writeTextFile
     if (writeTextFile === undefined) throw new Error('this runtime has no response file writer')
@@ -1910,6 +2163,7 @@ export function createTuiChat(
     const restoreSubmitDisabled = editor.disableSubmit
     transferControllers.add(controller)
     transferOperation = 'writing'
+    transferSubject = subject
     editor.disableSubmit = true
     updateEditorHint()
     requestRender()
@@ -1926,11 +2180,28 @@ export function createTuiChat(
       transferControllers.delete(controller)
       if (!disposed) {
         transferOperation = undefined
+        transferSubject = 'assistant response'
         editor.disableSubmit = restoreSubmitDisabled
         updateEditorHint()
         requestRender()
       }
     }
+  }
+
+  /** Write a human-selected text target, only replacing an existing file after confirmation. */
+  const writeSelectionWithConfirmation = async (
+    selection: CopyResponseSelection,
+    path: string,
+    signal: AbortSignal,
+    subject = 'assistant response',
+  ): Promise<TextFileWriteResult | undefined> => {
+    let result = await writeSelectionToFile(selection, path, false, signal, subject)
+    if (result.kind !== 'exists') return result
+    const overwrite = await confirmCopyFileOverwrite(result.path, signal)
+    if (overwrite !== true) return undefined
+    result = await writeSelectionToFile(selection, result.path, true, signal, subject)
+    if (result.kind === 'exists') throw new Error('the response file writer did not honor overwrite confirmation')
+    return result
   }
 
   /** Copy the latest or Nth latest persistent, transcript-visible assistant reply. */
@@ -1971,7 +2242,7 @@ export function createTuiChat(
       }
       try {
         await copySelection(action.selection, signal)
-        return { kind: 'success', text: `Copied ${action.selection.label} to clipboard.` }
+        return { kind: 'success' }
       } catch (error: unknown) {
         return { kind: 'error', text: `Clipboard copy failed: ${errorChain(error)}` }
       }
@@ -1985,18 +2256,367 @@ export function createTuiChat(
     const path = await chooseCopyFilePath(action.selection, signal)
     if (path === undefined) return { kind: 'success' }
     try {
-      let result = await writeSelectionToFile(action.selection, path, false, signal)
-      if (result.kind === 'exists') {
-        const overwrite = await confirmCopyFileOverwrite(result.path, signal)
-        if (overwrite !== true) return { kind: 'success' }
-        result = await writeSelectionToFile(action.selection, result.path, true, signal)
-        if (result.kind === 'exists') {
-          throw new Error('the response file writer did not honor overwrite confirmation')
-        }
-      }
+      const result = await writeSelectionWithConfirmation(action.selection, path, signal)
+      if (result === undefined) return { kind: 'success' }
       return { kind: 'success', text: `Wrote ${action.selection.label} to ${result.path}.` }
     } catch (error: unknown) {
       return { kind: 'error', text: `File write failed: ${errorChain(error)}` }
+    }
+  }
+
+  /** Export the current durable conversation without adding its contents to model context. */
+  const runExport = async (rawInput: string, signal: AbortSignal): Promise<CommandResult> => {
+    const selection: CopyResponseSelection = {
+      label: 'conversation',
+      text: exportConversationText(agent.session, sessionTitle),
+    }
+    const enteredPath = rawInput.trim()
+    const path = enteredPath.length >= 2
+      && ((enteredPath.startsWith('"') && enteredPath.endsWith('"'))
+        || (enteredPath.startsWith("'") && enteredPath.endsWith("'")))
+      ? enteredPath.slice(1, -1)
+      : enteredPath
+    if (path !== '') {
+      if (runtime.writeTextFile === undefined) {
+        return { kind: 'error', text: 'File export is unavailable because this runtime has no text file writer.' }
+      }
+      try {
+        const result = await writeSelectionWithConfirmation(selection, path, signal, 'conversation')
+        return result === undefined
+          ? { kind: 'success' }
+          : { kind: 'success', text: `Exported conversation to ${result.path}.` }
+      } catch (error: unknown) {
+        return { kind: 'error', text: `Export failed: ${errorChain(error)}` }
+      }
+    }
+    if (runtime.writeClipboardText === undefined && runtime.writeTextFile === undefined) {
+      return {
+        kind: 'error',
+        text: 'Conversation export is unavailable because this runtime has no clipboard or text file writer.',
+      }
+    }
+    const filename = defaultConversationExportFilename(agent.session.id)
+    const action = await chooseConversationExport(filename, signal)
+    if (action === undefined) return { kind: 'success' }
+    if (action === 'copy') {
+      try {
+        await copySelection(selection, signal, 'conversation')
+        return { kind: 'success' }
+      } catch (error: unknown) {
+        return { kind: 'error', text: `Conversation export failed: ${errorChain(error)}` }
+      }
+    }
+    try {
+      const result = await writeSelectionWithConfirmation(selection, filename, signal, 'conversation')
+      return result === undefined
+        ? { kind: 'success' }
+        : { kind: 'success', text: `Exported conversation to ${result.path}.` }
+    } catch (error: unknown) {
+      return { kind: 'error', text: `Export failed: ${errorChain(error)}` }
+    }
+  }
+
+  let workspaceOverlay: TuiOverlaySession | undefined
+
+  /** Open one workspace-control dialog while retaining command cancellation ownership. */
+  const chooseWorkspaceOverlay = <Value>(
+    create: (
+      done: (value: Value) => void,
+      cancel: () => void,
+      viewportRows: () => number,
+    ) => Component,
+    signal: AbortSignal,
+    options: TuiOverlayOptions = {
+      width: resolved.modelDialogWidth,
+      maxHeight: resolved.modelDialogMaxHeight,
+      anchor: 'center',
+      margin: 1,
+    },
+  ): Promise<Value | undefined> => {
+    void workspaceOverlay?.close()
+    return new Promise((resolve) => {
+      let settled = false
+      // oxlint-disable-next-line prefer-const -- assigned after the close callback is created so it can capture the session.
+      let session!: TuiOverlaySession
+      const finish = (value: Value | undefined): void => {
+        if (!settled) {
+          settled = true
+          resolve(value)
+          void session.close()
+        }
+      }
+      session = overlayManager.open({
+        create: host => create(
+          (value) => { finish(value) },
+          () => { finish(undefined) },
+          () => host.viewport.rows,
+        ),
+        options,
+        signal,
+      })
+      workspaceOverlay = session
+      void session.closed.then(() => {
+        if (workspaceOverlay === session) workspaceOverlay = undefined
+        finish(undefined)
+      })
+      requestRender()
+    })
+  }
+
+  /** Run one workspace command while preventing a competing turn or shell from racing its snapshot. */
+  const withWorkspaceOperation = async <Value>(
+    operation: NonNullable<typeof workspaceOperation>,
+    signal: AbortSignal,
+    work: () => Promise<Value>,
+  ): Promise<Value> => {
+    if (workspaceOperation !== undefined) throw new Error('another workspace operation is already running')
+    if (agent.status !== 'idle' || foregroundShell !== undefined || freshSwapInFlight) {
+      throw new Error('workspace controls require the active turn and foreground shell to be idle')
+    }
+    signal.throwIfAborted()
+    const restoreSubmitDisabled = editor.disableSubmit
+    workspaceOperation = operation
+    editor.disableSubmit = true
+    updateEditorHint()
+    requestRender()
+    try {
+      return await work()
+    } finally {
+      if (!disposed) {
+        workspaceOperation = undefined
+        editor.disableSubmit = restoreSubmitDisabled
+        updateEditorHint()
+        requestRender()
+      }
+    }
+  }
+
+  /** Return the newest fully closed event before this command's own pending lifecycle pair. */
+  const currentWorkspaceBoundary = (commandId: CommandId): number => {
+    const commandIndex = agent.session.events.findIndex(event =>
+      event.type === 'command/run' && event.data.commandId === commandId)
+    const boundary = stableForkBoundary(commandIndex < 0 ? agent.session.events : agent.session.events.slice(0, commandIndex))
+    if (boundary === undefined) {
+      throw new Error('Checkpoint requires at least one completed session event and cannot run during an active turn.')
+    }
+    return boundary
+  }
+
+  /** Check that a checkpoint's saved event boundary still occurs before a completed turn. */
+  const checkpointCanForkConversation = (checkpoint: WorkspaceCheckpoint): boolean => {
+    const index = agent.session.events.findIndex(event => event.seq === checkpoint.sessionBoundary)
+    if (index < 0) return false
+    const lastTurnBoundary = agent.session.events.slice(0, index + 1)
+      .findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
+    return lastTurnBoundary?.type !== 'turn/start'
+  }
+
+  /** Open a full-screen read-only diff pager without exposing its contents to model context. */
+  const showWorkspaceDiff = (diff: WorkspaceDiff, signal: AbortSignal): Promise<void> =>
+    chooseWorkspaceOverlay<void>(
+      (done, _cancel, viewportRows) => new WorkspaceDiffDialog(
+        diff,
+        viewportRows,
+        palette,
+        () => { done(undefined) },
+      ),
+      signal,
+      {
+        width: '100%',
+        maxHeight: '100%',
+        anchor: 'top-left',
+        margin: 0,
+      },
+    ).then(() => {})
+
+  /** Select a session-owned checkpoint by picker, or return undefined when the user cancels. */
+  const chooseWorkspaceCheckpoint = (
+    checkpoints: readonly WorkspaceCheckpoint[],
+    signal: AbortSignal,
+  ): Promise<WorkspaceCheckpoint | undefined> => chooseWorkspaceOverlay(
+    (done, cancel) => new WorkspaceCheckpointPickerDialog(
+      checkpoints,
+      resolved.maxModelOptions,
+      palette,
+      done,
+      cancel,
+    ),
+    signal,
+  )
+
+  /** Select one safe rewind scope for the checkpoint. */
+  const chooseWorkspaceRewindAction = (
+    checkpoint: WorkspaceCheckpoint,
+    capabilities: WorkspaceRewindCapabilities,
+    signal: AbortSignal,
+  ): Promise<WorkspaceRewindAction | undefined> => chooseWorkspaceOverlay(
+    (done, cancel) => new WorkspaceRewindActionDialog(
+      checkpoint,
+      capabilities,
+      resolved.maxModelOptions,
+      palette,
+      done,
+      cancel,
+    ),
+    signal,
+  )
+
+  /** Ask the final irreversible-action guard; no file changes occur before it resolves true. */
+  const confirmWorkspaceRewind = (
+    checkpoint: WorkspaceCheckpoint,
+    action: WorkspaceRewindAction,
+    signal: AbortSignal,
+  ): Promise<boolean> => chooseWorkspaceOverlay<boolean>(
+    (done, cancel) => new WorkspaceRewindConfirmDialog(
+      checkpoint,
+      action,
+      palette,
+      () => { done(true) },
+      cancel,
+    ),
+    signal,
+  ).then(value => value === true)
+
+  /** Render the current Git worktree diff without changing session or workspace state. */
+  const runDiff = async (signal: AbortSignal): Promise<CommandResult> => {
+    const history = runtime.workspaceHistory
+    if (history === undefined) {
+      return { kind: 'error', text: 'Workspace diff is unavailable because this runtime has no workspace history provider.' }
+    }
+    try {
+      await withWorkspaceOperation('diff', signal, async () => {
+        const diff = await history.diff({ cwd, signal })
+        signal.throwIfAborted()
+        await showWorkspaceDiff(diff, signal)
+      })
+      return { kind: 'success' }
+    } catch (error: unknown) {
+      return { kind: 'error', text: `Workspace diff failed: ${errorChain(error)}` }
+    }
+  }
+
+  /** Capture one explicit checkpoint at the current completed conversation boundary. */
+  const runCheckpoint = async (
+    rawInput: string,
+    commandId: CommandId,
+    signal: AbortSignal,
+  ): Promise<CommandResult> => {
+    const history = runtime.workspaceHistory
+    if (history === undefined) {
+      return { kind: 'error', text: 'Workspace checkpoints are unavailable because this runtime has no workspace history provider.' }
+    }
+    const label = rawInput.trim()
+    try {
+      const checkpoint = await withWorkspaceOperation('checkpoint', signal, async () => {
+        const boundary = currentWorkspaceBoundary(commandId)
+        return await history.createCheckpoint({
+          cwd,
+          sessionId: agent.session.id,
+          sessionBoundary: boundary,
+          ...label === '' ? {} : { label },
+          signal,
+        })
+      })
+      const workspace = checkpoint.workspace.kind === 'git'
+        ? `Git snapshot: ${String(checkpoint.workspace.trackedFiles ?? 0)} tracked and ${String(checkpoint.workspace.untrackedFiles ?? 0)} untracked file(s).`
+        : `Conversation-only checkpoint: ${checkpoint.workspace.reason ?? 'Git workspace unavailable.'}`
+      return { kind: 'success', text: `Created checkpoint ${String(checkpoint.id)}. ${workspace}` }
+    } catch (error: unknown) {
+      return { kind: 'error', text: `Checkpoint failed: ${errorChain(error)}` }
+    }
+  }
+
+  /** Select and confirm a code and/or conversation rewind, preserving a pre-rewind safety point. */
+  const runRewind = async (
+    rawInput: string,
+    commandId: CommandId,
+    signal: AbortSignal,
+  ): Promise<CommandResult> => {
+    const history = runtime.workspaceHistory
+    if (history === undefined) {
+      return { kind: 'error', text: 'Rewind is unavailable because this runtime has no workspace history provider.' }
+    }
+    const reference = rawInput.trim()
+    let restoredBackup: WorkspaceCheckpoint | undefined
+    try {
+      const result = await withWorkspaceOperation('rewind', signal, async (): Promise<CommandResult> => {
+        const checkpoints = await history.listCheckpoints({ sessionId: agent.session.id, signal })
+        if (checkpoints.length === 0) {
+          return { kind: 'error', text: 'No checkpoints exist for this session. Run /checkpoint first.' }
+        }
+        const checkpoint = reference === ''
+          ? await chooseWorkspaceCheckpoint(checkpoints, signal)
+          : checkpoints.find(candidate => String(candidate.id) === reference)
+        if (checkpoint === undefined) {
+          return reference === ''
+            ? { kind: 'success' }
+            : { kind: 'error', text: `No checkpoint with id "${displayText(reference)}" belongs to this session.` }
+        }
+        const capabilities: WorkspaceRewindCapabilities = {
+          workspace: checkpoint.workspace.kind === 'git',
+          conversation: runtime.swapFork !== undefined && checkpointCanForkConversation(checkpoint),
+        }
+        if (!capabilities.workspace && !capabilities.conversation) {
+          return {
+            kind: 'error',
+            text: 'This checkpoint cannot be rewound: it has no Git snapshot and no stable conversation branch boundary.',
+          }
+        }
+        const action = await chooseWorkspaceRewindAction(checkpoint, capabilities, signal)
+        if (action === undefined) return { kind: 'success' }
+        if (!await confirmWorkspaceRewind(checkpoint, action, signal)) return { kind: 'success' }
+        if (agent.status !== 'idle' || foregroundShell !== undefined || freshSwapInFlight) {
+          return { kind: 'error', text: 'Rewind requires the active turn and foreground shell to remain idle.' }
+        }
+        const restoreWorkspace = action === 'workspace' || action === 'both'
+        const forkConversation = action === 'conversation' || action === 'both'
+        if (restoreWorkspace) {
+          const result = await history.restoreCheckpoint({
+            checkpoint,
+            cwd,
+            sessionId: agent.session.id,
+            sessionBoundary: currentWorkspaceBoundary(commandId),
+            signal,
+          })
+          restoredBackup = result.backup
+        }
+        if (!forkConversation) {
+          return {
+            kind: 'success',
+            text: `Workspace restored from checkpoint ${String(checkpoint.id)}. Safety checkpoint ${String(restoredBackup?.id)} was created.`,
+          }
+        }
+        const swapFork = runtime.swapFork
+        if (swapFork === undefined || !checkpointCanForkConversation(checkpoint)) {
+          const suffix = restoredBackup === undefined
+            ? ''
+            : ` Workspace restoration succeeded; return to safety checkpoint ${String(restoredBackup.id)} if needed.`
+          return { kind: 'error', text: `Conversation rewind is no longer available at this checkpoint.${suffix}` }
+        }
+        await ctx.sessions.flush(agent.session)
+        signal.throwIfAborted()
+        // oxlint-disable-next-line typescript/no-unnecessary-condition -- asynchronous flush/cancellation can change session state.
+        if (agent.status !== 'idle' || foregroundShell !== undefined || !checkpointCanForkConversation(checkpoint)) {
+          const suffix = restoredBackup === undefined
+            ? ''
+            : ` Workspace restoration succeeded; return to safety checkpoint ${String(restoredBackup.id)} if needed.`
+          return { kind: 'error', text: `Conversation rewind could not start because session state changed.${suffix}` }
+        }
+        await runtime.terminal.drainInput(100, 20)
+        signal.throwIfAborted()
+        const selection: ModelSelection | undefined = target.current === undefined ? undefined : { ...target.current }
+        const workspaceNotice = restoredBackup === undefined
+          ? `Opened a child session at checkpoint ${String(checkpoint.id)}. The original session remains resumable.`
+          : `Workspace restored from checkpoint ${String(checkpoint.id)}; safety checkpoint ${String(restoredBackup.id)} was created. Opened a child session; the original remains resumable.`
+        await swapFork(checkpoint.sessionBoundary, selection, workspaceNotice)
+        return { kind: 'success' }
+      })
+      return result
+    } catch (error: unknown) {
+      const suffix = restoredBackup === undefined
+        ? ''
+        : ` Workspace restoration succeeded; return to safety checkpoint ${String(restoredBackup.id)} if needed.`
+      return { kind: 'error', text: `Rewind failed: ${errorChain(error)}${suffix}` }
     }
   }
 
@@ -2004,9 +2624,9 @@ export function createTuiChat(
   const applyColorScheme = (scheme: TerminalColorScheme): void => {
     if (scheme === currentScheme) return
     currentScheme = scheme
-    Object.assign(palette, createPalette(resolved.theme.color, scheme))
+    Object.assign(palette, createPalette(resolved.theme.color, scheme, resolved.theme.palette, resolved.theme.truecolor))
     Object.assign(mdTheme, markdownTheme(palette))
-    // `setStatus` below re-derives `editor.borderColor` from the new palette.
+    // `requestRender` below re-derives the editor rails from the new palette.
     rebuildTranscript(false)
     setStatus(agent.status)
     requestRender()
@@ -2021,7 +2641,7 @@ export function createTuiChat(
 
   // Ask the terminal for its color scheme via device-status report; the reply,
   // if any, arrives through the listener above. Most terminals do not respond,
-  // so we keep the dark-optimised palette. Swallow a query-write failure for the
+  // so we keep the dark Claude palette. Swallow a query-write failure for the
   // same reason.
   ui.queryTerminalColorScheme({ timeoutMs: 2000 }).catch(() => {})
 
@@ -2031,8 +2651,8 @@ export function createTuiChat(
     // Context cards carry injected instructions rather than tool traffic, so
     // they never hide: the hidden phase reads as their collapsed preview.
     for (const card of contextCards) card.setExpanded(toolsVisibility === 'expanded')
-    // Hidden mode folds each turn's steps into one assistant message; other
-    // modes restore the per-step Assistant headers.
+    // Hidden mode folds each turn's steps into one assistant block; other
+    // modes restore per-step spacing.
     for (const turn of assistantSteps.keys()) applyTurnFolding(turn)
     appendNotice(toolsVisibility === 'hidden' ? 'Tool cards hidden.' : `Tool and context cards ${toolsVisibility}.`)
   }
@@ -2152,11 +2772,61 @@ export function createTuiChat(
     requestRender()
   }
 
+  let loginOverlay: TuiOverlaySession | undefined
+  /** Open a write-only DeepSeek token prompt; the secret never enters prompt or command history. */
+  const showLogin = async (): Promise<CommandResult> => {
+    const credentials = ctx.get('credentials')
+    if (credentials === undefined) {
+      return { kind: 'error', text: 'Credential storage is unavailable in this runtime.' }
+    }
+    const ref = credentialRef('DEEPSEEK_API_KEY')
+    const info = await credentials.describe(ref)
+    if (!info.writable) {
+      return {
+        kind: 'error',
+        text: 'DEEPSEEK_API_KEY comes from the launching environment. Close DSH, remove that temporary environment variable, restart DSH, then run /login to save it permanently.',
+      }
+    }
+    void loginOverlay?.close()
+    const readClipboardText = runtime.readClipboardText
+    const session = overlayManager.open({
+      create: host => new CredentialLoginDialog(
+        info.configured,
+        info.source,
+        palette,
+        async (value) => {
+          await credentials.set(ref, value)
+          host.close()
+          appendNotice('DeepSeek API token saved permanently for future sessions.')
+        },
+        () => { host.close() },
+        () => { host.invalidate() },
+        readClipboardText === undefined
+          ? undefined
+          : async () => await readClipboardText({
+            signal: host.signal,
+            maxBytes: 16_384,
+            cwd,
+          }),
+      ),
+      options: { width: 72, anchor: 'center', margin: 1 },
+    })
+    loginOverlay = session
+    void session.closed.then(() => {
+      if (loginOverlay === session) loginOverlay = undefined
+    })
+    requestRender()
+    return { kind: 'success' }
+  }
+
   const showHelp = (): void => {
     const commandLines = ctx.commands.list(agent).map((command) => {
       const input = command.input === undefined ? '' : ` ${command.input.hint}`
       return `/${command.name}${input} — ${command.description}`
     })
+    const skillLines = skillCommands.map(command =>
+      `/${command.name} [instructions] — ${command.description}`,
+    )
     chat.addChild(new Spacer(1))
     chat.addChild(new Text(palette.bold(palette.accent('Keyboard shortcuts')), 0, 0))
     chat.addChild(new Text([
@@ -2165,6 +2835,7 @@ export function createTuiChat(
       'Esc cancel turn • Ctrl+G / Ctrl+X Ctrl+E external editor • Ctrl+T toggle task checklist',
       'Ctrl+X Ctrl+K twice within 3s stop all running background subagents',
       'Ctrl+S stash/restore prompt',
+      'Mouse wheel scroll transcript - Ctrl+End jump to the latest message',
       'Ctrl+O cycle cards (collapse/expand/hide) • Ctrl+R search history • Ctrl+L redraw; press twice to /clear',
       'Ctrl+B background foreground shell • Ctrl+C cancel/clear; press twice on empty input to exit',
       'Ctrl+D delete forward while editing; press twice on empty input to exit • ? on empty input opens shortcut help',
@@ -2172,8 +2843,23 @@ export function createTuiChat(
       '! <command> • stream a shell command directly, then send its result to the model',
       ...commandLines,
       '/skill:<name> [instructions] — load a skill into the conversation',
+      ...skillLines,
     ].map(line => palette.dim(line)).join('\n'), 0, 0))
     requestRender()
+  }
+
+  const showSkills = (): CommandResult => {
+    chat.addChild(new Spacer(1))
+    chat.addChild(new Text(palette.bold(palette.accent('Available skills')), 0, 0))
+    chat.addChild(new Text(skillCommands.length === 0
+      ? palette.dim('No user-invocable skills discovered yet. Skill roots may still be loading.')
+      : skillCommands.map((command) => {
+        const hint = command.argumentHint ?? ''
+        const description = command.description ?? 'Load this skill into the conversation'
+        return `${palette.accent(`/${command.name}`)} ${palette.dim(hint)}\n  ${palette.dim(description)}`
+      }).join('\n'), 0, 0))
+    requestRender()
+    return { kind: 'success' }
   }
 
   /** Render the current agent-owned background-job lifecycle as transcript rows. */
@@ -2195,10 +2881,212 @@ export function createTuiChat(
     requestRender()
   }
 
+  /** Render the redacted MCP connection directory without exposing config secrets. */
+  const showMcp = (rawInput: string): CommandResult => {
+    const directory = ctx.get('mcpConnections')
+    if (directory === undefined) {
+      return { kind: 'error', text: 'MCP status is unavailable because this runtime has no MCP connection directory.' }
+    }
+    const argument = rawInput.trim()
+    if (argument === 'reload') {
+      runReload()
+      return { kind: 'success' }
+    }
+    const snapshots = directory.snapshot()
+    const selected = argument === ''
+      ? undefined
+      : snapshots.find(snapshot => snapshot.serverName === argument)
+    if (argument !== '' && selected === undefined) {
+      return { kind: 'error', text: `Unknown MCP server: ${displayInlineText(argument)}. Run /mcp to list configured servers.` }
+    }
+    chat.addChild(new Spacer(1))
+    if (selected !== undefined) {
+      renderMcpDetail(selected)
+    } else {
+      chat.addChild(new Text(palette.bold(palette.accent('MCP servers')), 0, 0))
+      chat.addChild(new Text(snapshots.length === 0
+        ? palette.dim('No MCP servers are configured. Add an mcp-client row to cordis.yml, then run /mcp reload.')
+        : snapshots.map(renderMcpSummary).join('\n'), 0, 0))
+    }
+    requestRender()
+    return { kind: 'success' }
+  }
+
+  const renderMcpSummary = (snapshot: McpConnectionSnapshot): string => {
+    const tools = renderMcpTools(snapshot.toolNames)
+    const reconnect = snapshot.reconnectAttempt === undefined ? '' : ` Â· attempt ${String(snapshot.reconnectAttempt)}`
+    return displayText([
+      displayInlineText(snapshot.serverName),
+      snapshot.state,
+      snapshot.transport,
+      `${String(snapshot.toolNames.length)} tool${snapshot.toolNames.length === 1 ? '' : 's'}${reconnect}`,
+      tools,
+    ].join(' Â· '))
+  }
+
+  const renderMcpDetail = (snapshot: McpConnectionSnapshot): void => {
+    const reconnect = snapshot.reconnectAttempt === undefined
+      ? snapshot.state
+      : `${snapshot.state} (attempt ${String(snapshot.reconnectAttempt)})`
+    chat.addChild(new Text(
+      palette.bold(palette.accent(`MCP server ${displayInlineText(snapshot.serverName)}`)),
+      0,
+      0,
+    ))
+    chat.addChild(new Text(displayText([
+      `State: ${reconnect}`,
+      `Transport: ${snapshot.transport}`,
+      `Tools (${String(snapshot.toolNames.length)}): ${renderMcpTools(snapshot.toolNames)}`,
+    ].join('\n')), 0, 0))
+  }
+
+  const renderMcpTools = (toolNames: readonly string[]): string => {
+    if (toolNames.length === 0) return '(none)'
+    const visible = toolNames.slice(0, MAX_MCP_DISPLAY_TOOLS).map(displayInlineText)
+    const hidden = toolNames.length - visible.length
+    return hidden === 0 ? visible.join(', ') : `${visible.join(', ')}, +${String(hidden)} more`
+  }
+
+  /** Split one `/agents` invocation into its verb and unmodified trailing argument. */
+  const splitAgentsInput = (rawInput: string): { readonly verb: string; readonly rest: string } => {
+    const input = rawInput.trim()
+    const separator = input.search(/\s/u)
+    if (separator === -1) return { verb: input, rest: '' }
+    return { verb: input.slice(0, separator), rest: input.slice(separator).trim() }
+  }
+
+  /** Narrow one durable listing entry to a controllable child rather than a diagnostic row. */
+  const isSubagentChild = (entry: SubagentListEntry): entry is SubagentChildEntry => entry.kind === 'child'
+
+  /** Render the durable subagent tree without loading child transcripts or prompts. */
+  const renderAgentTreeEntry = (entry: SubagentDescendantListEntry): string => {
+    const indent = '  '.repeat(Math.max(0, entry.depth - 1))
+    const id = displayInlineText(entry.id)
+    if (entry.kind === 'diagnostic') return `${indent}${id} Â· unavailable (${entry.reason})`
+    const residency = entry.activity === 'running' ? 'live' : 'stored'
+    const label = displayInlineText(entry.label ?? '(unlabeled)')
+    return `${indent}${id} Â· ${entry.mode} Â· ${residency} Â· ${label}${entry.hasChildren ? ' Â· children' : ''}`
+  }
+
+  /** Render the terminal-only durable subagent directory and its direct-control hint. */
+  const renderAgentDirectory = (entries: readonly SubagentDescendantListEntry[]): void => {
+    chat.addChild(new Spacer(1))
+    chat.addChild(new Text(palette.bold(palette.accent('Subagents')), 0, 0))
+    chat.addChild(new Text(entries.length === 0
+      ? palette.dim('No durable subagents. Start one with /agents start <task>.')
+      : entries.map(renderAgentTreeEntry).join('\n'), 0, 0))
+    if (entries.length > 0) {
+      chat.addChild(new Text(
+        palette.dim('Direct continuable children: /agents send <id> <message> Â· /agents stop <id>'),
+        0,
+        0,
+      ))
+    }
+  }
+
+  /** Find one direct child by durable id without giving a human command descendant authority. */
+  const findDirectSubagent = async (
+    id: string,
+    signal: AbortSignal,
+  ): Promise<SubagentChildEntry | undefined> => {
+    const subagents = ctx.get('subagents')
+    if (subagents === undefined) return undefined
+    return (await subagents.listChildren(agent.session.id, signal))
+      .filter(isSubagentChild)
+      .find(entry => entry.id === SessionId(id))
+  }
+
+  /** Manage durable continuable subagents through a direct-human terminal control plane. */
+  const showAgents = async (rawInput: string, signal: AbortSignal): Promise<CommandResult> => {
+    const subagents = ctx.get('subagents')
+    if (subagents === undefined) {
+      return { kind: 'error', text: 'Subagents are unavailable because this runtime has no subagent service.' }
+    }
+    const { verb, rest } = splitAgentsInput(rawInput)
+    if (verb === '') {
+      const entries = await subagents.listDescendants(agent.session.id, signal)
+      renderAgentDirectory(entries)
+      requestRender()
+      return { kind: 'success' }
+    }
+    if (verb === 'start') {
+      if (rest === '') return { kind: 'error', text: 'Usage: /agents start <task>' }
+      const provider = subagents.getProvider('spawn')
+      if (provider?.prepareContinuable === undefined) {
+        return {
+          kind: 'error',
+          text: 'Continuable subagents are unavailable because this runtime has no continuable "spawn" provider.',
+        }
+      }
+      const selection = target.current
+      const started = await subagents.startContinuable({
+        provider: 'spawn',
+        label: rest,
+        request: {
+          parent: agent,
+          prompt: [{ type: 'text', text: rest }],
+          ...selection === undefined
+            ? {}
+            : { agentOptions: { provider: selection.provider, model: selection.model } },
+        },
+        signal,
+      })
+      const childId = displayInlineText(started.childId)
+      return {
+        kind: 'success',
+        text: `Started subagent ${childId}. Use /agents send ${childId} <message> to continue it.`,
+      }
+    }
+    if (verb === 'send') {
+      const { verb: childId, rest: message } = splitAgentsInput(rest)
+      if (childId === '' || message === '') return { kind: 'error', text: 'Usage: /agents send <id> <message>' }
+      const child = await findDirectSubagent(childId, signal)
+      if (child === undefined) {
+        return { kind: 'error', text: `No direct subagent named ${displayInlineText(childId)}.` }
+      }
+      if (child.mode !== 'continuable') {
+        return { kind: 'error', text: `Subagent ${displayInlineText(child.id)} is a one-shot task; inspect it with /tasks.` }
+      }
+      await subagents.followup(
+        agent,
+        child.id,
+        [{ type: 'text', text: message }],
+        { source: { kind: 'user' }, signal },
+      )
+      return { kind: 'success', text: `Sent a follow-up to subagent ${displayInlineText(child.id)}.` }
+    }
+    if (verb === 'stop') {
+      const { verb: childId, rest: extra } = splitAgentsInput(rest)
+      if (childId === '' || extra !== '') return { kind: 'error', text: 'Usage: /agents stop <id>' }
+      const child = await findDirectSubagent(childId, signal)
+      if (child === undefined) {
+        return { kind: 'error', text: `No direct subagent named ${displayInlineText(childId)}.` }
+      }
+      if (child.mode !== 'continuable') {
+        return { kind: 'error', text: `Subagent ${displayInlineText(child.id)} is a one-shot task; inspect it with /tasks.` }
+      }
+      if (child.activity !== 'running') {
+        return {
+          kind: 'error',
+          text: `Subagent ${displayInlineText(child.id)} is not live. Use /agents send ${displayInlineText(child.id)} <message> to resume it.`,
+        }
+      }
+      subagents.interrupt(child.id, { kind: 'user', parentSessionId: agent.session.id })
+      return {
+        kind: 'success',
+        text: `Stop requested for subagent ${displayInlineText(child.id)}; it may keep running until it observes cancellation.`,
+      }
+    }
+    return {
+      kind: 'error',
+      text: 'Usage: /agents [start <task>|send <id> <message>|stop <id>]',
+    }
+  }
+
   const showPalette = (): void => {
     chat.addChild(new Spacer(1))
     chat.addChild(new Text(
-      renderPalette(palette, currentScheme, resolved.theme.color).join('\n'), 0, 0,
+      renderPalette(palette, currentScheme, resolved.theme.color, resolved.theme.palette, resolved.theme.truecolor).join('\n'), 0, 0,
     ))
     requestRender()
   }
@@ -2299,8 +3187,6 @@ export function createTuiChat(
   // retains the last complete invocation-neutral catalog for synchronous
   // editor completion, filters it for user invocation, and refreshes it after
   // registry invalidation.
-  let skillCommands: SlashCommand[] = []
-  let skillCommandScan = 0
   const refreshCommandAutocomplete = (): void => {
     const base = new CombinedAutocompleteProvider(
       [
@@ -2335,11 +3221,30 @@ export function createTuiChat(
   const disposeCommandChanges = ctx.on('commands/change', refreshCommandAutocomplete)
   refreshCommandAutocomplete()
 
-  const refreshSkillCommands = (service: SkillRegistry): void => {
+  const refreshSkillCommands = (service: SkillRegistry, resetRetry = true): void => {
+    if (skillCommandRetry !== undefined) {
+      clearTimeout(skillCommandRetry)
+      skillCommandRetry = undefined
+    }
+    if (resetRetry) skillCommandRetryCount = 0
     const scan = ++skillCommandScan
-    service.snapshot({ cwd, signal: skillAbort.signal }).then(
+    service.snapshot({ cwd, signal: skillAbort.signal, scope: agent }).then(
       (snapshot) => {
-        if (disposed || scan !== skillCommandScan || !snapshot.complete) return
+        if (disposed || scan !== skillCommandScan) return
+        if (!snapshot.complete) {
+          // Providers may still be warming their workspace catalog. An
+          // incomplete observation is deliberately not cached and does not
+          // necessarily emit another skills/change event, so retry it here.
+          if (skillCommandRetryCount >= 8) return
+          const delay = Math.min(2_000, 100 * 2 ** skillCommandRetryCount)
+          skillCommandRetryCount += 1
+          skillCommandRetry = setTimeout(() => {
+            skillCommandRetry = undefined
+            if (!disposed) refreshSkillCommands(service, false)
+          }, delay)
+          return
+        }
+        skillCommandRetryCount = 0
         const invocable = snapshot.skills.filter(skill => skill.invocation.userInvocable)
         // The argument-hint slot shows in the menu but is never inserted on
         // selection, so it carries the skill's scope instead of an
@@ -2376,6 +3281,11 @@ export function createTuiChat(
       handler: () => { showHelp(); return { kind: 'success' } },
     })
     commandCtx.commands.register({
+      name: 'skills',
+      description: 'List available user-invocable skills',
+      handler: () => showSkills(),
+    })
+    commandCtx.commands.register({
       name: 'model',
       description: 'Show or switch this session\'s model',
       input: { hint: '[[provider/]model]' },
@@ -2400,6 +3310,20 @@ export function createTuiChat(
       recordInput: false,
       handler: ({ rawInput }) => runClear(rawInput),
     })
+    commandCtx.commands.register({
+      name: 'workdir',
+      description: 'Show or switch workspace in a fresh session',
+      input: { hint: '[path]' },
+      recordInput: false,
+      handler: async ({ rawInput }) => await runWorkdir(rawInput),
+    })
+    commandCtx.commands.register({
+      name: 'cd',
+      description: 'Alias for /workdir',
+      input: { hint: '[path]' },
+      recordInput: false,
+      handler: async ({ rawInput }) => await runWorkdir(rawInput),
+    })
     for (const alias of ['new', 'reset'] as const) {
       commandCtx.commands.register({
         name: alias,
@@ -2422,10 +3346,39 @@ export function createTuiChat(
       handler: () => { showSettingsSelector(); return { kind: 'success' } },
     })
     commandCtx.commands.register({
+      name: 'login',
+      description: 'Securely save or replace the DeepSeek API token',
+      recordInput: false,
+      handler: async () => await showLogin(),
+    })
+    commandCtx.commands.register({
       name: 'copy',
       description: 'Copy the latest or Nth latest assistant response',
       input: { hint: '[N]' },
       handler: ({ rawInput, signal }) => runCopy(rawInput, signal),
+    })
+    commandCtx.commands.register({
+      name: 'export',
+      description: 'Export the current conversation as plain text',
+      input: { hint: '[filename]' },
+      handler: ({ rawInput, signal }) => runExport(rawInput, signal),
+    })
+    commandCtx.commands.register({
+      name: 'diff',
+      description: 'View uncommitted workspace changes',
+      handler: ({ signal }) => runDiff(signal),
+    })
+    commandCtx.commands.register({
+      name: 'checkpoint',
+      description: 'Create a reversible workspace and conversation checkpoint',
+      input: { hint: '[label]' },
+      handler: ({ rawInput, commandId, signal }) => runCheckpoint(rawInput, commandId, signal),
+    })
+    commandCtx.commands.register({
+      name: 'rewind',
+      description: 'Restore a checkpointed workspace and/or branch the conversation',
+      input: { hint: '[checkpoint-id]' },
+      handler: ({ rawInput, commandId, signal }) => runRewind(rawInput, commandId, signal),
     })
     commandCtx.commands.register({
       name: 'context',
@@ -2470,6 +3423,18 @@ export function createTuiChat(
       name: 'tasks',
       description: 'Show background shell and delegated-task lifecycle',
       handler: () => { showTasks(); return { kind: 'success' } },
+    })
+    commandCtx.commands.register({
+      name: 'mcp',
+      description: 'Show MCP server connection status and public tools',
+      input: { hint: '[server|reload]' },
+      handler: ({ rawInput }) => showMcp(rawInput),
+    })
+    commandCtx.commands.register({
+      name: 'agents',
+      description: 'List and manage durable continuable subagents',
+      input: { hint: '[start <task>|send <id> <message>|stop <id>]' },
+      handler: async ({ rawInput, signal }) => await showAgents(rawInput, signal),
     })
     const exitHandler = (): CommandResult => {
       requestExit()
@@ -3061,7 +4026,198 @@ export function createTuiChat(
     })
   }
 
+  type SelectionPoint = { readonly row: number; readonly column: number }
+  let selectionAnchor: SelectionPoint | undefined
+  let selectionFocus: SelectionPoint | undefined
+  let selectionDragging = false
+  let selectionRenderLines: string[] = []
+  let mouseSelectionActive = false
+  let transcriptScrollOffset = 0
+  let transcriptScrollMaximum = 0
+  let previousTranscriptLineCount = 0
+  const originalUiRender = ui.render.bind(ui)
+  const orderedSelection = (): readonly [SelectionPoint, SelectionPoint] | undefined => {
+    if (selectionAnchor === undefined || selectionFocus === undefined) return undefined
+    return selectionAnchor.row < selectionFocus.row
+      || (selectionAnchor.row === selectionFocus.row && selectionAnchor.column <= selectionFocus.column)
+      ? [selectionAnchor, selectionFocus]
+      : [selectionFocus, selectionAnchor]
+  }
+  const selectionRangeForRow = (
+    row: number,
+    lineWidth: number,
+  ): { readonly start: number; readonly length: number } | undefined => {
+    const ordered = orderedSelection()
+    if (ordered === undefined) return undefined
+    const [start, end] = ordered
+    if (row < start.row || row > end.row) return undefined
+    const from = row === start.row ? Math.min(start.column, lineWidth) : 0
+    const through = row === end.row ? Math.min(end.column + 1, lineWidth) : lineWidth
+    return through <= from ? undefined : { start: from, length: through - from }
+  }
+  const jumpToBottomLine = (width: number): string => {
+    const label = ' Jump to bottom (Ctrl+End) ↓ '
+    const left = Math.max(0, Math.floor((width - visibleWidth(label)) / 2))
+    return `${' '.repeat(left)}\x1b[1;97;48;2;55;55;55m${label}\x1b[22;39;49m`
+  }
+  const viewportTranscript = (rendered: string[], width: number): string[] => {
+    const transcriptLines = rendered.slice(0, transcriptLineCount)
+    const fixedLines = rendered.slice(transcriptLineCount)
+    const growth = transcriptLines.length - previousTranscriptLineCount
+    if (transcriptScrollOffset > 0 && growth > 0) transcriptScrollOffset += growth
+    previousTranscriptLineCount = transcriptLines.length
+
+    const availableRows = Math.max(0, runtime.terminal.rows - fixedLines.length)
+    const showJump = transcriptScrollOffset > 0
+    const transcriptRows = Math.max(0, availableRows - (showJump ? 1 : 0))
+    transcriptScrollMaximum = Math.max(0, transcriptLines.length - transcriptRows)
+    transcriptScrollOffset = Math.min(transcriptScrollOffset, transcriptScrollMaximum)
+    const end = Math.max(0, transcriptLines.length - transcriptScrollOffset)
+    const start = Math.max(0, end - transcriptRows)
+    const visibleTranscript = transcriptLines.slice(start, end)
+    return [
+      ...visibleTranscript,
+      ...(transcriptScrollOffset > 0 ? [jumpToBottomLine(width)] : []),
+      ...fixedLines,
+    ]
+  }
+  // The renderer keeps an unstyled viewport snapshot for selection/copy, then
+  // paints the active range itself. This produces a stable DSH-blue selection
+  // instead of inheriting Windows Terminal's profile-dependent white band.
+  ui.render = (width: number): string[] => {
+    // A plugin card, paste badge, selection reset, or resized prompt must never
+    // be able to take down the whole terminal. pi-tui deliberately fails loud
+    // on over-wide custom output, so enforce its width contract at our single
+    // composition boundary after every application-owned transform.
+    const rendered = viewportTranscript(originalUiRender(width), width).map(line =>
+      visibleWidth(line) <= width ? line : truncateToWidth(line, width, ''))
+    selectionRenderLines = rendered.map(line => copyableScreenText(line.replaceAll(CURSOR_MARKER, '')))
+    if (orderedSelection() === undefined) return rendered
+    return rendered.map((line, row) => {
+      // The marker must reach pi-tui unchanged so it can locate the hardware
+      // cursor. Never rebuild its editor row from a plain-text copy snapshot.
+      if (line.includes(CURSOR_MARKER)) return line
+      const lineWidth = visibleWidth(line)
+      const range = selectionRangeForRow(row, lineWidth)
+      if (range === undefined) return line
+      const prefix = sliceByColumn(line, 0, range.start)
+      const selected = sliceByColumn(line, range.start, range.length)
+      const suffix = sliceByColumn(line, range.start + range.length, Math.max(0, lineWidth - range.start - range.length))
+      // Strip nested SGR/image controls inside the highlighted span. Otherwise
+      // their resets punch holes through the blue selection and can make the
+      // selected screen disagree with the exact clipboard payload.
+      const selectedCells = copyableScreenText(selected)
+      const painted = `${prefix}\x1b[1;97;48;2;38;79;120m${selectedCells}\x1b[22;39;49m${suffix}`
+      return visibleWidth(painted) <= width ? painted : truncateToWidth(painted, width, '')
+    })
+  }
+  const selectionText = (): string => {
+    const ordered = orderedSelection()
+    if (ordered === undefined) return ''
+    const [start, end] = ordered
+    const rows = selectionRenderLines.slice(start.row, end.row + 1).map((line, offset) => {
+      const row = start.row + offset
+      const lineWidth = visibleWidth(line)
+      const from = row === start.row ? Math.min(start.column, lineWidth) : 0
+      const through = row === end.row ? Math.min(end.column + 1, lineWidth) : lineWidth
+      return sliceByColumn(line, from, Math.max(0, through - from)).trimEnd()
+    })
+    // A mouse release one row below a visually single-line selection must not
+    // paste a phantom newline and expand the editor. Interior image rows remain
+    // real blank lines; only empty rows beyond the last textual cell are shed.
+    while (rows.at(-1) === '') rows.pop()
+    return rows.join('\n')
+  }
+  const mousePoint = (column: number, screenRow: number): SelectionPoint => {
+    return {
+      row: Math.min(Math.max(0, screenRow - 1), Math.max(0, selectionRenderLines.length - 1)),
+      column: Math.max(0, column - 1),
+    }
+  }
+  const copyMouseSelection = (): void => {
+    const text = selectionText()
+    if (text === '') return
+    // Claude Code's fullscreen selection writes OSC 52 directly to the
+    // attached terminal. Doing the same avoids spawning PowerShell for every
+    // drag and works through compatible SSH/tmux clipboard forwarding.
+    runtime.terminal.write(`\x1b]52;c;${Buffer.from(text, 'utf8').toString('base64')}\x07`)
+    showCopyToast(text)
+  }
+  const handleMouseSelection = (data: string): boolean => {
+    const match = /^\x1b\[<(\d+);(\d+);(\d+)([Mm])$/u.exec(data)
+    if (match === null) return false
+    const button = Number(match[1])
+    const column = Number(match[2])
+    const row = Number(match[3])
+    const final = match[4]
+    const baseButton = button & 3
+    const motion = (button & 32) !== 0
+    const wheel = (button & 64) !== 0
+    if (wheel) {
+      const direction = baseButton === 0 ? 1 : -1
+      transcriptScrollOffset = Math.min(
+        transcriptScrollMaximum,
+        Math.max(0, transcriptScrollOffset + direction * 3),
+      )
+      selectionAnchor = undefined
+      selectionFocus = undefined
+      selectionDragging = false
+      ui.requestRender(true)
+      return true
+    }
+    if (final === 'M' && baseButton === 0 && !motion) {
+      selectionAnchor = mousePoint(column, row)
+      selectionFocus = selectionAnchor
+      selectionDragging = true
+      ui.requestRender(true)
+      return true
+    }
+    if (final === 'M' && baseButton === 0 && motion && selectionDragging) {
+      selectionFocus = mousePoint(column, row)
+      ui.requestRender()
+      return true
+    }
+    if (final === 'm' && baseButton === 0 && selectionDragging) {
+      selectionFocus = mousePoint(column, row)
+      selectionDragging = false
+      ui.requestRender(true)
+      copyMouseSelection()
+      return true
+    }
+    return true
+  }
+
+  /** Best-effort feedback when the terminal forwards its native copy chord. */
+  const announceNativeClipboardCopy = (): void => {
+    const readClipboardText = runtime.readClipboardText
+    if (readClipboardText === undefined) return
+    const controller = new AbortController()
+    transferControllers.add(controller)
+    const timeout = setTimeout(() => { controller.abort(new Error('native clipboard read timed out')) }, 2_000)
+    // Let Windows Terminal finish its copy action before reading the clipboard.
+    setTimeout(() => {
+      void readClipboardText({ signal: controller.signal, maxBytes: 2_000_000, cwd }).then((text) => {
+        if (!disposed && !controller.signal.aborted && text !== undefined && text !== '') showCopyToast(text)
+      }, () => {}).finally(() => {
+        clearTimeout(timeout)
+        transferControllers.delete(controller)
+      })
+    }, 80)
+  }
+
   const removeInputListener = ui.addInputListener((data) => {
+    if (handleMouseSelection(data)) return { consume: true }
+    if (selectionAnchor !== undefined) {
+      selectionAnchor = undefined
+      selectionFocus = undefined
+      selectionDragging = false
+      ui.requestRender(true)
+    }
+    if (matchesKey(data, Key.ctrl('end'))) {
+      transcriptScrollOffset = 0
+      ui.requestRender(true)
+      return { consume: true }
+    }
     const idleExitKey: IdleExitKey | undefined = matchesKey(data, Key.ctrl('c'))
       ? 'ctrl-c'
       : matchesKey(data, Key.ctrl('d')) ? 'ctrl-d' : undefined
@@ -3076,6 +4232,10 @@ export function createTuiChat(
     if (overlayManager.hasActiveOverlay()) return undefined
     if (freshSwapInFlight) return { consume: true }
     if (transferOperation !== undefined) return { consume: true }
+    if (matchesKey(data, Key.ctrlShift('c'))) {
+      announceNativeClipboardCopy()
+      return undefined
+    }
     if (matchesKey(data, Key.ctrl('v')) || matchesKey(data, Key.alt('v'))) {
       pasteClipboardImage()
       return { consume: true }
@@ -3118,10 +4278,11 @@ export function createTuiChat(
         const result = modeController.cycle()
         if (result.view === undefined) {
           appendNotice('Mode switching is unavailable because this runtime has no permission or plan service.', 'warning')
-        } else if (!result.changed) {
-          appendNotice(`Mode unchanged: ${result.view.label}.`, 'warning')
         } else {
-          appendNotice(`Mode: ${result.view.label}${result.view.pending ? ' (applies from the next step)' : ''}.`)
+          // Mode is ambient UI state, not conversation content. The prompt
+          // rail, glyph, and footer provide feedback without transcript spam.
+          updatePromptValues()
+          requestRender()
         }
       } catch (error: unknown) {
         appendNotice(`Mode switch failed: ${errorChain(error)}`, 'error')
@@ -3295,7 +4456,12 @@ export function createTuiChat(
   })
 
   const detachListeners = (): void => {
+    if (mouseSelectionActive) {
+      runtime.terminal.write('\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l')
+      mouseSelectionActive = false
+    }
     skillAbort.abort()
+    if (skillCommandRetry !== undefined) clearTimeout(skillCommandRetry)
     fileSearch.dispose()
     userShellHistory.dispose()
     promptHistory.dispose()
@@ -3306,6 +4472,7 @@ export function createTuiChat(
     disposePromptChanges()
     for (const value of promptValues) value.dispose()
     stopBannerReveal()
+    if (statusToastTimer !== undefined) clearTimeout(statusToastTimer)
     disposeSessionEvents()
     disposeDequeued()
     disposeDiscarded()
@@ -3358,6 +4525,13 @@ export function createTuiChat(
   setStatus(agent.status)
   try {
     ui.start()
+    if (runtime.writeClipboardText !== undefined) {
+      // SGR button-event tracking gives DSH its own deterministic selection
+      // layer. Shift+drag remains the terminal-native escape hatch in Windows
+      // Terminal, matching other full-screen coding TUIs.
+      runtime.terminal.write('\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1006h')
+      mouseSelectionActive = true
+    }
   } catch (error: unknown) {
     disposed = true
     detachListeners()
@@ -3378,6 +4552,7 @@ export function createTuiChat(
   tuiServiceFiber = ctx.inject([], (serviceCtx) => {
     new TuiExtensionServiceImpl(serviceCtx, agent, overlayManager)
   })
+  if (runtime.initialNotice !== undefined) appendNotice(runtime.initialNotice)
   startBannerReveal()
 
   // A launcher-seeded first turn (`dsh migrate`/`dsh upgrade`):
@@ -3517,6 +4692,7 @@ export function apply(ctx: Context, config: Config): void {
   // boundary from COLORTERM; an explicit theme value still wins.
   const truecolor = config.theme?.truecolor ?? ['truecolor', '24bit'].includes(process.env.COLORTERM ?? '')
   let currentMount: TuiMountHandle | undefined
+  const workspaceHistory = new LocalWorkspaceHistory()
   const entrySettings = resolveTuiUserSettings(config)
   let settingsSource = (): TuiUserSettings => entrySettings
   installSettingsSection(ctx, TUI_SETTINGS_NAMESPACE, TuiUserSettingsSchema, entrySettings, {
@@ -3528,7 +4704,7 @@ export function apply(ctx: Context, config: Config): void {
   // resume, remount) the channel for the settled agent. A swap tears down the
   // previous channel before the replacement mounts; a newer ready supersedes
   // a stale in-flight mount.
-  ctx.on('tui-agent/ready', ({ sessionId, selection }) => {
+  ctx.on('tui-agent/ready', ({ sessionId, selection, initialNotice }) => {
     const generation = ++mountGeneration
     void (async () => {
       await currentMount?.dispose()
@@ -3542,16 +4718,18 @@ export function apply(ctx: Context, config: Config): void {
         exit: (code) => { disposeRootAndExit(ctx, code) },
         editText: editTextInExternalEditor,
         readClipboardImage: request => readImageFromClipboard(request, {
-          ...config.clipboardImageCommand === undefined
+          ...config.clipboardImageCommand === undefined || config.clipboardImageCommand.length === 0
             ? {}
             : { command: config.clipboardImageCommand },
         }),
+        readClipboardText: readTextFromClipboard,
         writeClipboardText: request => writeTextToClipboard(request, {
-          ...config.clipboardTextCommand === undefined
+          ...config.clipboardTextCommand === undefined || config.clipboardTextCommand.length === 0
             ? {}
             : { command: config.clipboardTextCommand },
         }),
         writeTextFile: writeResponseTextFile,
+        workspaceHistory,
         readSettings: () => settingsSource(),
         updateSettings: async (patch) => {
           const settings = ctx.get('settings')
@@ -3560,6 +4738,7 @@ export function apply(ctx: Context, config: Config): void {
           return settingsSource()
         },
         ...selection === undefined ? {} : { initialModelSelection: selection },
+        ...initialNotice === undefined ? {} : { initialNotice },
         // The session's own resume command, printed once the terminal is
         // released on exit — the Claude Code "--continue" analog.
         goodbyeMessage: `Resume this session with: dsh tui --resume ${String(sessionId)}`,
@@ -3574,12 +4753,21 @@ export function apply(ctx: Context, config: Config): void {
         },
         // `/clear` and timely double Ctrl+L keep the old log resumable while
         // creating a fresh identity and remounting this terminal in place.
-        swapFresh: (freshSelection) => {
+        swapFresh: (freshSelection, freshCwd) => {
           const tuiAgent = ctx.get('tuiAgent')
           if (tuiAgent === undefined) {
             return Promise.reject(new Error('tui-runner service is not mounted'))
           }
-          return tuiAgent.fresh(freshSelection)
+          return tuiAgent.fresh(freshSelection, freshCwd)
+        },
+        // `/rewind` forks a child through a completed event boundary, leaving
+        // the source session durable and resumable before this terminal remounts.
+        swapFork: (boundary, forkSelection, notice) => {
+          const tuiAgent = ctx.get('tuiAgent')
+          if (tuiAgent === undefined) {
+            return Promise.reject(new Error('tui-runner service is not mounted'))
+          }
+          return tuiAgent.fork(boundary, forkSelection, notice)
         },
       })
     })()

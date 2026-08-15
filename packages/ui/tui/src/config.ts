@@ -12,10 +12,19 @@ import {
   DEFAULT_FILE_SEARCH_MAX_RESULTS,
 } from './chat/file-autocomplete.ts'
 
+/** Visual style of the built-in palette. */
+export type TuiPaletteStyle = 'deepseek' | 'claude' | 'adaptive'
+
 /** Theme and prompt-template settings for the pi-tui terminal mode. */
 export interface TuiThemeConfig {
   /** Apply the built-in ANSI color palette. */
   color?: boolean
+  /**
+   * Palette style. `deepseek` uses blue/violet roles on dark terminals,
+   * `claude` keeps the terracotta reference palette, and `adaptive` follows
+   * the terminal's ANSI colors.
+   */
+  palette?: TuiPaletteStyle
   /** Paint the startup banner with the 24-bit DeepSeek brand gradient. */
   truecolor?: boolean
   /** Left-aligned template on the row above the editor. */
@@ -124,16 +133,18 @@ const directShellOutputRefreshMsSchema = z.number().step(1).min(1).default(50)
 const fileSearchMaxResultsSchema = z.number().step(1).min(1).default(DEFAULT_FILE_SEARCH_MAX_RESULTS)
 const fileSearchMaxEntriesSchema = z.number().step(1).min(1).default(DEFAULT_FILE_SEARCH_MAX_ENTRIES)
 const fileSearchExcludedDirectoriesSchema = z.array(z.string()).default([...DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES])
-const showHardwareCursorSchema = z.boolean().default(false)
+const showHardwareCursorSchema = z.boolean().default(true)
 const colorSchema = z.boolean().default(true)
 // No default: an unset value auto-detects truecolor from COLORTERM in `apply`.
 const truecolorSchema = z.boolean()
+const paletteStyleSchema = z.union([z.const('adaptive'), z.const('claude'), z.const('deepseek')]).default('deepseek')
 const DEFAULT_LEFT_PROMPT = '${cwd}${git/worktree}${model}${token_meter/cache_hit_rate}${context}'
 const DEFAULT_RIGHT_PROMPT = '${mode}${queued}'
-const DEFAULT_INPUT_PROMPT = '${symbol} ${indicator}'
+const DEFAULT_INPUT_PROMPT = '${symbol}${indicator}'
 const DEFAULT_INPUT_PLACEHOLDER = 'press enter to steer and esc to cancel'
 const TuiThemeConfigSchema: z<TuiThemeConfig> = z.object({
   color: colorSchema,
+  palette: paletteStyleSchema,
   truecolor: truecolorSchema,
   leftPrompt: z.string().default(DEFAULT_LEFT_PROMPT),
   rightPrompt: z.string().default(DEFAULT_RIGHT_PROMPT),
@@ -258,6 +269,7 @@ export const Config: z<Config> = z.object({
 /** Fully defaulted TUI theme settings. */
 export interface ResolvedTuiThemeConfig {
   color: boolean
+  palette: TuiPaletteStyle
   truecolor: boolean
   leftPrompt: string
   rightPrompt: string
@@ -346,9 +358,10 @@ export function resolveTuiConfig(config: TuiConfig | undefined): ResolvedTuiConf
     fileSearchMaxResults: config?.fileSearchMaxResults ?? DEFAULT_FILE_SEARCH_MAX_RESULTS,
     fileSearchMaxEntries: config?.fileSearchMaxEntries ?? DEFAULT_FILE_SEARCH_MAX_ENTRIES,
     fileSearchExcludedDirectories: [...(config?.fileSearchExcludedDirectories ?? DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES)],
-    showHardwareCursor: config?.showHardwareCursor ?? false,
+    showHardwareCursor: config?.showHardwareCursor ?? true,
     theme: {
       color: config?.theme?.color ?? true,
+      palette: config?.theme?.palette ?? 'deepseek',
       truecolor: config?.theme?.truecolor ?? false,
       leftPrompt: config?.theme?.leftPrompt ?? DEFAULT_LEFT_PROMPT,
       rightPrompt: config?.theme?.rightPrompt ?? DEFAULT_RIGHT_PROMPT,

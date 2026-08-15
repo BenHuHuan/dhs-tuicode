@@ -9,7 +9,7 @@ overrides:
   '@deepseek-ai/schemastery': link:vendor/schemastery
 
 patchedDependencies:
-  '@earendil-works/pi-tui@0.80.7': 8630838327eb8cbe610c0498711492d1fb102efdcbeab58f6b7479210e143722
+  '@earendil-works/pi-tui@0.80.7': 517f18175a7606ff6913999f90e7940954a65bdca212e7553a349bb575ddc1a8
   node-pty@1.1.0: 7a0c04f1f49d798a9ffe2f7f414c01064a44ca2489772d0c3e1235ab336755e6
 
 importers:
@@ -309,7 +309,7 @@ importers:
         version: link:../../packages/workflow/workflow-worker-thread
       '@earendil-works/pi-tui':
         specifier: 0.80.7
-        version: 0.80.7(patch_hash=8630838327eb8cbe610c0498711492d1fb102efdcbeab58f6b7479210e143722)
+        version: 0.80.7(patch_hash=517f18175a7606ff6913999f90e7940954a65bdca212e7553a349bb575ddc1a8)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -7914,12 +7914,18 @@ importers:
       '@deepseek-ai/dsh-cmdline':
         specifier: workspace:^
         version: link:../../boot/cmdline
+      '@deepseek-ai/dsh-home-paths':
+        specifier: workspace:^
+        version: link:../../util/home-paths
+      '@deepseek-ai/dsh-mcp-client':
+        specifier: workspace:^
+        version: link:../../mcp/mcp-client
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
       '@earendil-works/pi-tui':
         specifier: 0.80.7
-        version: 0.80.7(patch_hash=8630838327eb8cbe610c0498711492d1fb102efdcbeab58f6b7479210e143722)
+        version: 0.80.7(patch_hash=517f18175a7606ff6913999f90e7940954a65bdca212e7553a349bb575ddc1a8)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -7929,6 +7935,9 @@ importers:
       saxes:
         specifier: 6.0.0
         version: 6.0.0
+      sharp:
+        specifier: 0.35.3
+        version: 0.35.3(@types/node@22.20.0)
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:^
@@ -7951,12 +7960,18 @@ importers:
       '@deepseek-ai/dsh-attachment':
         specifier: workspace:^
         version: link:../../attachment/attachment
+      '@deepseek-ai/dsh-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
       '@deepseek-ai/dsh-commands':
         specifier: workspace:^
         version: link:../../interaction/commands
       '@deepseek-ai/dsh-compaction':
         specifier: workspace:^
         version: link:../../compaction/compaction
+      '@deepseek-ai/dsh-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
       '@deepseek-ai/dsh-goal':
         specifier: workspace:^
         version: link:../../goal/goal
@@ -15095,7 +15110,7 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-tui@0.80.7(patch_hash=8630838327eb8cbe610c0498711492d1fb102efdcbeab58f6b7479210e143722)':
+  '@earendil-works/pi-tui@0.80.7(patch_hash=517f18175a7606ff6913999f90e7940954a65bdca212e7553a349bb575ddc1a8)':
     dependencies:
       get-east-asian-width: 1.6.0
       marked: 18.0.5

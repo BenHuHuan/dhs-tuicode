@@ -60,6 +60,7 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
 // mocked SDK even through a static import.
 import { apply } from '@deepseek-ai/dsh-mcp-client/src/index.ts'
 import { RECONNECT_DEFAULTS, resolveReconnectPolicy, startConnection } from '@deepseek-ai/dsh-mcp-client/src/connection.ts'
+import McpConnectionRegistry from '@deepseek-ai/dsh-mcp-client/src/registry.ts'
 
 // ---- Helpers ----
 
@@ -69,6 +70,7 @@ async function mountRegistry(): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(McpConnectionRegistry)
   return ctx
 }
 
@@ -168,6 +170,26 @@ describe('reconnect supervisor', () => {
     instances[0]!.onclose?.()
     await sleep(30)
     expect(instances).toHaveLength(2)
+  })
+
+  it('publishes a redacted connected, reconnecting, and disposed directory row', async () => {
+    const directory = ctx.mcpConnections
+    await apply(ctx, stdioConfig({ initialDelayMs: 5, maxDelayMs: 40, maxAttempts: 5 }))
+    expect(directory.snapshot()).toEqual([{
+      serverName: 'srv',
+      transport: 'stdio',
+      state: 'connected',
+      toolNames: ['mcp__srv__remote'],
+    }])
+
+    instances[0]!.onclose?.()
+    expect(directory.snapshot()[0]).toMatchObject({ state: 'reconnecting', reconnectAttempt: 1 })
+    await vi.waitFor(() => {
+      expect(directory.snapshot()[0]).toMatchObject({ state: 'connected', toolNames: ['mcp__srv__remote'] })
+    })
+
+    await ctx.fiber.dispose()
+    expect(directory.snapshot()).toEqual([])
   })
 
   it('stops at the failure cap, unregisters the tools, and reports final failure', async () => {

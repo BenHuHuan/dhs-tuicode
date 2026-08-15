@@ -17,13 +17,14 @@ function agentHandle(
   cwd: string,
   options: AgentOptions,
   dispose: AgentHandle['dispose'] = vi.fn(() => Promise.resolve()),
+  events: Agent['session']['events'] = [],
 ): AgentHandle {
   const sessionId = SessionId(id)
   return {
     agent: {
       id: sessionId,
       options,
-      session: { id: sessionId, header: { id: sessionId, cwd } },
+      session: { id: sessionId, header: { id: sessionId, cwd }, events },
     } as unknown as Agent,
     dispose,
   }
@@ -135,6 +136,84 @@ describe('TuiAgentService fresh-session swaps', () => {
     await expect(service.fresh(undefined)).rejects.toBe(retirementError)
     expect(replacementDispose).toHaveBeenCalledOnce()
     expect(service.current).toBe(initial.agent)
+    await ctx.fiber.dispose()
+  })
+
+  it('forks a child through an exact completed event boundary and keeps the source resumable', async () => {
+    const ctx = new Context()
+    const sourceEvents = [
+      { seq: 0, type: 'turn/start' },
+      { seq: 1, type: 'user/message' },
+      { seq: 2, type: 'turn/end' },
+      { seq: 3, type: 'command/run' },
+    ] as unknown as Agent['session']['events']
+    const sourceDispose = vi.fn(() => Promise.resolve())
+    const source = agentHandle(
+      'main',
+      '/workspace',
+      { provider: 'base', model: 'base-model', maxTokens: 42 },
+      sourceDispose,
+      sourceEvents,
+    )
+    const child = agentHandle('child', '/workspace', { provider: 'selected', model: 'selected-model', maxTokens: 42 })
+    const create = vi.fn<(options: CreateAgentOptions) => Promise<AgentHandle>>()
+      .mockResolvedValueOnce(source)
+      .mockResolvedValueOnce(child)
+    const ready = vi.fn()
+    ctx.on('tui-agent/ready', ready)
+    const service = new TuiAgentService(ctx)
+    await service.settle(undefined, {
+      agents: { create } as unknown as AgentRegistry,
+      agentOptions: { provider: 'base', model: 'base-model', maxTokens: 42 },
+    })
+    const selection: ModelSelection = {
+      provider: 'selected',
+      model: 'selected-model',
+      reasoningEffort: ReasoningEffortId('max'),
+    }
+
+    await service.fork(2, selection, 'Child ready.')
+
+    const request = create.mock.calls[1]?.[0]
+    if (request === undefined) throw new Error('fork did not create a child agent')
+    expect(String(request.sessionId)).toMatch(/^session-[0-9a-f-]+$/u)
+    expect(request.meta).toEqual({ cwd: '/workspace', parentSession: source.agent.session.id, seedLength: 3 })
+    expect(request.seed).toEqual(sourceEvents.slice(0, 3))
+    expect(request.agentOptions).toEqual({ provider: 'selected', model: 'selected-model', maxTokens: 42 })
+    expect(sourceDispose).toHaveBeenCalledOnce()
+    expect(service.current).toBe(child.agent)
+    expect(ready).toHaveBeenLastCalledWith({
+      sessionId: child.agent.id,
+      selection,
+      initialNotice: 'Child ready.',
+    })
+    await ctx.fiber.dispose()
+  })
+
+  it('refuses a fork boundary that would seed an active turn', async () => {
+    const ctx = new Context()
+    const sourceDispose = vi.fn(() => Promise.resolve())
+    const source = agentHandle(
+      'main',
+      '/workspace',
+      { provider: 'base', model: 'base-model' },
+      sourceDispose,
+      [
+        { seq: 0, type: 'turn/start' },
+        { seq: 1, type: 'user/message' },
+      ] as unknown as Agent['session']['events'],
+    )
+    const create = vi.fn<(options: CreateAgentOptions) => Promise<AgentHandle>>().mockResolvedValueOnce(source)
+    const service = new TuiAgentService(ctx)
+    await service.settle(undefined, {
+      agents: { create } as unknown as AgentRegistry,
+      agentOptions: { provider: 'base', model: 'base-model' },
+    })
+
+    await expect(service.fork(1, undefined)).rejects.toThrow('ends inside an active turn')
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(sourceDispose).not.toHaveBeenCalled()
+    expect(service.current).toBe(source.agent)
     await ctx.fiber.dispose()
   })
 })

@@ -274,6 +274,29 @@ export class PermissionPresetService extends Service {
           return { kind: 'success', text: `preset ${name}` }
         },
       })
+      commandCtx.commands.register({
+        name: 'bypass',
+        description: 'Toggle full access without approval prompts',
+        input: { hint: '[on|off|status]' },
+        handler: ({ agent, rawInput }) => {
+          const action = rawInput.trim().toLowerCase() || 'on'
+          const fullAccess = this.names.find(name => this.resolve(name).sandbox === 'danger-full-access')
+          const confined = this.names.find(name => this.resolve(name).sandbox !== 'danger-full-access')
+          if (action === 'status') {
+            const current = this.current(agent.session.events)
+            return { kind: 'success', text: `bypass ${current === fullAccess ? 'on' : 'off'} (${current})` }
+          }
+          if (action !== 'on' && action !== 'off') {
+            return { kind: 'error', text: 'usage: /bypass [on|off|status]' }
+          }
+          const target = action === 'on' ? fullAccess : confined
+          if (target === undefined) {
+            return { kind: 'error', text: `no ${action === 'on' ? 'full-access' : 'confined'} permission preset is configured` }
+          }
+          this.apply(agent.session, target, (policy) => { this.ctx.approval.setPolicy(agent, policy) })
+          return { kind: 'success', text: `bypass ${action} (${target})` }
+        },
+      })
     })
   }
 

@@ -4,7 +4,7 @@ title "DSH snapshot"
 cursor hidden column=0 viewportRow=31 bufferRow=31
 buffer
 0| " DEEPSEEK HARNESS"
-  style 1-8 fg=bright-magenta bold
+  style 1-8 fg=yellow bold
   style 10-16 bold
 1| " Snapshot agent ready."
   style 1-21 dim
@@ -12,64 +12,67 @@ buffer
   style 1-12 dim
 3| <blank>
 4| "/workspace/project (tui-staging)  deepseek-v4-flash  ↑0 ↓0  0% context"
-  style 0-17 fg=bright-magenta bold
+  style 0-17 fg=yellow bold
   style 18-31 dim
   style 34-50 dim
   style 53-57 dim
   style 60-69 dim
-5| " dsh >                                                                                      "
-  style 1-3 fg=bright-magenta bold
-  style 5-6 dim
-  style 7-7 inverse
-6| <blank>
-7| "        ╭ Keyboard shortcuts ──────────────────────────────────────────────────────╮        "
-  style 8-83 fg=bright-magenta
+5| "╭──────────────────────────────────────────────────────────────────────────────────────────╮"
+  style 0-91 dim
+6| " ❯                                                                                          "
+  style 1-1 fg=yellow bold
+  style 2-3 dim
+  style 4-4 inverse
+7| "╰───────╭ Keyboard shortcuts ──────────────────────────────────────────────────────╮───────╯"
+  style 0-7 dim
+  style 8-83 fg=yellow
+  style 84-91 dim
 8| "        │ Enter send · Shift/Alt+Enter newline · Up/Down prompt history            │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 9| "        │ Ctrl+V / Alt+V paste an image from the clipboard                         │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 10| "        │ Shift+Tab / Alt+M cycle permission modes · Alt+P choose model · Alt+T    │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 11| "        │ toggle thinking                                                          │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 12| "        │ Esc cancel active turn · Ctrl+G / Ctrl+X Ctrl+E external editor          │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 13| "        │ Ctrl+X Ctrl+K twice within 3s stop all running background subagents      │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 14| "        │ Ctrl+T toggle task checklist                                             │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 15| "        │ Ctrl+S stash/restore prompt · Ctrl+O cycle cards                         │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 16| "        │ Ctrl+R search history · Ctrl+L redraw; press twice to /clear             │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 17| "        │ Ctrl+B background foreground shell · Ctrl+C cancel/clear; press twice on │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 18| "        │ empty input to exit                                                      │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 19| "        │ Ctrl+D delete forward while editing; press twice on empty input to exit  │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 20| "        │ Type ? in an empty prompt to toggle this panel                           │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 21| "        │                                                                          │        "
-  style 8-8 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 8-8 fg=yellow
+  style 83-83 fg=yellow
 22| "        │ ? / Esc close                                                            │        "
-  style 8-8 fg=bright-magenta
+  style 8-8 fg=yellow
   style 10-22 dim
-  style 83-83 fg=bright-magenta
+  style 83-83 fg=yellow
 23| "        ╰──────────────────────────────────────────────────────────────────────────╯        "
-  style 8-83 fg=bright-magenta
+  style 8-83 fg=yellow
 24-31| <blank>

@@ -37,7 +37,7 @@ The concrete provider retains pi-tui, focus, and terminal lifecycle state. Plugi
 abstract openOverlay(request: TuiOverlayRequest): TuiOverlaySession
 ```
 
-Source: [`packages/ui/tui/src/index.ts:356`](../../packages/ui/tui/src/index.ts)
+Source: [`packages/ui/tui/src/index.ts:413`](../../packages/ui/tui/src/index.ts)
 
 <a id="ctxtuiagent--tuiagentservice"></a>
 
@@ -70,6 +70,16 @@ async swap(resumeSessionId: SessionId): Promise<void>
  * @param selection - model target selected by the current TUI.
  */
 async fresh(selection: ModelSelection | undefined): Promise<void>
+
+/**
+ * Replace the live channel with a child session seeded through one completed
+ * source-log boundary. The source session stays durable and resumable; this
+ * is a branch, never an in-place mutation of conversation history.
+ * @param boundary - Inclusive source event sequence selected by `/rewind`.
+ * @param selection - Model target preserved from the current TUI when set.
+ * @param initialNotice - Terminal-local child-mount notice, never persisted into model context.
+ */
+async fork(boundary: number, selection: ModelSelection | undefined, initialNotice?: string): Promise<void>
 ```
 
 Types: [ModelSelection](core.md) · [SessionId](core.md)
@@ -134,7 +144,7 @@ The runner settled on the agent the TUI renders. Fires after every create or res
  * @param payload.sessionId - identity of the settled agent's session.
  * @mode emit
  */
-'tui-agent/ready'(payload: { sessionId: SessionId; selection?: ModelSelection }): void
+'tui-agent/ready'(payload: { sessionId: SessionId; selection?: ModelSelection; initialNotice?: string }): void
 ```
 
 Types: [ModelSelection](core.md) · [SessionId](core.md)

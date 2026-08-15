@@ -75,6 +75,9 @@
       "path": "../../interaction/commands"
     },
     {
+      "path": "../../credentials/credentials"
+    },
+    {
       "path": "../../interaction/user-questions"
     },
     {
@@ -106,6 +109,9 @@
     },
     {
       "path": "../../subagent/subagent"
+    },
+    {
+      "path": "../../mcp/mcp-client"
     },
     {
       "path": "../../runtime-diagnostics/invariants"

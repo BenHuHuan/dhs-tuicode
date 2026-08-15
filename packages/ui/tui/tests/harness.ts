@@ -82,6 +82,8 @@ export interface TuiHarnessOptions {
   swapResume?: TuiRuntime['swapResume']
   /** Host fresh-session swap; absent exercises the view-only `/clear` degradation path. */
   swapFresh?: TuiRuntime['swapFresh']
+  /** Host child-session branch; absent exercises the conversation-rewind degradation path. */
+  swapFork?: TuiRuntime['swapFork']
   /** Host external-editor boundary; absent exercises explicit degradation. */
   editText?: TuiRuntime['editText']
   /** Host clipboard-image boundary; absent exercises explicit degradation. */
@@ -90,6 +92,8 @@ export interface TuiHarnessOptions {
   writeClipboardText?: TuiRuntime['writeClipboardText']
   /** Host response-file boundary; absent exercises explicit picker `w` degradation. */
   writeTextFile?: TuiRuntime['writeTextFile']
+  /** Durable workspace history provider behind `/diff`, `/checkpoint`, and `/rewind`. */
+  workspaceHistory?: TuiRuntime['workspaceHistory']
   /** Optional durable image store used by clipboard admission tests. */
   attachments?: AttachmentStore
   /** Latest committed live TUI settings; absent falls back to plugin config. */
@@ -98,6 +102,8 @@ export interface TuiHarnessOptions {
   updateSettings?: TuiRuntime['updateSettings']
   /** Model target supplied by a preceding fresh-session swap. */
   initialModelSelection?: TuiRuntime['initialModelSelection']
+  /** Host-authored transient notice shown when this TUI channel starts. */
+  initialNotice?: TuiRuntime['initialNotice']
   /** Host-supplied exit line; absent exercises the no-message path. */
   goodbyeMessage?: TuiRuntime['goodbyeMessage']
   /** Set false to exercise the optional session-query degradation path. */
@@ -296,13 +302,16 @@ export async function createTuiTestHarness<TerminalType extends Terminal, Exit e
     ...(options.formatCwd === undefined ? {} : { formatCwd: options.formatCwd }),
     ...(options.swapResume === undefined ? {} : { swapResume: options.swapResume }),
     ...(options.swapFresh === undefined ? {} : { swapFresh: options.swapFresh }),
+    ...(options.swapFork === undefined ? {} : { swapFork: options.swapFork }),
     ...(options.editText === undefined ? {} : { editText: options.editText }),
     ...(options.readClipboardImage === undefined ? {} : { readClipboardImage: options.readClipboardImage }),
     ...(options.writeClipboardText === undefined ? {} : { writeClipboardText: options.writeClipboardText }),
     ...(options.writeTextFile === undefined ? {} : { writeTextFile: options.writeTextFile }),
+    ...(options.workspaceHistory === undefined ? {} : { workspaceHistory: options.workspaceHistory }),
     ...(options.readSettings === undefined ? {} : { readSettings: options.readSettings }),
     ...(options.updateSettings === undefined ? {} : { updateSettings: options.updateSettings }),
     ...(options.initialModelSelection === undefined ? {} : { initialModelSelection: options.initialModelSelection }),
+    ...(options.initialNotice === undefined ? {} : { initialNotice: options.initialNotice }),
     ...(options.goodbyeMessage === undefined ? {} : { goodbyeMessage: options.goodbyeMessage }),
     gitBranch: options.gitBranch ?? (() => 'tui-staging'),
   })

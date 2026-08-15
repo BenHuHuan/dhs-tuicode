@@ -25,6 +25,7 @@ import {
 } from './harness.ts'
 import { HeadlessTerminal, type TerminalSnapshotOptions } from './headless-terminal.ts'
 import { TestSessionQueryEngine } from './session-query.ts'
+import { WorkspaceCheckpointId, type WorkspaceCheckpoint } from '../src/runtime.ts'
 
 const SNAPSHOTS_DIR = join(dirname(fileURLToPath(import.meta.url)), 'snapshots')
 const REFRESHING = process.env.DSH_SNAPSHOT === 'refresh'
@@ -44,6 +45,8 @@ const CHECKPOINTS = [
   'code-mode-pending',
   'dynamic-workflow-pending',
   'cordis-tools-pending',
+  'mcp-directory',
+  'agents-directory',
   'advanced-cards-collapsed',
   'advanced-cards-expanded',
   'tool-cards-hidden-folded',
@@ -65,6 +68,9 @@ const CHECKPOINTS = [
   'model-switching',
   'reasoning-effort-selector',
   'copy-response-selector',
+  'export-conversation-selector',
+  'workspace-diff-dialog',
+  'workspace-rewind-confirmation',
   'shortcut-help',
   'external-editor-returned',
   'idle-exit-confirmation',
@@ -103,17 +109,17 @@ async function checkpoint(
   observedCheckpoints.add(name)
   const violations = terminal.themeViolations()
   if (bannerGradient) {
-    // The banner paints its product name in the DeepSeek brand gradient with
-    // 24-bit foreground codes: the sole sanctioned truecolor. Require it to be
-    // present and to never leak a background or extended-palette color into the
-    // otherwise theme-agnostic UI.
-    expect(violations, `${name} must render the banner gradient`).not.toEqual([])
+    // A truecolor checkpoint paints the whole Claude palette with sanctioned
+    // 24-bit foreground codes, including the banner's brand gradient. Require
+    // at least one truecolor foreground and never allow a background fill or an
+    // extended-palette code.
+    expect(violations, `${name} must render the truecolor palette`).not.toEqual([])
     expect(
       violations.every(entry => entry.endsWith('rgb-fg')),
-      `${name} must confine truecolor to the banner foreground`,
+      `${name} must confine truecolor to sanctioned foreground roles`,
     ).toBe(true)
   } else {
-    expect(violations, `${name} must remain theme-agnostic`).toEqual([])
+    expect(violations, `${name} must stay on the ANSI fallback`).toEqual([])
   }
   const snapshot = await terminal.snapshot(options)
   const path = join(SNAPSHOTS_DIR, `${name}.expected.txt`)
@@ -672,6 +678,84 @@ describe('TUI terminal-state snapshots', () => {
     await disposeSnapshot(harness)
   })
 
+  it('pins the redacted MCP connection directory and public tool inventory', async () => {
+    const harness = await setupSnapshot({
+      configureContext: async (ctx) => {
+        await ctx.plugin(SystemPrompt)
+        await ctx.plugin(ToolRegistry)
+        ctx.provide('mcpConnections', {
+          snapshot: () => [
+            {
+              serverName: 'filesystem',
+              transport: 'stdio',
+              state: 'connected',
+              toolNames: ['mcp__filesystem__read_file', 'mcp__filesystem__write_file'],
+            },
+            {
+              serverName: 'research',
+              transport: 'streamable-http',
+              state: 'reconnecting',
+              reconnectAttempt: 2,
+              toolNames: [],
+            },
+          ],
+        } as never)
+      },
+    }, { columns: 96, rows: 30 })
+    await renderAfter(harness, () => {
+      harness.terminal.send('/mcp')
+      harness.terminal.send('\r')
+    })
+    await checkpoint('mcp-directory', harness.terminal, { includeScrollback: true })
+    await disposeSnapshot(harness)
+  })
+
+  it('pins the durable subagent tree and direct-control guidance', async () => {
+    const harness = await setupSnapshot({
+      configureContext: async (ctx) => {
+        await ctx.plugin(SystemPrompt)
+        await ctx.plugin(ToolRegistry)
+        ctx.provide('subagents', {
+          listDescendants: async () => [
+            {
+              kind: 'child',
+              id: SessionId('reviewer'),
+              parentId: SessionId('main-session'),
+              depth: 1,
+              activity: 'running',
+              hasChildren: true,
+              mode: 'continuable',
+              label: 'Review command safety',
+            },
+            {
+              kind: 'child',
+              id: SessionId('test-auditor'),
+              parentId: SessionId('reviewer'),
+              depth: 2,
+              activity: 'inactive',
+              hasChildren: false,
+              mode: 'continuable',
+              label: 'Check focused tests',
+            },
+            {
+              kind: 'diagnostic',
+              id: SessionId('unavailable-child'),
+              parentId: SessionId('reviewer'),
+              depth: 2,
+              reason: 'unavailable',
+            },
+          ],
+        } as never)
+      },
+    }, { columns: 96, rows: 30 })
+    await renderAfter(harness, () => {
+      harness.terminal.send('/agents')
+      harness.terminal.send('\r')
+    })
+    await checkpoint('agents-directory', harness.terminal, { includeScrollback: true })
+    await disposeSnapshot(harness)
+  })
+
   it('pins terminal, diff, subagent, task, skill, collapsed, and expanded cards', async () => {
     const harness = await setupSnapshot({
       tools: ADVANCED_CARD_TOOLS,
@@ -1102,6 +1186,95 @@ describe('TUI terminal-state snapshots', () => {
       harness.terminal.send('\r')
     })
     await checkpoint('copy-response-selector', harness.terminal, { includeScrollback: true })
+    await disposeSnapshot(harness)
+  })
+
+  it('pins the complete-conversation export selector', async () => {
+    const harness = await setupSnapshot({
+      writeClipboardText: () => Promise.resolve(),
+      writeTextFile: ({ path }) => Promise.resolve({ kind: 'written', path }),
+    }, { columns: 92, rows: 32 })
+    await renderAfter(harness, () => {
+      appendUser(harness.session, 'Include this in the export.')
+      appendAssistant(harness.session, [{ type: 'text', text: 'And this answer.' }])
+      harness.terminal.send('/export')
+      harness.terminal.send('\r')
+    })
+    await checkpoint('export-conversation-selector', harness.terminal, { includeScrollback: true })
+    await disposeSnapshot(harness)
+  })
+
+  it('pins the read-only workspace diff pager and the final rewind confirmation', async () => {
+    const checkpointRecord: WorkspaceCheckpoint = {
+      id: WorkspaceCheckpointId('checkpoint-snapshot-00000000-0000-4000-8000-000000000000'),
+      sessionId: SessionId('main-session'),
+      sessionBoundary: 2,
+      createdAt: Date.parse('2026-07-22T09:10:11.000Z'),
+      label: 'Before workspace change',
+      workspace: { kind: 'git', trackedFiles: 2, untrackedFiles: 1 },
+    }
+    const backup: WorkspaceCheckpoint = {
+      ...checkpointRecord,
+      id: WorkspaceCheckpointId('checkpoint-snapshot-11111111-1111-4111-8111-111111111111'),
+      label: 'Before rewind',
+    }
+    const harness = await setupSnapshot({
+      workspaceHistory: {
+        createCheckpoint: async () => checkpointRecord,
+        listCheckpoints: async () => [checkpointRecord],
+        diff: async () => ({
+          title: 'Workspace diff',
+          changedFiles: 3,
+          lines: [
+            'Staged changes',
+            '',
+            'diff --git a/src/agent.ts b/src/agent.ts',
+            '+export const checkpoint = true',
+            '',
+            'Untracked files',
+            '',
+            '?? notes/rewind-plan.md',
+          ],
+        }),
+        restoreCheckpoint: async () => ({ backup }),
+      },
+      swapFork: async () => {},
+      beforeMount(session) {
+        session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      },
+    }, { columns: 92, rows: 32 })
+    await renderAfter(harness, () => {
+      harness.terminal.send('/diff')
+      harness.terminal.send('\r')
+    })
+    await checkpoint('workspace-diff-dialog', harness.terminal, { includeScrollback: true })
+    await renderAfter(harness, () => { harness.terminal.send('q') })
+    await renderAfter(harness, () => {
+      harness.terminal.send('/rewind')
+      harness.terminal.send('\r')
+    })
+    await vi.waitFor(async () => {
+      expect(await harness.terminal.snapshot({ includeScrollback: true })).toContain('Select checkpoint to rewind')
+    })
+    let frame = harness.terminal.frames
+    harness.terminal.send('\r')
+    await harness.terminal.waitForFrame(frame)
+    await vi.waitFor(async () => {
+      expect(await harness.terminal.snapshot({ includeScrollback: true })).toContain('Choose rewind action')
+    })
+    frame = harness.terminal.frames
+    harness.terminal.send('\x1b[B')
+    await harness.terminal.waitForFrame(frame)
+    frame = harness.terminal.frames
+    harness.terminal.send('\x1b[B')
+    await harness.terminal.waitForFrame(frame)
+    frame = harness.terminal.frames
+    harness.terminal.send('\r')
+    await harness.terminal.waitForFrame(frame)
+    await vi.waitFor(async () => {
+      expect(await harness.terminal.snapshot({ includeScrollback: true })).toContain('Confirm rewind?')
+    })
+    await checkpoint('workspace-rewind-confirmation', harness.terminal, { includeScrollback: true })
     await disposeSnapshot(harness)
   })
 

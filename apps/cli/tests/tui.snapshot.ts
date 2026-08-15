@@ -1055,7 +1055,7 @@ async function runScenario(scenario: Scenario): Promise<ScenarioResult> {
       ])
     }
 
-    expect(terminal.themeViolations(), `${scenario.name} must remain theme-agnostic`).toEqual([])
+    expect(terminal.themeViolations(), `${scenario.name} must stay on the ANSI fallback`).toEqual([])
     const snapshot = interactionSnapshot ?? normalizeTerminalSnapshot(
       await terminal.snapshot({ includeScrollback: true }),
       cwd,

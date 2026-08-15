@@ -58,6 +58,7 @@ import {
   type TuiOverlaySession,
   type TuiRuntime,
 } from '../src/index.ts'
+import { WorkspaceCheckpointId, type WorkspaceCheckpoint } from '../src/runtime.ts'
 import { WorkspaceFileSearch } from '../src/chat/file-autocomplete.ts'
 import { ResumePicker } from '../src/components/dialogs.ts'
 import { ATTRIBUTE_ROLES, brandText, COLOR_ROLES, createPalette, paletteSpec } from '../src/components/theme.ts'
@@ -157,9 +158,13 @@ async function tick(): Promise<void> {
 }
 
 function promptWidth(output: string): number {
-  const row = output.split('\n').find(line => line.includes('dsh'))
+  const row = output.split('\n').find(line => line.includes('❯'))
   if (row === undefined) throw new Error('prompt row not rendered')
-  return visibleWidth(row.slice(row.indexOf('dsh'), row.indexOf('dsh') + 6))
+  const plain = row.replaceAll(/\x1b\[[0-9;]*[A-Za-z]/g, '')
+  const start = plain.indexOf('❯')
+  // The fixed prompt prefix is the rail, the glyph/blank slot, and one space;
+  // measure only those cells so the placeholder after the cursor never widens it.
+  return visibleWidth(plain.slice(start, start + 3))
 }
 
 async function setup(options: TuiHarnessOptions = {}) {
@@ -296,13 +301,14 @@ describe('TUI config', () => {
       fileSearchMaxResults: 20,
       fileSearchMaxEntries: 10_000,
       fileSearchExcludedDirectories: ['.git', 'node_modules'],
-      showHardwareCursor: false,
+      showHardwareCursor: true,
       theme: {
         color: true,
+        palette: 'claude',
         truecolor: false,
         leftPrompt: '${cwd}${git/worktree}${model}${token_meter/cache_hit_rate}${context}',
         rightPrompt: '${mode}${queued}',
-        inputPrompt: '${symbol} ${indicator}',
+        inputPrompt: '${symbol}${indicator}',
         inputPlaceholder: 'press enter to steer and esc to cancel',
       },
       title: 'DeepSeek Harness',
@@ -365,10 +371,11 @@ describe('TUI config', () => {
       showHardwareCursor: true,
       theme: {
         color: false,
+        palette: 'claude',
         truecolor: true,
         leftPrompt: '${cwd}${git/worktree}${model}${token_meter/cache_hit_rate}${context}',
         rightPrompt: '${mode}${queued}',
-        inputPrompt: '${symbol} ${indicator}',
+        inputPrompt: '${symbol}${indicator}',
         inputPlaceholder: 'press enter to steer and esc to cancel',
       },
       title: 'DSH',
@@ -2001,7 +2008,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     expect(result.terminal.output).toContain('restored answer')
     expect(result.terminal.output).toContain('write tests')
     expect(result.terminal.output).toContain('/opt (tui-staging)  deepseek-v4-flash  ↑1.3k ↓42')
-    expect(result.terminal.output).toContain('dsh > ')
+    expect(result.terminal.output).toContain('❯')
     expect(result.terminal.output).not.toContain('main-session  deepseek-v4-flash')
     // Context resolution is async (resolveModelContext); settle before reading.
     await tick()
@@ -2578,7 +2585,6 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.session.append('step/end', { turn: 1, step: 1 })
     await tick()
     expect(result.terminal.output).toContain('Completed ')
-    expect(result.terminal.output).toContain('Assistant')
     expect(result.terminal.output).toContain('Model wait 0.0s · Completed')
     await dispose(result)
   })
@@ -2633,15 +2639,15 @@ describe('pi-tui chat lifecycle and transcript', () => {
     const result = await setup({ status: 'running', now: () => clock })
     clock = 1_000
 
-    // A space separates `dsh` from the caret slot: the prompt reads
-    // `dsh <glyph> ` with the same visible width as the idle `dsh > `, so the
-    // cursor never shifts. Assert both the glyph slot and that constant width
+    // The `❯` rail precedes the caret slot: the prompt reads `❯ <glyph> ` with
+    // the same visible width as the idle `❯ `, so the cursor never shifts.
+    // Assert both the glyph slot and that constant width
     // (color is off in this harness, so output carries no ANSI to strip).
     // Each phase swaps only the glyph character in the same slot at equal width.
     const phaseGlyph: [() => void, string][] = [
-      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'reasoning-delta', index: 0, text: 'weighing' } }), 'dsh ✻ '],
-      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'text-delta', index: 1, text: 'answer' } }), 'dsh ● '],
-      [() => result.session.append('tool/call', { turn: 1, step: 1, callId: 'c1' as never, name: 'bash', arguments: '{}' }), 'dsh ⚙ '],
+      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'reasoning-delta', index: 0, text: 'weighing' } }), '❯✻'],
+      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'text-delta', index: 1, text: 'answer' } }), '❯●'],
+      [() => result.session.append('tool/call', { turn: 1, step: 1, callId: 'c1' as never, name: 'bash', arguments: '{}' }), '❯⚙'],
     ]
     let runningWidth: number | undefined
     for (const [drive, expected] of phaseGlyph) {
@@ -2663,11 +2669,11 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await new Promise(resolve => setTimeout(resolve, 150))
     await tick()
     const promptRow = (): string => {
-      const rows = result.terminal.output.split(/\r?\n|\x1b\[[0-9;]*[A-Za-z]/u).filter(r => r.includes('dsh'))
+      const rows = result.terminal.output.split(/\r?\n|\x1b\[[0-9;]*[A-Za-z]/u).filter(r => r.includes('❯'))
       return rows.at(-1) ?? ''
     }
-    expect(promptRow()).toContain('dsh > ')
-    expect(promptRow()).not.toMatch(/dsh(?:\x1b\[[0-9;]*m| )*[◍✻●⚙⊙]/u)
+    expect(promptRow()).toContain('❯')
+    expect(promptRow()).not.toMatch(/❯(?:\x1b\[[0-9;]*m| )*[◍✻●⚙⊙]/u)
     expect(promptWidth(result.terminal.output)).toBe(runningWidth)
 
     await dispose(result)
@@ -2683,7 +2689,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.terminal.output = ''
     await new Promise(resolve => setTimeout(resolve, 75))
 
-    expect(result.terminal.output).toContain('dsh ⊙ ')
+    expect(result.terminal.output).toContain('❯⊙')
     expect(result.terminal.output).toContain('Context being compacted 1.0s')
     expect(promptWidth(result.terminal.output)).toBe(idleWidth)
     expect(result.terminal.progress.at(-1)).toBe(true)
@@ -2701,8 +2707,8 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.session.append('compaction/start', { compactionId: CompactionId('compact-1'), turn: 1 })
     await tick()
 
-    expect(result.terminal.output).toContain('dsh > ')
-    expect(result.terminal.output).not.toContain('dsh ⊙ ')
+    expect(result.terminal.output).toContain('❯')
+    expect(result.terminal.output).not.toContain('❯⊙')
     expect(result.terminal.progress.at(-1)).toBe(false)
     await dispose(result)
   })
@@ -2722,8 +2728,8 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.terminal.resize(result.terminal.columns + 1)
     await tick()
 
-    expect(result.terminal.output).toContain('dsh > ')
-    expect(result.terminal.output).not.toMatch(/dsh [◍✻●⚙⊙]/u)
+    expect(result.terminal.output).toContain('❯')
+    expect(result.terminal.output).not.toMatch(/❯[◍✻●⚙⊙]/u)
     expect(result.terminal.output).not.toContain('Context being compacted')
     expect(result.terminal.progress.at(-1)).toBe(false)
     await dispose(result)
@@ -2751,7 +2757,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.terminal.resize(result.terminal.columns + 1)
     await tick()
 
-    expect(result.terminal.output).toContain('dsh ⊙ ')
+    expect(result.terminal.output).toContain('❯⊙')
     expect(result.terminal.progress.at(-1)).toBe(true)
     await dispose(result)
   })
@@ -2764,16 +2770,16 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.session.append('compaction/start', { compactionId: CompactionId('compact-1'), turn: null })
     await tick()
 
-    expect(result.terminal.output).toContain('dsh ◍ ')
-    expect(result.terminal.output).not.toContain('dsh ⊙ ')
+    expect(result.terminal.output).toContain('❯◍')
+    expect(result.terminal.output).not.toContain('❯⊙')
     result.session.append('compaction/end', { compactionId: CompactionId('compact-1'), turn: null })
     await tick()
     result.terminal.output = ''
     result.terminal.resize(result.terminal.columns + 1)
     await tick()
 
-    expect(result.terminal.output).toContain('dsh ◍ ')
-    expect(result.terminal.output).not.toContain('dsh ⊙ ')
+    expect(result.terminal.output).toContain('❯◍')
+    expect(result.terminal.output).not.toContain('❯⊙')
     expect(result.terminal.progress.at(-1)).toBe(true)
     await dispose(result)
   })
@@ -2794,7 +2800,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
       await tick()
 
       expect(intervalSpy).toHaveBeenCalledOnce()
-      expect(result.terminal.output).toContain('dsh ⊙ ')
+      expect(result.terminal.output).toContain('❯⊙')
       expect(result.terminal.progress.at(-1)).toBe(true)
 
       result.session.append('compaction/end', { compactionId: CompactionId('compact-1'), turn: null })
@@ -2820,8 +2826,8 @@ describe('pi-tui chat lifecycle and transcript', () => {
       },
     })
 
-    expect(result.terminal.output).toContain('dsh > ')
-    expect(result.terminal.output).not.toContain('dsh ⊙ ')
+    expect(result.terminal.output).toContain('❯')
+    expect(result.terminal.output).not.toContain('❯⊙')
     expect(result.terminal.output).not.toContain('Context being compacted')
     expect(result.terminal.progress.at(-1)).toBe(false)
     await dispose(result)
@@ -2910,23 +2916,23 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await tick()
     // Just after the end the glyph still paints a gray, not `>`.
     expect(result.terminal.output).toMatch(/\x1b\[38;2;\d+;\d+;\d+m●/u)
-    expect(result.terminal.output).not.toContain('dsh \x1b[90m>')
+    expect(result.terminal.output).not.toContain('❯\x1b[90m>')
 
     // While the clock stays within the fade window the timer keeps ticking
     // without clearing the fade (the not-yet-elapsed branch): the last frame is
     // still the fading glyph, and the plain caret has not returned.
     result.terminal.output = ''
     await new Promise(resolve => setTimeout(resolve, 120))
-    const lastPromptRow = result.terminal.output.split(/\x1b\[[0-9;]*[A-Za-z]/u).filter(r => r.includes('dsh')).at(-1) ?? ''
-    expect(lastPromptRow).not.toContain('dsh \x1b[90m>')
+    const lastPromptRow = result.terminal.output.split(/\x1b\[[0-9;]*[A-Za-z]/u).filter(r => r.includes('❯')).at(-1) ?? ''
+    expect(lastPromptRow).not.toContain('❯\x1b[90m>')
 
     // Past the fade window the fade timer clears and the plain caret returns.
     clock = 2_000
     result.terminal.output = ''
     await new Promise(resolve => setTimeout(resolve, 120))
     await tick()
-    expect(result.terminal.output).not.toMatch(/dsh(?:\x1b\[[0-9;]*m| )*●/u)
-    expect(result.terminal.output).toContain('>')
+    expect(result.terminal.output).not.toMatch(/❯(?:\x1b\[[0-9;]*m| )*●/u)
+    expect(result.terminal.output).toContain('❯')
 
     await dispose(result)
   })
@@ -2946,7 +2952,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     // glyph slot is blank; past it the glyph shows in the palette dim role,
     // never the accent (ANSI 95).
     const early = await frameAt(60)
-    expect(early).not.toMatch(/dsh(?:\x1b\[[0-9;]*m| )*●/u)
+    expect(early).not.toMatch(/❯(?:\x1b\[[0-9;]*m| )*●/u)
     const shown = await frameAt(300)
     expect(shown).toMatch(/\x1b\[2;39m●/u)
     expect(shown).not.toMatch(/\x1b\[95m●/u)
@@ -2956,8 +2962,8 @@ describe('pi-tui chat lifecycle and transcript', () => {
 
   it('shows the plain prompt caret while idle', async () => {
     const result = await setup({ now: () => 0 })
-    expect(result.terminal.output).toContain('dsh > ')
-    expect(result.terminal.output).not.toMatch(/dsh [◍✻●⚙⊙]/u)
+    expect(result.terminal.output).toContain('❯')
+    expect(result.terminal.output).not.toMatch(/❯[◍✻●⚙⊙]/u)
     await dispose(result)
   })
 
@@ -3137,7 +3143,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     expect(result.terminal.output).toContain('nested result')
     expect(result.terminal.output).toContain('[future-block]')
     expect(result.terminal.output).toContain('[content]')
-    expect(result.terminal.output).toContain('\x1b[36mconst answer = 42\x1b[39m')
+    expect(result.terminal.output).toContain('\x1b[95mconst answer = 42\x1b[39m')
     expect(result.terminal.output).not.toContain('```')
     expect(result.terminal.output).toContain('↑2.0m ↓1.5m')
     await dispose(result)
@@ -3605,7 +3611,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
       cwd: '/workspace',
     })
     await vi.waitFor(() => {
-      expect(result.terminal.output).toContain('Copied full response #1 to clipboard.')
+      expect(result.terminal.output).toMatch(/copied \d+ chars? to clipboard/u)
     })
 
     result.terminal.send('/copy 2')
@@ -3613,7 +3619,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await vi.waitFor(() => { expect(writeClipboardText).toHaveBeenCalledTimes(2) })
     expect(writeClipboardText.mock.calls[1]?.[0].text).toBe('older answer\n')
     await vi.waitFor(() => {
-      expect(result.terminal.output).toContain('Copied full response #2 to clipboard.')
+      expect(result.terminal.output).toMatch(/copied \d+ chars? to clipboard/u)
     })
     expect(result.agent.sent).toEqual([])
     expect(result.agent.steered).toEqual([])
@@ -3661,7 +3667,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.terminal.send('\r')
     await vi.waitFor(() => { expect(writeClipboardText).toHaveBeenCalledTimes(1) })
     expect(writeClipboardText.mock.calls[0]?.[0].text).toBe('const answer = 42')
-    expect(result.terminal.output).toContain('Copied code block 1 from response #1 to clipboard.')
+    expect(result.terminal.output).toMatch(/copied \d+ chars? to clipboard/u)
 
     await openPicker()
     result.terminal.send('\r')
@@ -3849,6 +3855,250 @@ describe('pi-tui chat lifecycle and transcript', () => {
     })
     await dispose(pending)
     expect(writerSignal?.aborted).toBe(true)
+  })
+
+  it('/export writes the complete durable conversation to an explicit path without sending it to the agent', async () => {
+    const writeTextFile = vi.fn<NonNullable<TuiRuntime['writeTextFile']>>(({ path, overwrite }) => {
+      const resolvedPath = path.startsWith('/') ? path : `/workspace/${path}`
+      return Promise.resolve(!overwrite && path === 'existing.txt'
+        ? { kind: 'exists' as const, path: resolvedPath }
+        : { kind: 'written' as const, path: resolvedPath })
+    })
+    const result = await setup({ writeTextFile })
+    appendUser(result.session, 'Summarize the current workspace.')
+    appendAssistant(result.session, [{ type: 'text', text: 'The workspace is ready.' }])
+    await tick()
+
+    result.terminal.send('/export "notes/session transcript.txt"')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(writeTextFile).toHaveBeenCalledOnce() })
+    expect(writeTextFile.mock.calls[0]?.[0]).toMatchObject({
+      path: 'notes/session transcript.txt',
+      overwrite: false,
+      cwd: '/workspace',
+    })
+    expect(writeTextFile.mock.calls[0]?.[0].text).toContain('DeepSeek Harness conversation')
+    expect(writeTextFile.mock.calls[0]?.[0].text).toContain('Summarize the current workspace.')
+    expect(writeTextFile.mock.calls[0]?.[0].text).toContain('The workspace is ready.')
+    await vi.waitFor(() => {
+      expect(result.terminal.output).toContain('Exported conversation to /workspace/notes/session transcript.txt.')
+    })
+
+    result.terminal.send('/export existing.txt')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(result.terminal.output).toContain('Overwrite existing file?') })
+    result.terminal.send('n')
+    await tick()
+    expect(writeTextFile).toHaveBeenCalledTimes(2)
+
+    result.terminal.send('/export existing.txt')
+    const secondOverwrite = result.terminal.output.length
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(writeTextFile).toHaveBeenCalledTimes(3) })
+    await vi.waitFor(() => {
+      expect(result.terminal.output.slice(secondOverwrite)).toContain('Overwrite existing file?')
+    })
+    result.terminal.send('y')
+    await vi.waitFor(() => { expect(writeTextFile).toHaveBeenCalledTimes(4) })
+    expect(writeTextFile.mock.calls[3]?.[0]).toMatchObject({
+      path: '/workspace/existing.txt',
+      overwrite: true,
+    })
+    expect(result.agent.sent).toEqual([])
+    expect(result.agent.steered).toEqual([])
+    await dispose(result)
+  })
+
+  it('/export offers copy and default-file destinations when no filename is supplied', async () => {
+    const writeClipboardText = vi.fn<NonNullable<TuiRuntime['writeClipboardText']>>(() => Promise.resolve())
+    const writeTextFile = vi.fn<NonNullable<TuiRuntime['writeTextFile']>>(({ path }) => Promise.resolve({
+      kind: 'written',
+      path: path.startsWith('/') ? path : `/workspace/${path}`,
+    }))
+    const result = await setup({ writeClipboardText, writeTextFile })
+    appendUser(result.session, 'Keep this prompt in the export.')
+    appendAssistant(result.session, [{ type: 'text', text: 'Keep this answer too.' }])
+    await tick()
+
+    const openExport = async (): Promise<void> => {
+      const from = result.terminal.output.length
+      result.terminal.send('/export')
+      result.terminal.send('\r')
+      await vi.waitFor(() => { expect(result.terminal.output.slice(from)).toContain('Export conversation') })
+    }
+
+    await openExport()
+    expect(result.terminal.output).toContain('Copy to clipboard')
+    expect(result.terminal.output).toContain('Save to file')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(writeClipboardText).toHaveBeenCalledOnce() })
+    expect(writeClipboardText.mock.calls[0]?.[0].text).toContain('Keep this prompt in the export.')
+    expect(writeClipboardText.mock.calls[0]?.[0].text).toContain('Keep this answer too.')
+    await vi.waitFor(() => { expect(result.terminal.output).toMatch(/copied \d+ chars? to clipboard/u) })
+
+    await openExport()
+    result.terminal.send('\x1b[B')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(writeTextFile).toHaveBeenCalledOnce() })
+    expect(writeTextFile.mock.calls[0]?.[0]).toMatchObject({
+      path: 'dsh-session-main-session.txt',
+      overwrite: false,
+      cwd: '/workspace',
+    })
+    await vi.waitFor(() => {
+      expect(result.terminal.output).toContain('Exported conversation to /workspace/dsh-session-main-session.txt.')
+    })
+    expect(result.agent.sent).toEqual([])
+    expect(result.agent.steered).toEqual([])
+    await dispose(result)
+  })
+
+  it('/export reports when neither clipboard nor file export is available', async () => {
+    const result = await setup()
+
+    result.terminal.send('/export')
+    result.terminal.send('\r')
+    await vi.waitFor(() => {
+      expect(result.terminal.output).toContain('Conversation export is unavailable because this runtime has no clipboard or text file')
+      expect(result.terminal.output).toContain('writer.')
+    })
+    expect(result.agent.sent).toEqual([])
+    expect(result.agent.steered).toEqual([])
+    await dispose(result)
+  })
+
+  it('/diff opens a read-only workspace pager without sending the diff to the agent', async () => {
+    const diff = vi.fn<NonNullable<TuiRuntime['workspaceHistory']>['diff']>(async () => ({
+      title: 'Workspace diff',
+      changedFiles: 1,
+      lines: ['Unstaged changes', '', 'diff --git a/demo.ts b/demo.ts', '+const answer = 42'],
+    }))
+    const history: NonNullable<TuiRuntime['workspaceHistory']> = {
+      createCheckpoint: async () => { throw new Error('not used') },
+      listCheckpoints: async () => [],
+      diff,
+      restoreCheckpoint: async () => { throw new Error('not used') },
+    }
+    const result = await setup({ omitInitialLifecycle: true, workspaceHistory: history })
+
+    result.terminal.send('/diff')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(diff).toHaveBeenCalledOnce() })
+    await vi.waitFor(() => {
+      expect(result.terminal.output).toContain('Workspace diff')
+      expect(result.terminal.output).toContain('+const answer = 42')
+    })
+    expect(diff.mock.calls[0]?.[0]).toMatchObject({ cwd: '/workspace', signal: expect.any(AbortSignal) })
+    result.terminal.send('q')
+    await tick()
+    expect(result.agent.sent).toEqual([])
+    expect(result.agent.steered).toEqual([])
+    await dispose(result)
+  })
+
+  it('/checkpoint records the stable conversation cut without adding it to model context', async () => {
+    const checkpoint: WorkspaceCheckpoint = {
+      id: WorkspaceCheckpointId('checkpoint-test-00000000-0000-4000-8000-000000000000'),
+      sessionId: SessionId('main-session'),
+      sessionBoundary: 3,
+      createdAt: 1_700_000_000_000,
+      label: 'before refactor',
+      workspace: { kind: 'git', trackedFiles: 2, untrackedFiles: 1 },
+    }
+    const createCheckpoint = vi.fn<NonNullable<TuiRuntime['workspaceHistory']>['createCheckpoint']>(async () => checkpoint)
+    const history: NonNullable<TuiRuntime['workspaceHistory']> = {
+      createCheckpoint,
+      listCheckpoints: async () => [],
+      diff: async () => ({ title: 'unused', lines: [], changedFiles: 0 }),
+      restoreCheckpoint: async () => { throw new Error('not used') },
+    }
+    const result = await setup({
+      workspaceHistory: history,
+      beforeMount(session) {
+        session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      },
+    })
+
+    result.terminal.send('/checkpoint before refactor')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(createCheckpoint).toHaveBeenCalledOnce() })
+    expect(createCheckpoint.mock.calls[0]?.[0]).toMatchObject({
+      cwd: '/workspace',
+      sessionId: SessionId('main-session'),
+      label: 'before refactor',
+      signal: expect.any(AbortSignal),
+    })
+    expect(createCheckpoint.mock.calls[0]?.[0].sessionBoundary).toBe(3)
+    await vi.waitFor(() => {
+      expect(result.terminal.output).toContain('Created checkpoint checkpoint-test-00000000-0000-4000-8000-000000000000.')
+    })
+    expect(result.agent.sent).toEqual([])
+    expect(result.agent.steered).toEqual([])
+    await dispose(result)
+  })
+
+  it('/rewind confirms both workspace restore and conversation branch before calling either host action', async () => {
+    const checkpoint: WorkspaceCheckpoint = {
+      id: WorkspaceCheckpointId('checkpoint-test-11111111-1111-4111-8111-111111111111'),
+      sessionId: SessionId('main-session'),
+      sessionBoundary: 2,
+      createdAt: 1_700_000_000_000,
+      label: 'release point',
+      workspace: { kind: 'git', trackedFiles: 1, untrackedFiles: 0 },
+    }
+    const backup: WorkspaceCheckpoint = {
+      ...checkpoint,
+      id: WorkspaceCheckpointId('checkpoint-test-22222222-2222-4222-8222-222222222222'),
+      sessionBoundary: 3,
+      label: 'Before rewind',
+    }
+    const restoreCheckpoint = vi.fn<NonNullable<TuiRuntime['workspaceHistory']>['restoreCheckpoint']>(async () => ({ backup }))
+    const swapFork = vi.fn<NonNullable<TuiRuntime['swapFork']>>(async () => {})
+    const history: NonNullable<TuiRuntime['workspaceHistory']> = {
+      createCheckpoint: async () => { throw new Error('not used') },
+      listCheckpoints: async () => [checkpoint],
+      diff: async () => ({ title: 'unused', lines: [], changedFiles: 0 }),
+      restoreCheckpoint,
+    }
+    const result = await setup({
+      workspaceHistory: history,
+      swapFork,
+      beforeMount(session) {
+        session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      },
+    })
+
+    result.terminal.send('/rewind')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(result.terminal.output).toContain('Select checkpoint to rewind') })
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(result.terminal.output).toContain('Choose rewind action') })
+    result.terminal.send('\x1b[B')
+    result.terminal.send('\x1b[B')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(result.terminal.output).toContain('Confirm rewind?') })
+    expect(restoreCheckpoint).not.toHaveBeenCalled()
+    expect(swapFork).not.toHaveBeenCalled()
+    result.terminal.send('y')
+    await vi.waitFor(() => {
+      expect(restoreCheckpoint).toHaveBeenCalledOnce()
+      expect(swapFork).toHaveBeenCalledOnce()
+    })
+    expect(restoreCheckpoint.mock.calls[0]?.[0]).toMatchObject({
+      checkpoint,
+      cwd: '/workspace',
+      sessionId: SessionId('main-session'),
+      sessionBoundary: 3,
+      signal: expect.any(AbortSignal),
+    })
+    expect(swapFork).toHaveBeenCalledWith(
+      checkpoint.sessionBoundary,
+      { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      expect.stringContaining(`safety checkpoint ${String(backup.id)}`),
+    )
+    expect(result.agent.sent).toEqual([])
+    expect(result.agent.steered).toEqual([])
+    await dispose(result)
   })
 
   it('applies an externally committed reasoning-display update to a mounted channel', async () => {
@@ -4386,10 +4636,31 @@ describe('pi-tui chat lifecycle and transcript', () => {
 
     result.terminal.send('\x13')
     await tick()
-    expect(result.terminal.output).toContain('[paste #1 1001 chars]')
+    expect(result.terminal.output).toContain('[Paste #1 1001 chars]')
     result.terminal.send('Z')
     result.terminal.send('\r')
     expect(result.agent.sent).toEqual([[{ type: 'text', text: `pre${pasted}Zpost` }]])
+    await dispose(result)
+  })
+
+  it('keeps repeated multiline pastes as separate inline draft blocks', async () => {
+    const result = await setup()
+    const first = 'one\ntwo\nthree\nfour'
+    const second = 'five\nsix'
+    result.terminal.send('before ')
+    result.terminal.send(`\x1b[200~${first}\x1b[201~`)
+    result.terminal.send(' between ')
+    result.terminal.send(`\x1b[200~${second}\x1b[201~`)
+    result.terminal.send(' after')
+    await tick()
+
+    expect(result.terminal.output).toContain('[Paste #1 +4 lines]')
+    expect(result.terminal.output).toContain('[Paste #2 +2 lines]')
+    result.terminal.send('\r')
+    expect(result.agent.sent).toEqual([[{
+      type: 'text',
+      text: `before ${first} between ${second} after`,
+    }]])
     await dispose(result)
   })
 
@@ -6839,7 +7110,7 @@ describe('tool cards and surface replay', () => {
       result.session.append('tool/call', { turn: 1, step: 1, callId: id as never, name, arguments: args })
     }
     await tick()
-    expect(result.terminal.output).toContain('$ raw command')
+    expect(result.terminal.output).toContain('Run(raw command)')
     result.terminal.send('/details reasoning off')
     result.terminal.send('\r')
     await tick()
@@ -6959,20 +7230,20 @@ describe('tool cards and surface replay', () => {
     expect(output).toContain('set\\x0aand echo')
     expect(output).toContain('lines (Ctrl+O to expand)')
     expect(output).toContain('SIGTERM')
-    // The header is a fixed `Tool / <name>` frame; the tool name shows there.
-    expect(output).toContain('Tool / bash')
-    expect(output).toContain('Tool / edit')
-    // An empty-string terminal description contributes no ` / <desc>` segment;
-    // the header ends at the tool name, and the command shows as the body $-line.
-    expect(output).toContain('Tool / emptyDescTerminal')
-    expect(output).not.toContain('Tool / emptyDescTerminal /')
-    expect(output).toContain('$ blank desc command')
+    // The header is a Claude Code `Verb(argument)` title; the tool name folds
+    // into the verb, and the terminal command stays visible in the header.
+    expect(output).toContain('Run(printf hello)')
+    expect(output).toContain('Edit')
+    // An empty-string terminal description contributes no ` · <desc>` segment;
+    // the header keeps the presenter's command instead.
+    expect(output).toContain('Run(blank desc command)')
+    expect(output).not.toContain('Run(blank desc command) · ')
     // A card whose title only repeats the name renders header-only (empty body).
-    expect(output).toContain('Tool / emptyBody')
+    expect(output).toContain('Tool')
     // A search result view carries no `content` of its own, so the card renders
     // the raw model-facing result text through the same dim generic body — the
     // TUI has no dedicated search arm.
-    expect(output).toContain('Tool / search')
+    expect(output).toContain('Search(todo)')
     expect(output).toContain('Line 1: todo one')
     // A diff card drops its title (the paths + change footer carry the meaning).
     // The first file's path is head-visible; the second file and the change
@@ -7039,7 +7310,7 @@ describe('tool cards and surface replay', () => {
     result.terminal.send('\x0c')
     await tick()
     const hiddenFrame = result.terminal.output.slice(result.terminal.output.lastIndexOf('\x1b[2J'))
-    expect(hiddenFrame).not.toContain('Tool / bash')
+    expect(hiddenFrame).not.toContain('Run(printf hello)')
     expect(hiddenFrame).not.toContain('Run command')
     expect(hiddenFrame).not.toContain('fallback result body')
     // The dozen hidden cards leave no per-card blank rows behind: each card owns
@@ -7058,7 +7329,7 @@ describe('tool cards and surface replay', () => {
     await dispose(result)
   })
 
-  it('names a single-file diff in the body once, under a fixed Tool header', async () => {
+  it('names a single-file diff in the body once, under an unknown-tool title', async () => {
     const result = await setup({ tools, config: { maxToolOutputLines: 20 } })
     appendUser(result.session, 'edit one file')
     appendAssistant(result.session, [
@@ -7070,9 +7341,10 @@ describe('tool cards and surface replay', () => {
     })
     await tick()
     const output = result.terminal.output
-    // The header is a fixed `Tool / <name>` frame; the diff title is dropped and
-    // the file path shows once in the body, above the change footer.
-    expect(output).toContain('Tool / singleDiff')
+    // The header falls back to the bare unknown-tool verb `Tool`; the diff
+    // title is dropped and the file path shows once in the body, above the
+    // change footer.
+    expect(output).toContain('Tool')
     expect(output).not.toContain('Edit src/only.ts')
     expect(output.split('src/only.ts').length - 1).toBe(1)
     expect(output).toContain('  my: my-MM')
@@ -7339,7 +7611,7 @@ describe('tool cards and surface replay', () => {
     expect(liveRender).toContain('old prompt')
     // The shadowed step keeps its card: one call row, one full result, no
     // second card from the pruned copy.
-    expect(liveRender.split('$ printf hello')).toHaveLength(2)
+    expect(liveRender.split('Run(printf hello)')).toHaveLength(2)
     expect(liveRender).toContain('third')
     expect(liveRender.split('[exit 0]')).toHaveLength(2)
     expect(liveRender.split('… earlier context was compacted …')).toHaveLength(2)
@@ -7357,7 +7629,7 @@ describe('tool cards and surface replay', () => {
     await tick()
     const replayRender = result.terminal.output.slice(result.terminal.output.lastIndexOf('\x1b[2J'))
     expect(replayRender).toContain('old prompt')
-    expect(replayRender.split('$ printf hello')).toHaveLength(2)
+    expect(replayRender.split('Run(printf hello)')).toHaveLength(2)
     expect(replayRender).toContain('third')
     expect(replayRender.split('[exit 0]')).toHaveLength(2)
     expect(replayRender.split('… earlier context was compacted …')).toHaveLength(2)
@@ -7409,9 +7681,6 @@ describe('tool cards and surface replay', () => {
     .slice(terminal.output.lastIndexOf('\x1b[2J'))
     .replaceAll(/\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\r/g, '')
 
-  const countAssistantHeaders = (frame: string): number => frame.split('\n')
-    .filter(row => row.trim() === 'Assistant').length
-
   it('keeps accepted user input ahead of the assistant when step/start is logged first', async () => {
     const result = await setup()
     result.session.append('turn/start', { turn: 1 })
@@ -7425,8 +7694,7 @@ describe('tool cards and surface replay', () => {
     await tick()
 
     const live = lastFrame(result.terminal)
-    expect(live.indexOf('ordered prompt')).toBeLessThan(live.indexOf('Assistant'))
-    expect(live.indexOf('Assistant')).toBeLessThan(live.indexOf('ordered answer'))
+    expect(live.indexOf('❯ ordered prompt')).toBeLessThan(live.indexOf('ordered answer'))
 
     result.terminal.send('/details reasoning off')
     result.terminal.send('\r')
@@ -7434,8 +7702,7 @@ describe('tool cards and surface replay', () => {
     result.terminal.resize(result.terminal.columns + 1)
     await tick()
     const replayed = lastFrame(result.terminal)
-    expect(replayed.indexOf('ordered prompt')).toBeLessThan(replayed.indexOf('Assistant'))
-    expect(replayed.indexOf('Assistant')).toBeLessThan(replayed.indexOf('ordered answer'))
+    expect(replayed.indexOf('❯ ordered prompt')).toBeLessThan(replayed.indexOf('ordered answer'))
     await dispose(result)
   })
 
@@ -7457,40 +7724,42 @@ describe('tool cards and surface replay', () => {
     session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
   }
 
-  it('folds a turn to one Assistant header in hidden mode and restores headers on cycle', async () => {
+  it('drops tool cards while hidden and restores them on cycle', async () => {
     const result = await setup({ tools })
     appendTwoStepTurn(result.session)
     await tick()
 
-    // Collapsed (default): each step keeps its own header.
+    // Collapsed (default): both steps' text and the settled tool card show.
     result.terminal.send('\x0c')
     await tick()
-    expect(countAssistantHeaders(lastFrame(result.terminal))).toBe(2)
+    const collapsed = lastFrame(result.terminal)
+    expect(collapsed).toContain('first step text')
+    expect(collapsed).toContain('second step text')
+    expect(collapsed).toContain('[exit 0]')
 
-    // collapsed -> expanded -> hidden.
+    // collapsed -> expanded -> hidden: the tool card disappears, the two
+    // assistant text bodies remain in model order.
     result.terminal.send('\x0f')
     result.terminal.send('\x0f')
     await tick()
     result.terminal.send('\x0c')
     await tick()
     const hidden = lastFrame(result.terminal)
-    expect(countAssistantHeaders(hidden)).toBe(1)
     expect(hidden).toContain('first step text')
     expect(hidden).toContain('second step text')
-    expect(hidden).not.toContain('Tool / bash')
-    // The fold keeps model order: header text precedes the continuation.
+    expect(hidden).not.toContain('[exit 0]')
     expect(hidden.indexOf('first step text')).toBeLessThan(hidden.indexOf('second step text'))
 
-    // hidden -> collapsed restores per-step headers.
+    // hidden -> collapsed restores the tool card.
     result.terminal.send('\x0f')
     await tick()
     result.terminal.send('\x0c')
     await tick()
-    expect(countAssistantHeaders(lastFrame(result.terminal))).toBe(2)
+    expect(lastFrame(result.terminal)).toContain('[exit 0]')
     await dispose(result)
   })
 
-  it('gives the hidden-mode header to the first step with a visible body and keeps turns separate', async () => {
+  it('keeps hidden tool-only steps gap-free and turns separate', async () => {
     const result = await setup({ tools })
     // Turn 1, step 1 is tool-only; step 2 carries the turn's text.
     appendUser(result.session, 'tool-only first step')
@@ -7507,7 +7776,7 @@ describe('tool cards and surface replay', () => {
     appendAssistant(result.session, [{ type: 'text', text: 'late turn-one text' }], undefined, { turn: 1, step: 2 })
     result.session.append('step/end', { turn: 1, step: 2 })
     result.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
-    // Turn 2 keeps its own header.
+    // Turn 2 stays visible.
     result.session.append('turn/start', { turn: 2 })
     appendUser(result.session, 'next turn')
     result.session.append('step/start', { turn: 2, step: 1 })
@@ -7522,14 +7791,14 @@ describe('tool cards and surface replay', () => {
     result.terminal.send('\x0c')
     await tick()
     const hidden = lastFrame(result.terminal)
-    // One header per turn: the tool-only step neither renders a blank segment
-    // nor consumes turn one's header, which the late text step owns.
-    expect(countAssistantHeaders(hidden)).toBe(2)
+    // The hidden tool-only step contributes no card and no blank gap; its turn's
+    // late text and the next turn's text both stay visible.
+    expect(hidden).not.toContain('tool body')
     expect(hidden).toContain('late turn-one text')
     expect(hidden).toContain('turn-two text')
-    const rows = hidden.split('\n').map(row => row.trim())
-    const turnOneHeader = rows.indexOf('Assistant')
-    expect(rows[turnOneHeader + 1]).toBe('late turn-one text')
+    const rows = hidden.split('\n').map(row => row.replaceAll(/\x1b\[[0-9;]*[A-Za-z]/g, '').trim())
+    expect(rows.indexOf('late turn-one text')).toBeGreaterThan(-1)
+    expect(rows.indexOf('late turn-one text')).toBeLessThan(rows.indexOf('turn-two text'))
     await dispose(result)
   })
 
@@ -7546,15 +7815,15 @@ describe('tool cards and surface replay', () => {
     result.terminal.send('\x0c')
     await tick()
     const hidden = lastFrame(result.terminal)
-    expect(countAssistantHeaders(hidden)).toBe(1)
     expect(hidden).toContain('live first')
     expect(hidden).toContain('live second')
+    expect(hidden.indexOf('live first')).toBeLessThan(hidden.indexOf('live second'))
 
     // A transcript rebuild (resize) recomputes the same fold from the log.
     result.terminal.resize(89)
     await tick()
     const rebuilt = lastFrame(result.terminal)
-    expect(countAssistantHeaders(rebuilt)).toBe(1)
+    expect(rebuilt).toContain('live first')
     expect(rebuilt).toContain('live second')
     await dispose(result)
   })
@@ -8725,8 +8994,9 @@ describe('terminal mounting', () => {
     result.terminal.send('\x1b[?997;2n')
     await tick()
     await tick()
-    // The rebuild re-renders under the light palette, where `code` is ANSI 34
-    // (blue) rather than the dark scheme's ANSI 36 (cyan); `dim` is unchanged.
+    // The rebuild re-renders under the light Claude fallback, where `code` is
+    // ANSI 34 (blue) rather than the dark fallback's ANSI 95 (bright magenta);
+    // `dim` is unchanged.
     expect(result.terminal.output).toContain('\x1b[2;39mdeepseek-v4-flash')
 
     result.terminal.send('\x1b[?997;1n')
@@ -8754,7 +9024,7 @@ describe('terminal mounting', () => {
     })
     await tick()
     // The `~/` abbreviation uses the platform separator (`~\` on Windows).
-    expect(terminal.output).toContain(process.platform === 'win32' ? '\x1b[95m~\\' : '\x1b[95m~/')
+    expect(terminal.output).toContain(process.platform === 'win32' ? '\x1b[33m~\\' : '\x1b[33m~/')
     expect(terminal.output).toContain('\x1b[2;39m (tui-staging)')
     await disposeTuiTestHarness(result)
   })
@@ -8874,9 +9144,10 @@ describe('banner sweep reveal', () => {
     expect(result.terminal.output).toContain('DEEPSEEK')
     expect(result.terminal.output).toContain('HARNESS')
     expect(result.terminal.output).toContain('main-session')
-    // Borderless: no box-drawing frame around the banner.
-    expect(result.terminal.output).not.toContain('╭')
-    expect(result.terminal.output).not.toContain('╮')
+    // Borderless: the banner rows themselves carry no box-drawing frame (the
+    // Claude Code input rail below the transcript owns the `╭`/`╮` corners).
+    expect(result.terminal.output).toContain(' DEEPSEEK')
+    expect(result.terminal.output).not.toContain('╭ DEEPSEEK')
     // A mid-sweep frame rendered a clipped title: `DEEPSEEK` with no `HARNESS`
     // on the same line.
     const clipped = result.terminal.output
@@ -8890,8 +9161,8 @@ describe('banner sweep reveal', () => {
     const result = await setup()
     await tick()
     expect(result.terminal.output).toContain('Coding agent ready.')
-    expect(result.terminal.output).toContain('DEEPSEEK')
-    expect(result.terminal.output).not.toContain('╭')
+    expect(result.terminal.output).toContain(' DEEPSEEK')
+    expect(result.terminal.output).not.toContain('╭ DEEPSEEK')
     // No reveal frames: the banner is drawn whole from the first render, so no
     // clipped-title frame ever appears.
     const clipped = result.terminal.output

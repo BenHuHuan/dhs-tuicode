@@ -22,6 +22,8 @@ export const TUI_STARTUP_SERVICE = 'tuiStartup'
 export interface TuiStartupValues {
   /** The session to resume in place; absent starts a uniquely identified fresh session. */
   resumeSessionId?: string
+  /** Start in full-access/never-ask mode after an explicit CLI opt-in. */
+  dangerouslySkipPermissions?: boolean
 }
 
 /**
@@ -34,10 +36,12 @@ function tuiCommand(): Command {
     .description('Start the interactive terminal UI driving one agent session.')
     .helpOption('-h, --help', 'show this help')
     .option('--resume <sessionId>', 'resume the named session in place instead of starting fresh')
+    .option('--dangerously-skip-permissions', 'start in full-access mode without approval prompts')
     .addHelpText('after', `
 Examples:
   dsh --profile tui                 start a fresh interactive session
   dsh --profile tui --resume <id>   resume an existing session
+  dsh --profile tui --dangerously-skip-permissions
 `)
 }
 
@@ -50,9 +54,10 @@ Examples:
  */
 export function apply(ctx: Context): void {
   const program = tuiCommand()
-  program.action((options: { resume?: string }) => {
+  program.action((options: { resume?: string; dangerouslySkipPermissions?: boolean }) => {
     ctx.provide(TUI_STARTUP_SERVICE, {
       ...(options.resume === undefined ? {} : { resumeSessionId: options.resume }),
+      ...(options.dangerouslySkipPermissions === true ? { dangerouslySkipPermissions: true } : {}),
     } satisfies TuiStartupValues)
   })
   parseCmdline(ctx, program)

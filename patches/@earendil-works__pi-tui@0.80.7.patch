@@ -38,7 +38,7 @@ index a6fedc9e3b36d066e34860d040db6df47d88c432..f0b20eb87686215d1d1a54274a7b1ebd
       * Add a prompt to history for up/down arrow navigation.
       * Called after successful submission.
 diff --git a/dist/components/editor.js b/dist/components/editor.js
-index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3f5692e9e 100644
+index 6c03aeec4148571558713e885ac7f7df18a511bc..b87e98c2612a60abb90d14e2743d20bd7d47a4da 100644
 --- a/dist/components/editor.js
 +++ b/dist/components/editor.js
 @@ -79,7 +79,7 @@ function segmentWithMarkers(text, baseSegmenter, validIds) {
@@ -239,7 +239,21 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
              let displayText = layoutLine.text;
              let lineVisibleWidth = visibleWidth(layoutLine.text);
              let cursorInPadding = false;
-@@ -439,34 +497,41 @@ export class Editor {
+@@ -429,44 +487,53 @@ export class Editor {
+                     const afterGraphemes = [...this.segment(after, "grapheme")];
+                     const firstGrapheme = afterGraphemes[0]?.segment || "";
+                     const restAfter = after.slice(firstGrapheme.length);
+-                    const cursor = `\x1b[7m${firstGrapheme}\x1b[0m`;
++                    const cursor = this.tui.getShowHardwareCursor()
++                        ? firstGrapheme
++                        : `\x1b[7m${firstGrapheme}\x1b[0m`;
+                     displayText = before + marker + cursor + restAfter;
+                     // lineVisibleWidth stays the same - we're replacing, not adding
+                 }
+                 else {
+                     // Cursor is at the end - add highlighted space
+-                    const cursor = "\x1b[7m \x1b[0m";
++                    const cursor = this.tui.getShowHardwareCursor() ? " " : "\x1b[7m \x1b[0m";
                      displayText = before + marker + cursor;
                      lineVisibleWidth = lineVisibleWidth + 1;
                      // If cursor overflows content width into the padding, flag it
@@ -291,7 +305,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
              }
          }
          return result;
-@@ -726,7 +791,7 @@ export class Editor {
+@@ -726,7 +793,7 @@ export class Editor {
              this.insertCharacter(data);
          }
      }
@@ -300,7 +314,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
          const layoutLines = [];
          if (this.state.lines.length === 0 || (this.state.lines.length === 1 && this.state.lines[0] === "")) {
              // Empty editor
-@@ -734,6 +799,7 @@ export class Editor {
+@@ -734,6 +801,7 @@ export class Editor {
                  text: "",
                  hasCursor: true,
                  cursorPos: 0,
@@ -308,7 +322,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
              });
              return layoutLines;
          }
-@@ -749,18 +815,20 @@ export class Editor {
+@@ -749,18 +817,20 @@ export class Editor {
                          text: line,
                          hasCursor: true,
                          cursorPos: this.state.cursorCol,
@@ -330,7 +344,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
                  for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
                      const chunk = chunks[chunkIndex];
                      if (!chunk)
-@@ -796,12 +864,14 @@ export class Editor {
+@@ -796,12 +866,14 @@ export class Editor {
                              text: chunk.text,
                              hasCursor: true,
                              cursorPos: adjustedCursorPos,
@@ -345,7 +359,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
                          });
                      }
                  }
-@@ -941,7 +1011,7 @@ export class Editor {
+@@ -941,7 +1013,7 @@ export class Editor {
                  const currentLine = this.state.lines[this.state.cursorLine] || "";
                  const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
                  const charBeforeSymbol = textBeforeCursor[textBeforeCursor.length - 2];
@@ -354,7 +368,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
                      this.tryTriggerAutocomplete();
                  }
              }
-@@ -1439,7 +1509,7 @@ export class Editor {
+@@ -1439,7 +1511,7 @@ export class Editor {
       * - startCol: starting column in the logical line
       * - length: length of this visual line segment
       */
@@ -363,7 +377,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
          const visualLines = [];
          for (let i = 0; i < this.state.lines.length; i++) {
              const line = this.state.lines[i] || "";
-@@ -1453,7 +1523,7 @@ export class Editor {
+@@ -1453,7 +1525,7 @@ export class Editor {
              }
              else {
                  // Line needs wrapping - use word-aware wrapping
@@ -372,7 +386,7 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
                  for (const chunk of chunks) {
                      visualLines.push({
                          logicalLine: i,
-@@ -1849,7 +1919,7 @@ export class Editor {
+@@ -1849,7 +1921,7 @@ export class Editor {
      setAutocompleteTriggerCharacters(triggerCharacters) {
          const next = [...DEFAULT_AUTOCOMPLETE_TRIGGER_CHARACTERS];
          for (const character of triggerCharacters) {
@@ -381,3 +395,24 @@ index 6c03aeec4148571558713e885ac7f7df18a511bc..2f2d2f2b22924b37b38158adb236ebd3
                  continue;
              }
              next.push(character);
+diff --git a/dist/terminal-image.js b/dist/terminal-image.js
+index 3a1b2df81ef8249f52373211689fe45b213ba401..9fa8a453a3be286c9fdcac765adee98ac83a6752 100644
+--- a/dist/terminal-image.js
++++ b/dist/terminal-image.js
+@@ -93,13 +93,14 @@ export function setCapabilities(caps) {
+ }
+ const KITTY_PREFIX = "\x1b_G";
+ const ITERM2_PREFIX = "\x1b]1337;File=";
++const SIXEL_PREFIX = "\x1bP0;1;0q";
+ export function isImageLine(line) {
+     // Fast path: sequence at line start (single-row images)
+-    if (line.startsWith(KITTY_PREFIX) || line.startsWith(ITERM2_PREFIX)) {
++    if (line.startsWith(KITTY_PREFIX) || line.startsWith(ITERM2_PREFIX) || line.startsWith(SIXEL_PREFIX)) {
+         return true;
+     }
+     // Slow path: sequence elsewhere (multi-row images have cursor-up prefix)
+-    return line.includes(KITTY_PREFIX) || line.includes(ITERM2_PREFIX);
++    return line.includes(KITTY_PREFIX) || line.includes(ITERM2_PREFIX) || line.includes(SIXEL_PREFIX);
+ }
+ /**
+  * Generate a random image ID for Kitty graphics protocol.

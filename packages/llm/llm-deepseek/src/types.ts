@@ -21,6 +21,7 @@ export interface WireRequest {
   reasoning_effort?: 'high' | 'max'
   tools?: WireTool[]
   temperature?: number
+  top_p?: number
   max_tokens?: number
   /**
    * Stop sequences (OpenAI `stop`): generation halts as soon as the model

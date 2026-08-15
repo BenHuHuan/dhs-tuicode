@@ -1,10 +1,10 @@
 terminal 92x32 buffer=normal length=32 base=0 viewport=0
 lifecycle started=1 stopped=0 progress=inactive
 title "DSH snapshot"
-cursor hidden column=7 viewportRow=5 bufferRow=5
+cursor hidden column=4 viewportRow=6 bufferRow=6
 viewport
 0| " DEEPSEEK HARNESS"
-  style 1-8 fg=bright-magenta bold
+  style 1-8 fg=yellow bold
   style 10-16 bold
 1| " Snapshot agent ready."
   style 1-21 dim
@@ -12,12 +12,16 @@ viewport
   style 1-12 dim
 3| <blank>
 4| "/workspace/project (tui-staging)  deepseek-v4-flash  ↑0 ↓0  0% context"
-  style 0-17 fg=bright-magenta bold
+  style 0-17 fg=yellow bold
   style 18-31 dim
   style 34-50 dim
   style 53-57 dim
   style 60-69 dim
-5| " dsh > Prompt stashed · Ctrl+S to restore                                                   "
-  style 1-3 fg=bright-magenta bold
-  style 5-40 dim
-6-31| <blank>
+5| "╭──────────────────────────────────────────────────────────────────────────────────────────╮"
+  style 0-91 dim
+6| " ❯  Prompt stashed · Ctrl+S to restore                                                      "
+  style 1-1 fg=yellow bold
+  style 2-37 dim
+7| "╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+  style 0-91 dim
+8-31| <blank>

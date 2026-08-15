@@ -261,8 +261,10 @@ export class HeadlessTerminal implements Terminal {
   }
 
   /**
-   * Reject palette output that would become theme-specific in a user's terminal.
-   * @returns One location per RGB, extended-palette, or explicit-background cell.
+   * Locate terminal cells outside the palette policy: background fills,
+   * extended-palette codes, and — for ANSI-fallback checkpoints — any 24-bit
+   * foreground.
+   * @returns One location per violating cell, with its violating attributes.
    */
   themeViolations(): string[] {
     const violations: string[] = []

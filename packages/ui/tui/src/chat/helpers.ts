@@ -19,6 +19,18 @@ import { isCompactCheckpointSource } from '@deepseek-ai/dsh-compaction'
 import { isAppendSurfaceEvent, isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
+import {
+  BRACKETED_PASTE_END,
+  BRACKETED_PASTE_START,
+  sanitizePastedText,
+} from '../components/text.ts'
+
+interface PasteEditorInternals {
+  pastes: Map<number, string>
+  pasteCounter: number
+}
+
+const PASTE_BADGE_PATTERN = /\[paste #(\d+)( (?:\+\d+ lines|\d+ chars))?\]/gu
 
 /** Editor that shows a placeholder without making it editable content. */
 export class HintEditor extends Editor {
@@ -26,10 +38,68 @@ export class HintEditor extends Editor {
   hint: string | undefined
   /** Prompt text rendered before the placeholder, matching the live prompt width. */
   hintPrefix = ''
+  private bracketedPaste: string | undefined
+
+  private commitPaste(raw: string): void {
+    const decoded = raw.replace(/\u001B\[(\d+);5u/gu, (match, code: string) => {
+      const point = Number(code)
+      if (point >= 97 && point <= 122) return String.fromCharCode(point - 96)
+      if (point >= 65 && point <= 90) return String.fromCharCode(point - 64)
+      return match
+    })
+    const clean = sanitizePastedText(
+      decoded.replace(/\r\n?/gu, '\n').replaceAll('\t', '    '),
+    )
+    if (clean === '') return
+    const lines = clean.split('\n')
+    if (lines.length === 1 && clean.length <= 1_000) {
+      this.insertTextAtCursor(clean)
+      return
+    }
+    const internals = this as unknown as PasteEditorInternals
+    const id = internals.pasteCounter + 1
+    internals.pasteCounter = id
+    internals.pastes.set(id, clean)
+    const detail = lines.length > 1 ? `+${String(lines.length)} lines` : `${String(clean.length)} chars`
+    // Retain pi-tui's marker grammar so submit, undo, cursor segmentation, and
+    // deletion continue to treat every paste as one atomic draft component.
+    this.insertTextAtCursor(`[paste #${String(id)} ${detail}]`)
+  }
+
+  override handleInput(data: string): void {
+    let remaining = data
+    while (remaining !== '') {
+      if (this.bracketedPaste === undefined) {
+        const start = remaining.indexOf(BRACKETED_PASTE_START)
+        if (start < 0) {
+          super.handleInput(remaining)
+          return
+        }
+        const prefix = remaining.slice(0, start)
+        if (prefix !== '') super.handleInput(prefix)
+        this.bracketedPaste = ''
+        remaining = remaining.slice(start + BRACKETED_PASTE_START.length)
+      }
+      const end = remaining.indexOf(BRACKETED_PASTE_END)
+      if (end < 0) {
+        this.bracketedPaste += remaining
+        return
+      }
+      this.bracketedPaste += remaining.slice(0, end)
+      this.commitPaste(this.bracketedPaste)
+      this.bracketedPaste = undefined
+      remaining = remaining.slice(end + BRACKETED_PASTE_END.length)
+    }
+  }
 
   override render(width: number): string[] {
     const lines = super.render(width)
-    if (this.hint === undefined || this.getText() !== '') return lines
+    const decorated = lines.map(line => line.replace(
+      PASTE_BADGE_PATTERN,
+      (_match, id: string, detail: string | undefined) =>
+        `\x1b[1;97;48;2;22;64;122m[Paste #${id}${detail ?? ''}]\x1b[22;39;49m`,
+    ))
+    if (this.hint === undefined || this.getText() !== '') return decorated
     const content = lines[0]
     /* v8 ignore next -- Editor always renders one content row. */
     if (content === undefined) return lines
@@ -39,8 +109,8 @@ export class HintEditor extends Editor {
     const available = Math.max(0, width - visibleWidth(padding) - visibleWidth(this.hintPrefix))
     const placeholder = truncateToWidth(this.hint, available, '')
     const used = visibleWidth(padding) + visibleWidth(this.hintPrefix) + visibleWidth(placeholder)
-    lines[0] = `${padding}${this.hintPrefix}${marker}${placeholder}${' '.repeat(Math.max(0, width - used))}`
-    return lines
+    decorated[0] = `${padding}${this.hintPrefix}${marker}${placeholder}${' '.repeat(Math.max(0, width - used))}`
+    return decorated
   }
 }
 

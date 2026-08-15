@@ -131,3 +131,16 @@ describe('/permission command', () => {
       event.type !== 'command/run' && event.type !== 'command/done')).toEqual(before)
   })
 })
+
+describe('/bypass command', () => {
+  it('toggles full access without an environment variable', async () => {
+    const { ctx, session } = await harness()
+    const { agent } = await agentFor(ctx, session)
+    await expect(ctx.commands.execute(agent, '/bypass', new AbortController().signal))
+      .resolves.toMatchObject({ result: { kind: 'success', text: 'bypass on (danger-full-access)' } })
+    expect(ctx.permissionPresets.current(session.events)).toBe('danger-full-access')
+    await expect(ctx.commands.execute(agent, '/bypass off', new AbortController().signal))
+      .resolves.toMatchObject({ result: { kind: 'success', text: 'bypass off (workspace-write)' } })
+    expect(ctx.permissionPresets.current(session.events)).toBe('workspace-write')
+  })
+})

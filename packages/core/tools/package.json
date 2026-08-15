@@ -22,6 +22,10 @@
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
     },
+    "./bootstrap": {
+      "types": "./lib/types/bootstrap.d.ts",
+      "default": "./lib/bootstrap.js"
+    },
     "./types": {
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
@@ -36,6 +40,7 @@
   "files": [
     "lib/index.js",
     "lib/invariant.js",
+    "lib/bootstrap.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],

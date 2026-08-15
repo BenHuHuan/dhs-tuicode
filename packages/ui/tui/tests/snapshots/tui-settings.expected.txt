@@ -4,7 +4,7 @@ title "DSH snapshot"
 cursor hidden column=96 viewportRow=18 bufferRow=18
 buffer
 0| " DEEPSEEK HARNESS"
-  style 1-8 fg=bright-magenta bold
+  style 1-8 fg=yellow bold
   style 10-16 bold
 1| " Snapshot agent ready."
   style 1-21 dim
@@ -12,40 +12,44 @@ buffer
   style 1-12 dim
 3| <blank>
 4| "/workspace/project (tui-staging)  deepseek-v4-flash  ↑0 ↓0  0% context"
-  style 0-17 fg=bright-magenta bold
+  style 0-17 fg=yellow bold
   style 18-31 dim
   style 34-50 dim
   style 53-57 dim
   style 60-69 dim
-5| " dsh >                                                                                          "
-  style 1-3 fg=bright-magenta bold
-  style 5-6 dim
-  style 7-7 inverse
-6-10| <blank>
+5| "╭──────────────────────────────────────────────────────────────────────────────────────────────╮"
+  style 0-95 dim
+6| " ❯                                                                                              "
+  style 1-1 fg=yellow bold
+  style 2-3 dim
+  style 4-4 inverse
+7| "╰──────────────────────────────────────────────────────────────────────────────────────────────╯"
+  style 0-95 dim
+8-10| <blank>
 11| "            ╭ TUI settings ────────────────────────────────────────────────────────╮            "
-  style 12-83 fg=bright-magenta
+  style 12-83 fg=yellow
 12| "            │   Reasoning blocks                shown                              │            "
-  style 12-12 fg=bright-magenta
+  style 12-12 fg=yellow
   style 32-52 dim
-  style 83-83 fg=bright-magenta
+  style 83-83 fg=yellow
 13| "            │ → External editor context         included                           │            "
-  style 12-12 fg=bright-magenta
-  style 14-55 fg=bright-magenta inverse
-  style 83-83 fg=bright-magenta
+  style 12-12 fg=yellow
+  style 14-55 fg=yellow inverse
+  style 83-83 fg=yellow
 14| "            │                                                                      │            "
-  style 12-12 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 12-12 fg=yellow
+  style 83-83 fg=yellow
 15| "            │ Saved external editor context.                                       │            "
-  style 12-12 fg=bright-magenta
+  style 12-12 fg=yellow
   style 14-43 dim
-  style 83-83 fg=bright-magenta
+  style 83-83 fg=yellow
 16| "            │                                                                      │            "
-  style 12-12 fg=bright-magenta
-  style 83-83 fg=bright-magenta
+  style 12-12 fg=yellow
+  style 83-83 fg=yellow
 17| "            │ ↑/↓ move • Enter/Space toggle • Esc close                            │            "
-  style 12-12 fg=bright-magenta
+  style 12-12 fg=yellow
   style 14-54 dim
-  style 83-83 fg=bright-magenta
+  style 83-83 fg=yellow
 18| "            ╰──────────────────────────────────────────────────────────────────────╯            "
-  style 12-83 fg=bright-magenta
+  style 12-83 fg=yellow
 19-29| <blank>

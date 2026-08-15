@@ -68,6 +68,10 @@ export interface Config {
   thinking?: 'enabled' | 'disabled'
   /** Default thinking effort (default `high`); `off` disables thinking per request. */
   reasoningEffort?: 'off' | 'high' | 'max'
+  /** Default sampling temperature sent when a request does not override it. */
+  temperature?: number
+  /** Fixed nucleus-sampling probability sent on every request. */
+  topP?: number
   /** Default per-request output cap (default 256,000); a model's own cap and explicit request values win. */
   maxTokens?: number
   /** Positive context capacity used when the selected model has no exact value (default 1,000,000). */
@@ -93,6 +97,8 @@ export const Config: z<Config> = z.object({
   baseURL: z.string(),
   thinking: z.union(['enabled', 'disabled']),
   reasoningEffort: z.union(['off', 'high', 'max']),
+  temperature: z.number().min(0).max(2),
+  topP: z.number().min(0).max(1),
   maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_TOKENS),
   defaultContextWindow: z.number().step(1).min(1).default(DEFAULT_CONTEXT_WINDOW),
   models: z.array(catalogModel).default(DEFAULT_MODELS),
@@ -172,6 +178,14 @@ export function resolveAdapterOptions(config: Config, environment?: LaunchEnviro
     && (!Number.isSafeInteger(config.maxTokens) || config.maxTokens <= 0)) {
     throw new Error('llm-deepseek: maxTokens must be a positive safe integer')
   }
+  if (config.temperature !== undefined
+    && (!Number.isFinite(config.temperature) || config.temperature < 0 || config.temperature > 2)) {
+    throw new Error('llm-deepseek: temperature must be between 0 and 2')
+  }
+  if (config.topP !== undefined
+    && (!Number.isFinite(config.topP) || config.topP < 0 || config.topP > 1)) {
+    throw new Error('llm-deepseek: topP must be between 0 and 1')
+  }
   const streamIdleTimeoutMs = config.streamIdleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS
   if (!Number.isFinite(streamIdleTimeoutMs)
     || streamIdleTimeoutMs <= 0
@@ -188,6 +202,8 @@ export function resolveAdapterOptions(config: Config, environment?: LaunchEnviro
     defaults: {
       thinking: config.thinking,
       reasoningEffort: config.reasoningEffort,
+      temperature: config.temperature,
+      topP: config.topP,
     },
     maxTokens: config.maxTokens ?? DEFAULT_MAX_TOKENS,
     defaultContextWindow: config.defaultContextWindow ?? DEFAULT_CONTEXT_WINDOW,

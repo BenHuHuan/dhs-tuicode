@@ -64,7 +64,7 @@
       name: '@deepseek-ai/dsh-agent-default-model'
       config:
         provider: deepseek-official
-        model: deepseek-v4-flash
+        model: deepseek-v4-pro
 
     - id: jobs
       name: '@deepseek-ai/dsh-jobs-local'
@@ -177,13 +177,14 @@
 
     - id: bash-sandbox
       name: '@deepseek-ai/dsh-bash-sandbox'
-      disabled: !!js process.platform === 'win32'
+      disabled: !!js process.platform === 'win32' && ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') !== 'danger-full-access' || !process.getBuiltinModule('node:fs').existsSync(process.env.DSH_BASH_PATH ?? 'C:/Program Files/Git/bin/bash.exe'))
       config:
+        executable: !!js "process.env.DSH_BASH_PATH ?? (process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : 'bash')"
         timeoutMs: 60000
 
     - id: pwsh-sandbox
       name: '@deepseek-ai/dsh-pwsh-sandbox'
-      disabled: !!js process.platform !== 'win32'
+      disabled: !!js process.platform !== 'win32' || ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' && process.getBuiltinModule('node:fs').existsSync(process.env.DSH_BASH_PATH ?? 'C:/Program Files/Git/bin/bash.exe'))
 
     - id: approval
       name: '@deepseek-ai/dsh-user-approval'
@@ -200,6 +201,13 @@
           workspace-write:
             sandbox: workspace-write
             approval: ask
+            name: Build
+            description: Write inside the workspace and ask before sensitive actions.
+          workspace-auto:
+            sandbox: workspace-write
+            approval: never
+            name: Flow
+            description: Work autonomously while remaining confined to the workspace.
           danger-full-access:
             sandbox: danger-full-access
             approval: never
@@ -209,11 +217,11 @@
 
     - id: tool-bash
       name: '@deepseek-ai/dsh-tool-bash'
-      disabled: !!js process.platform === 'win32'
+      disabled: !!js process.platform === 'win32' && ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') !== 'danger-full-access' || !process.getBuiltinModule('node:fs').existsSync(process.env.DSH_BASH_PATH ?? 'C:/Program Files/Git/bin/bash.exe'))
 
     - id: tool-pwsh
       name: '@deepseek-ai/dsh-tool-pwsh'
-      disabled: !!js process.platform !== 'win32'
+      disabled: !!js process.platform !== 'win32' || ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' && process.getBuiltinModule('node:fs').existsSync(process.env.DSH_BASH_PATH ?? 'C:/Program Files/Git/bin/bash.exe'))
 
     - id: tool-jobs
       name: '@deepseek-ai/dsh-tool-jobs'
@@ -239,6 +247,14 @@
 
     - id: skill-filesystem
       name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        # Share the user's ordinary and built-in Codex skills with DSH. Codex
+        # keeps `.system` one level below its skill root, while the filesystem
+        # provider intentionally scans one level at a time, so both roots are
+        # explicit. Missing directories are harmless.
+        customSkillDirs:
+          - !!js "process.getBuiltinModule('node:path').join(process.env.CODEX_HOME ?? process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:os').homedir(), '.codex'), 'skills')"
+          - !!js "process.getBuiltinModule('node:path').join(process.env.CODEX_HOME ?? process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:os').homedir(), '.codex'), 'skills', '.system')"
 
     - id: skill-badge
       name: '@deepseek-ai/dsh-skill-badge'
@@ -449,3 +465,8 @@
     # choice.
     - id: llm-deepseek
       name: '@deepseek-ai/dsh-llm-deepseek'
+      config:
+        thinking: enabled
+        reasoningEffort: max
+        temperature: 1.0
+        topP: 0.95

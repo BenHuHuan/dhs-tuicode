@@ -93,9 +93,11 @@ const testIncludes = [
 // Unbounded fork fan-out on high-core Windows hosts starves real Git, worker,
 // watcher, and subprocess fixtures past Vitest's 5 s default even though each
 // completes in 1-2 s alone. Keep direct `pnpm test` within the measured local
-// stability point; an explicit CLI --maxWorkers still overrides this default.
+// stability point. Four forks leave enough headroom for the process-heavy
+// fixtures on developer machines; an explicit CLI --maxWorkers still overrides
+// this default when a host has room for more.
 const unitMaxWorkers = process.platform === 'win32'
-  ? Math.min(8, availableParallelism())
+  ? Math.min(4, availableParallelism())
   : undefined
 
 // The instrumented coverage gate sets this env; the exempt heavy suites then

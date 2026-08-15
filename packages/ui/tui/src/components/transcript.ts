@@ -11,7 +11,7 @@ import {
   Spacer,
   Text,
   truncateToWidth,
-  wrapTextWithAnsi,
+  visibleWidth,
   type Component,
   type MarkdownTheme,
 } from '@earendil-works/pi-tui'
@@ -28,8 +28,10 @@ import type {
 import type { FileDiff } from '@deepseek-ai/dsh-tools'
 import { preview, renderUnknownXml } from './xml-tool-output.ts'
 import { displayInlineText, displayText } from './text.ts'
-import { gradientText, type Palette } from './theme.ts'
-import { contentText, type ParsedArguments } from './content.ts'
+import { gradientText, type ColorRole, type Palette } from './theme.ts'
+import { formatToolElapsed, toolCardArgSummary, toolCardColor, toolCardTitle } from './tool-card.ts'
+import { contentText, imageContentText, type ParsedArguments } from './content.ts'
+import type { InlineImageFactory } from './inline-image.ts'
 import {
   formatCompletionTime,
   formatTimingTotals,
@@ -77,7 +79,7 @@ function diffContentLines(text: string): string[] {
  * whole-side rendering so a model-authored pending edit cannot stall the TUI.
  */
 function renderDiff(diff: FileDiff, maxDiffEditLength: number, palette: Palette): RenderedDiff {
-  // The card header is a fixed `Tool / <name>` frame that never names a file, so
+  // The card title summarizes the operation but never names a diff file, so
   // each hunk always carries its own path header (no redundancy to suppress).
   const lines = [palette.bold(displayText(diff.path))]
   let added = 0
@@ -115,18 +117,9 @@ function renderDiff(diff: FileDiff, maxDiffEditLength: number, palette: Palette)
 }
 
 /**
- * A message's bold, underlined role header in the role color. The underline
- * bands each role without a background fill or per-line prefix, so it reads on
- * any theme and a body drag-select copies the message text verbatim.
- */
-function messageHeader(label: string, color: (text: string) => string, palette: Palette): string {
-  return palette.bold(palette.underline(color(displayText(label))))
-}
-
-/**
- * Borderless startup banner: product title, an optional configured subtitle,
- * and the session id. No box frame — each line renders as plain left-padded
- * text (matching transcript notices) so it reads on any theme.
+ * Claude-Code-shaped startup card using DeepSeek's blue/violet visual system.
+ * Wide terminals receive a two-column welcome/tips layout; narrow terminals
+ * collapse to a compact identity block without losing the current workspace.
  */
 export class HeaderComponent implements Component {
   /** Columns of the banner currently revealed; `undefined` renders it whole. */
@@ -137,6 +130,7 @@ export class HeaderComponent implements Component {
     private readonly subtitle: () => string | undefined,
     private readonly palette: Palette,
     private readonly gradient: boolean,
+    private readonly mascot?: Component,
   ) {}
 
   /**
@@ -150,20 +144,95 @@ export class HeaderComponent implements Component {
   invalidate(): void {}
 
   render(width: number): string[] {
-    const usable = Math.max(1, width - 2)
+    // Ultra-wide terminals should not turn the welcome card into a wall. This
+    // cap still leaves 64 columns for the 56-cell mascot plus its safe inset,
+    // and a separate 63-column information pane.
+    const cardWidth = Math.min(width, 132)
+    const usable = Math.max(1, cardWidth - 2)
     const name = this.gradient
       ? this.palette.bold(gradientText('DEEPSEEK'))
       : this.palette.bold(this.palette.accent('DEEPSEEK'))
-    const title = `${name} ${this.palette.bold('HARNESS')}`
+    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.0.1')}`
+    const model = displayText(this.agent.options?.model ?? 'model unset')
+    const cwd = displayText(this.agent.session.header.cwd ?? process.cwd())
     const detail = displayText(this.agent.session.id)
     const subtitle = this.subtitle()
-    const lines = [
-      title,
-      ...subtitle === undefined ? [] : [this.palette.dim(displayText(subtitle))],
-      this.palette.dim(detail),
-    ]
-      .flatMap(line => wrapTextWithAnsi(line, usable))
-      .map(line => ` ${truncateToWidth(line, usable, '')}`)
+    const pad = (value: string, target: number): string => {
+      const bounded = truncateToWidth(value, target, '')
+      return bounded + ' '.repeat(Math.max(0, target - visibleWidth(bounded)))
+    }
+    let lines: string[]
+    if (cardWidth < 76) {
+      lines = [
+        ` ${title}`,
+        ` ${this.palette.bold('Welcome back!')}`,
+        ` ${this.palette.dim(`${model} · max effort`)}`,
+        ` ${this.palette.dim(cwd)}`,
+        ` ${this.palette.dim(subtitle === undefined ? detail : displayText(subtitle))}`,
+      ].map(line => truncateToWidth(line, usable, ''))
+    } else {
+      const innerWidth = cardWidth - 2
+      const contentWidth = innerWidth - 5
+      // Give the mascot nearly half of the card. Wide terminals have room for
+      // the full-resolution brick art, so preserve its detail rather than
+      // shrinking it to make the text column dominant.
+      const leftWidth = Math.max(38, Math.floor(contentWidth * 0.50))
+      const rightWidth = contentWidth - leftWidth
+      const border = (value: string): string => this.palette.accent(value)
+      const topPrefix = `${border('╭─')} ${title} `
+      const top = topPrefix + border('─'.repeat(Math.max(0, cardWidth - visibleWidth(topPrefix) - 1))) + border('╮')
+      const row = (left: string, right: string): string => `${border('│')} ${pad(left, leftWidth)} ${border('│')} ${pad(right, rightWidth)} ${border('│')}`
+      const subtitleText = subtitle === undefined ? 'Minimal mode · tools on demand' : displayText(subtitle)
+      const center = (value: string, target: number): string => {
+        const bounded = truncateToWidth(value, target, '')
+        return `${' '.repeat(Math.max(0, Math.floor((target - visibleWidth(bounded)) / 2)))}${bounded}`
+      }
+      // Keep the complete silhouette inside a safe area. The mascot asset has
+      // opaque pixels close to every canvas edge, so the extra blank rows and
+      // eight-column inset prevent the hair loop, fins, and water curl from
+      // visually colliding with (or appearing clipped by) the card border.
+      const rawArt = this.mascot?.render(Math.max(1, leftWidth - 8)) ?? []
+      const artWidth = Math.max(0, ...rawArt.map(line => visibleWidth(line)))
+      const artIndent = Math.max(0, Math.floor((leftWidth - artWidth) / 2))
+      const art = rawArt.length === 0
+        ? []
+        : ['', ...rawArt.map(line =>
+          `${' '.repeat(artIndent)}${truncateToWidth(line, Math.max(1, leftWidth - artIndent), '')}`,
+        ), '']
+      // Only two identity lines stay below the mascot. Operational metadata
+      // belongs to the right-hand console so the silhouette remains complete
+      // without growing a long caption tail beneath it.
+      const leftLines = [
+        ...art,
+        center(this.palette.bold('Welcome back!'), leftWidth),
+        center(this.palette.dim(`${model} · max effort`), leftWidth),
+      ]
+      const rightLines = [
+        `${this.palette.bold('WORKSPACE')}  ${this.palette.italic(this.palette.dim(cwd))}`,
+        `${this.palette.bold('PROFILE')}    ${this.palette.italic(this.palette.dim(subtitleText))}`,
+        '',
+        this.palette.bold(this.palette.accent('Tips for getting started')),
+        `${this.palette.code('/help')} shortcuts and commands`,
+        `${this.palette.code('/mcp')} and ${this.palette.code('/agents')} manage extensions`,
+        this.palette.dim('─'.repeat(rightWidth)),
+        this.palette.bold(this.palette.brand("What's new")),
+        'Complete brick mascot with protected edge detail',
+        'Crash-safe copy selection and composable inline paste blocks',
+        '/skills shares available Codex skill catalogs',
+        '/workdir switches projects without losing history',
+        `${this.palette.code('/bypass')} toggles full access instantly`,
+      ]
+      const bodyHeight = Math.max(leftLines.length, rightLines.length)
+      const rightTop = Math.max(0, Math.floor((bodyHeight - rightLines.length) / 2))
+      lines = [
+        top,
+        ...Array.from({ length: bodyHeight }, (_, index) => row(
+          leftLines[index] ?? '',
+          rightLines[index - rightTop] ?? '',
+        )),
+        border(`╰${'─'.repeat(Math.max(0, cardWidth - 2))}╯`),
+      ]
+    }
     if (this.revealWidth === undefined) return lines
     const revealed = this.revealWidth
     return lines.map(line => truncateToWidth(line, revealed, ''))
@@ -171,26 +240,89 @@ export class HeaderComponent implements Component {
 }
 
 /**
- * A user or steering prompt in the transcript. An underlined accent role header
- * plus blank-line spacing separate it from surrounding blocks; body lines carry
- * no prefix or indent, so a terminal drag-select copies the prompt verbatim.
+ * One rounded Claude Code input-rail: `╭─…╮` above the editor or `╰─…╯`
+ * below it, with no side rails. The paint role is mutable so the host can
+ * switch normal, plan, and always-approve borders without rebuilding the tree.
  */
-export class UserMessageComponent extends Container {
-  constructor(text: string, palette: Palette, mdTheme: MarkdownTheme, label = 'You') {
-    super()
-    this.addChild(new Text(messageHeader(label, palette.accent, palette), 0, 0))
-    this.addChild(new Markdown(displayText(text), 0, 0, mdTheme, { color: value => palette.text(value) }, {
+export class EditorFrameComponent implements Component {
+  private paint: ColorRole
+
+  constructor(private readonly top: boolean, paint: ColorRole) {
+    this.paint = paint
+  }
+
+  /** Replace the frame's color role; the next render picks it up. */
+  setPaint(paint: ColorRole): void {
+    this.paint = paint
+  }
+
+  invalidate(): void {}
+
+  render(width: number): string[] {
+    if (width < 1) return ['']
+    if (width === 1) return [this.paint(this.top ? '╭' : '╰')]
+    const lead = this.top ? '╭' : '╰'
+    return [this.paint(`${lead}${'─'.repeat(Math.max(0, width - 1))}`)]
+  }
+}
+
+/** Short-lived, right-aligned operation feedback in the input chrome. */
+export class StatusToastComponent implements Component {
+  private message: string | undefined
+
+  constructor(
+    private readonly palette: Palette,
+    private readonly paint?: (text: string) => string,
+  ) {}
+
+  setMessage(message: string | undefined): void {
+    this.message = message
+  }
+
+  invalidate(): void {}
+
+  render(width: number): string[] {
+    if (this.message === undefined || width < 1) return []
+    const message = truncateToWidth(this.message, width, '')
+    const painted = this.paint?.(message) ?? this.palette.code(message)
+    return [`${' '.repeat(Math.max(0, width - visibleWidth(message)))}${painted}`]
+  }
+}
+
+/**
+ * A user or steering prompt in the transcript, rendered as a Claude Code rail:
+ * every body row carries an accent `❯` marker and the body stays in the
+ * terminal's default text tone, so a drag-select copies only the prompt bytes
+ * plus its marker. The marker replaces the former underlined `You` header.
+ */
+export class UserMessageComponent implements Component {
+  private readonly markdown: Markdown
+
+  constructor(text: string, private readonly palette: Palette, mdTheme: MarkdownTheme) {
+    this.markdown = new Markdown(displayText(text), 0, 0, mdTheme, { color: value => palette.text(value) }, {
       preserveOrderedListMarkers: true,
       preserveBackslashEscapes: true,
-    }))
+    })
+  }
+
+  invalidate(): void {
+    this.markdown.invalidate()
+  }
+
+  render(width: number): string[] {
+    // `❯` plus one separating space. Blank rows keep the bare marker so the
+    // rail reads continuously through a multi-paragraph prompt.
+    const rail = this.palette.bold(this.palette.accent('❯'))
+    const bodyWidth = Math.max(0, width - visibleWidth(rail) - 1)
+    return this.markdown.render(bodyWidth).map(line => line.trim() === '' ? rail : `${rail} ${line}`)
   }
 }
 
 /**
  * Children of a settled assistant message: optional reasoning block then the
- * response text. A folded continuation (a later step of a turn while tool cards
- * are hidden) drops the `Assistant` header and renders nothing when it has no
- * visible body, so tool-only steps leave no blank segment behind.
+ * response text in the terminal's default tone. Claude Code presents assistant
+ * output without a role header; the reasoning block keeps a `✻` glyph so the
+ * two channels remain distinguishable.
  */
 function assistantMessageChildren(
   content: readonly ContentBlock[],
@@ -198,25 +330,35 @@ function assistantMessageChildren(
   foldedContinuation: boolean,
   palette: Palette,
   mdTheme: MarkdownTheme,
+  inlineImage?: InlineImageFactory,
 ): Component[] {
   const reasoning = displayText(textBlocks(content, 'reasoning').trim())
-  const text = displayText(content
-    .filter(block => block.type === 'text' || block.type === 'image')
-    .map(block => contentText([block]))
-    .join('').trim())
+  const body = content.filter(block => block.type === 'text' || block.type === 'image')
   const showsReasoning = reasoning !== '' && showReasoning
-  if (foldedContinuation && !showsReasoning && text === '') return []
+  const hasBody = body.some(block => block.type === 'image' || block.text.trim() !== '')
+  if (foldedContinuation && !showsReasoning && !hasBody) return []
   const children: Component[] = [new Spacer(1)]
-  if (!foldedContinuation) {
-    children.push(new Text(messageHeader('Assistant', palette.accent, palette), 0, 0))
-  }
   if (showsReasoning) {
     children.push(
-      new Text(palette.italic(palette.dim('Reasoning')), 0, 0),
+      new Text(palette.italic(palette.dim('✻ Reasoning')), 0, 0),
       new Markdown(reasoning, 0, 0, mdTheme, { color: value => palette.dim(value), italic: true }),
     )
   }
-  if (text) children.push(new Markdown(text, 0, 0, mdTheme, { color: value => palette.text(value) }))
+  let pendingText = ''
+  const flushText = (): void => {
+    const text = displayText(pendingText.trim())
+    pendingText = ''
+    if (text) children.push(new Markdown(text, 0, 0, mdTheme, { color: value => palette.text(value) }))
+  }
+  for (const block of body) {
+    if (block.type === 'text') {
+      pendingText += block.text
+      continue
+    }
+    flushText()
+    children.push(inlineImage?.(block) ?? new Text(palette.dim(imageContentText(block)), 0, 0))
+  }
+  flushText()
   return children
 }
 
@@ -286,6 +428,7 @@ export class StreamingAssistantComponent extends Container {
     private showReasoning: boolean,
     private readonly palette: Palette,
     private readonly mdTheme: MarkdownTheme,
+    private readonly inlineImage?: InlineImageFactory,
   ) {
     super()
     this.timing = new StepTimingComponent(position, events, tracker, now, palette)
@@ -352,10 +495,10 @@ export class StreamingAssistantComponent extends Container {
   }
 
   /**
-   * Mark this step as a folded continuation of its turn: no `Assistant` header,
+   * Mark this step as a folded continuation of its turn: no leading spacing,
    * and no output at all while the step has no visible body. Used while tool
    * cards are hidden so a turn reads as one assistant message.
-   * @param folded - Whether to render as a headerless continuation.
+   * @param folded - Whether to render as a continuation.
    */
   setFoldedContinuation(folded: boolean): void {
     if (this.foldedContinuation === folded) return
@@ -365,7 +508,7 @@ export class StreamingAssistantComponent extends Container {
 
   /**
    * Whether the step currently renders visible reasoning or text.
-   * @returns `true` when a header-owning render would show a body.
+   * @returns `true` when a full render would show a body.
    */
   hasVisibleBody(): boolean {
     const content = this.presentedContent()
@@ -393,6 +536,7 @@ export class StreamingAssistantComponent extends Container {
       this.foldedContinuation,
       this.palette,
       this.mdTheme,
+      this.inlineImage,
     )
     for (const child of children) this.addChild(child)
   }
@@ -457,6 +601,8 @@ export class ToolCardComponent extends CachedCardComponent {
   private callView: ToolCallView
   private resultView: ToolResultView | undefined
   private diffBodyCache: { view: ToolCallView | ToolResultView; body: CardBody } | undefined
+  private readonly startedAt: number
+  private finishedAt: number | undefined
 
   constructor(
     private readonly name: string,
@@ -466,8 +612,10 @@ export class ToolCardComponent extends CachedCardComponent {
     private readonly maxDiffEditLength: number,
     private readonly palette: Palette,
     private readonly mdTheme: MarkdownTheme,
+    startedAt: number,
   ) {
     super()
+    this.startedAt = startedAt
     this.callView = this.presentCall()
   }
 
@@ -486,9 +634,11 @@ export class ToolCardComponent extends CachedCardComponent {
   /**
    * Record the tool result and derive its result view.
    * @param event - The `tool/result` event payload.
+   * @param time - Event timestamp, the tool's completion clock.
    */
-  updateResult(event: Extract<SessionEvent, { type: 'tool/result' }>['data']): void {
+  updateResult(event: Extract<SessionEvent, { type: 'tool/result' }>['data'], time: number): void {
     this.diffBodyCache = undefined
+    this.finishedAt = time
     this.dropLines()
     const result = event.message.content[0]
     this.result = {
@@ -520,9 +670,6 @@ export class ToolCardComponent extends CachedCardComponent {
     // keeps only the conversation, the way Codex hides tool calls.
     if (this.visibility === 'hidden') return []
     const isError = this.result?.isError ?? false
-    // A ring marker: hollow while the call is pending, filled once it settles;
-    // the header color (warning/success/error) tells pending from ok from error.
-    const glyph = this.result === undefined ? '○' : '●'
     const rawBody = this.renderBody()
     const view = this.resultView ?? this.callView
     // A generic card's own content, a read card's `content` fallback (the
@@ -559,33 +706,49 @@ export class ToolCardComponent extends CachedCardComponent {
       : undefined
     // A generic card renders title and result as one Markdown document, so the
     // document's own block spacing is preserved, then dims every row — the whole
-    // card body reads as one dim block under the status-colored header.
+    // card body reads as one dim block under the family-colored title.
     const body = unknownXml ?? (markdownContent !== undefined && rawBody.lines.length > 0
       ? this.dimBody(rawBody, width)
       : [...rawBody.prelude, ...rawBody.lines])
     const visibleBody = unknownXml !== undefined || this.visibility === 'expanded'
       ? body
       : preview(body, this.maxOutputLines, count => this.palette.dim(`… +${count} lines (Ctrl+O to expand)`))
-    // The header is a fixed `Tool / <name>` frame in the status color (warning
-    // pending / success ok / error), flat — no bold or underline, so one color
-    // reads consistently across the whole row. Every tool-specific detail (a
-    // read's path, a diff, command output) lives in the body below; the sole
-    // header extra is a bash card's model-authored description, appended as a
-    // `/ <desc>` segment. The body stays unprefixed so a drag-select copies only
-    // the tool text; body lines pass through Text so overlong output wraps.
-    const statusColor = this.result === undefined
-      ? this.palette.warning
-      : isError ? this.palette.error : this.palette.success
-    // The header is a single card row: collapse an embedded newline in the
-    // description to an inline escape so it cannot break onto extra rows and
-    // collide with the body lines that follow.
+    // Claude Code card header: a status bullet plus a bold `Verb(argument)`
+    // title painted by tool family, with the model-authored bash description
+    // and a bounded elapsed time in dim. The title is escaped inline so a
+    // multi-line command cannot break the single header row.
+    const pending = this.result === undefined
+    const bullet = pending ? '⠋' : isError ? '✗' : '›'
+    const bulletPaint = pending ? this.palette.dim : isError ? this.palette.error : this.palette.success
+    const titlePaint = toolCardColor(this.name, this.palette)
+    const summary = this.parsed.valid ? toolCardArgSummary(this.name, this.parsed.value) : undefined
+    const derivedTitle = toolCardTitle(this.name, this.parsed.valid ? this.parsed.value : undefined)
+    // A terminal card without a derivable argument still keeps its command in
+    // the header; the bare verb would otherwise erase the one piece of
+    // information that card carries.
+    const terminalTitle = view.card === 'terminal' ? this.terminalPending()?.title : undefined
+    const title = summary === undefined && terminalTitle !== undefined && terminalTitle !== ''
+      ? `Run(${terminalTitle})`
+      : derivedTitle
     const desc = this.headerDescription()
-    const headerText = `${glyph} Tool / ${displayText(this.name)}${desc === undefined ? '' : ` / ${displayInlineText(desc)}`}`
-    const header = truncateToWidth(headerText, Math.max(1, width - 2), '')
+    // Sub-second deltas are process-scheduling noise and would make live
+    // snapshots unreplayable; report a duration once it carries signal.
+    const elapsedMs = this.finishedAt === undefined ? undefined : this.finishedAt - this.startedAt
+    const elapsed = elapsedMs === undefined || elapsedMs < 1_000
+      ? ''
+      : ` ${this.palette.dim(`(${formatToolElapsed(elapsedMs)})`)}`
+    const header = `${bulletPaint(bullet)} ${this.palette.bold(titlePaint(displayInlineText(title)))}${desc === undefined ? '' : `${this.palette.dim(' · ')}${this.palette.dim(displayInlineText(desc))}`}${elapsed}`
     // The blank first row is the card's own paragraph gap (no external Spacer),
     // so the hidden state removes the gap together with the card.
-    const lines: string[] = ['', statusColor(header)]
-    if (visibleBody.length > 0) lines.push(...new Text(visibleBody.join('\n'), 0, 0).render(width))
+    const lines: string[] = ['', truncateToWidth(header, Math.max(1, width - 2), '')]
+    if (visibleBody.length > 0) {
+      const bodyLines = new Text(visibleBody.join('\n'), 0, 0).render(Math.max(1, width - 3))
+      lines.push(
+        ...bodyLines.map((line, index) => index === 0
+          ? `${this.palette.dim('⎿  ')}${line}`
+          : `   ${line}`),
+      )
+    }
     return lines
   }
 
@@ -595,7 +758,7 @@ export class ToolCardComponent extends CachedCardComponent {
   }
 
   /**
-   * The optional header `/ <desc>` segment: a bash (terminal) card's
+   * The optional ` · <desc>` header segment: a bash (terminal) card's
    * model-authored description. Non-terminal tools contribute no header detail —
    * their presenter title moves into the body instead.
    */
@@ -606,8 +769,8 @@ export class ToolCardComponent extends CachedCardComponent {
 
   /**
    * The presenter's title for a non-terminal card, shown as the first body line
-   * (a read's `Read src/foo.ts`, a diff's `Edit files`) now that the header is a
-   * fixed `Tool / <name>` frame. The result-state title replaces the pending one.
+   * (a read's `Read src/foo.ts`, a diff's `Edit files`) now that the header is
+   * a `Verb(argument)` summary. The result-state title replaces the pending one.
    */
   private bodyTitle(): string {
     return this.resultView?.title ?? this.callView.title
@@ -616,20 +779,9 @@ export class ToolCardComponent extends CachedCardComponent {
   private renderBody(): CardBody {
     const view = this.resultView ?? this.callView
     if (view.card === 'terminal') {
-      const pending = this.terminalPending()
-      const prelude: string[] = []
+      // The `Run(command)` header already echoes the command, so the body keeps
+      // only output and exit metadata, the way Claude Code's Bash card does.
       const lines: string[] = []
-      // The command shows as a $-line here whenever it is not the header: either a
-      // description headlines the row (the command still belongs somewhere) or the row
-      // is a pending undescribed call (the classic running-command echo). A completed
-      // undescribed row keeps the command only in the header.
-      // The command and cwd are each a single card row, so escape a multi-line
-      // command inline (displayInlineText) — a real newline would break onto extra
-      // rows and collide with the output below.
-      const headlined = pending?.description !== undefined && pending.description !== ''
-      const commandInBody = pending !== undefined && (headlined || this.result === undefined)
-      if (commandInBody) prelude.push(this.palette.dim(`$ ${displayInlineText(pending.title)}`))
-      if (pending?.cwd) prelude.push(this.palette.dim(displayInlineText(pending.cwd)))
       if (this.resultView?.card === 'terminal') {
         if (this.resultView.output) lines.push(...this.dimOutput(this.resultView.output))
         if (this.resultView.exitCode !== undefined) lines.push(this.palette.dim(`[exit ${this.resultView.exitCode}]`))
@@ -639,7 +791,7 @@ export class ToolCardComponent extends CachedCardComponent {
       } else if (this.result !== undefined) {
         lines.push(...this.dimOutput(contentText(this.result.content)))
       }
-      return { prelude: prelude.filter(Boolean), lines: lines.filter(Boolean) }
+      return { prelude: [], lines: lines.filter(Boolean) }
     }
     if (view.card === 'diff') {
       if (this.diffBodyCache?.view === view) return this.diffBodyCache.body
@@ -674,8 +826,8 @@ export class ToolCardComponent extends CachedCardComponent {
     const content = (view.card === 'generic' || view.card === 'read' ? view.content : undefined) ?? this.result?.content
     const prelude: string[] = []
     const lines: string[] = []
-    // The presenter title headlines the body now that the header is a fixed
-    // `Tool / <name>` frame (a terminal card keeps its command $-line instead).
+    // The presenter title headlines the body now that the header is a
+    // `Verb(argument)` summary (a terminal card keeps its output only).
     // Skip it when it only repeats the tool name (the fallback presenter for a
     // tool with no presentCall, or an unknown tool), which the header already shows.
     const bodyTitle = this.bodyTitle()
@@ -712,7 +864,7 @@ export class ToolCardComponent extends CachedCardComponent {
    * Render a generic card's prelude and result as one Markdown document under the
    * dim body tone. Rendering both together preserves the document's own block
    * spacing (Markdown's blank row before a heading); dimming every row keeps the
-   * card body one uniform tone, so only the status-colored header carries color.
+   * card body one uniform tone, so only the family-colored title carries color.
    */
   private dimBody(body: CardBody, width: number): string[] {
     const rows = new Markdown([...body.prelude, ...body.lines].join('\n'), 0, 0, this.mdTheme, {

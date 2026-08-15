@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-tui-mcp-and-direct-subagent-controls.md
+2026-08-14-tui-mcp-and-direct-subagent-controls.md: f9345afc83cd3c9752a3c78a18795b9ba1426c5f
+2026-08-14-tui-mcp-and-direct-subagent-controls.zh.md: 5eeeb1a279ac8ffe37f6c78e8bfd4085e05d97da

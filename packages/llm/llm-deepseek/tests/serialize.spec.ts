@@ -178,10 +178,20 @@ describe('serializeRequest', () => {
   })
 
   it('maps sampling params and stop sequences', () => {
-    const wire = serializeRequest(request({ messages: history, temperature: 0.2, maxTokens: 100, stop: ['END'] }))
+    const wire = serializeRequest(
+      request({ messages: history, temperature: 0.2, maxTokens: 100, stop: ['END'] }),
+      { temperature: 1, topP: 0.95 },
+    )
     expect(wire.temperature).toBe(0.2)
+    expect(wire.top_p).toBe(0.95)
     expect(wire.max_tokens).toBe(100)
     expect(wire.stop).toEqual(['END'])
+  })
+
+  it('uses adapter sampling defaults when the request does not override temperature', () => {
+    const wire = serializeRequest(request({ messages: history }), { temperature: 1, topP: 0.95 })
+    expect(wire.temperature).toBe(1)
+    expect(wire.top_p).toBe(0.95)
   })
 
   it('maps tools to the wire function shape', () => {

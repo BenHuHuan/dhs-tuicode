@@ -6,8 +6,9 @@
 
 - id: system-prompt
   config:
-    persona: >-
-      You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+    includeHarnessIdentity: false
+    includeRuntimeContext: false
+    persona: You are a helpful software engineer assistant.
 
 # The shared module-reload HMR row stays off; the launcher's watch-only
 # fallback still keeps the user patch layers live until the run exits.
@@ -20,6 +21,16 @@
     mode: !!js process.env.DSH_TOOLS_MODE
 
 - insert:
+    # Give the initial request Minimal's shell/read surface, then derive the
+    # promotion to the complete catalog from the first durable assistant result.
+    - id: tool-bootstrap
+      name: '@deepseek-ai/dsh-tools/bootstrap'
+      config:
+        shellTools: [bash, pwsh]
+        commonTools: [read]
+        promoteOn: either
+        bootstrapMaxTokens: 1024
+
     # Code Mode is a core execution capability, not a Web component.
     - id: code-runtime
       name: '@deepseek-ai/dsh-code-runtime-worker-thread'
