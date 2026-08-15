@@ -15,21 +15,50 @@
 - id: hmr
   disabled: true
 
+- id: tool-bash
+  disabled: true
+
 - id: tools
   config:
     # Keep the same temporary process-wide Code Mode opt-in as the Web surface.
     mode: !!js process.env.DSH_TOOLS_MODE
 
 - insert:
-    # Give the initial request Minimal's shell/read surface, then derive the
+    # Give the initial request Minimal's real bash/editor surface, then derive the
     # promotion to the complete catalog from the first durable assistant result.
     - id: tool-bootstrap
       name: '@deepseek-ai/dsh-tools/bootstrap'
       config:
-        shellTools: [bash, pwsh]
-        commonTools: [read]
+        bootstrapTools: [bash, str_replace_editor]
         promoteOn: either
-        bootstrapMaxTokens: 1024
+        suppressedContextSources: [agent-instructions, skill-catalog]
+
+    - id: minimal-persistent-shell
+      name: cordis:group
+      group: true
+      isolate:
+        terminals: true
+      config:
+        - id: pty
+          name: '@deepseek-ai/dsh-terminal'
+        - id: terminal-bash
+          name: '@deepseek-ai/dsh-terminal-bash'
+          config:
+            shellPath: !!js "process.env.DSH_BASH_PATH ?? (process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash')"
+            timeoutMs: 300000
+        - id: persistent-bash
+          name: '@deepseek-ai/dsh-tool-bash-persistent'
+          config:
+            timeoutMs: 300000
+            description: |-
+              Run commands in a bash shell
+              * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
+              * You don't have access to the internet via this tool.
+              * You do have access to a mirror of common linux and python packages via apt and pip.
+              * State is persistent across command calls and discussions with the user.
+              * To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.
+              * Please avoid commands that may produce a very large amount of output.
+              * Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.
 
     # Code Mode is a core execution capability, not a Web component.
     - id: code-runtime

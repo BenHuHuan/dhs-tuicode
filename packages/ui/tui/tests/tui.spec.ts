@@ -304,7 +304,7 @@ describe('TUI config', () => {
       showHardwareCursor: true,
       theme: {
         color: true,
-        palette: 'claude',
+        palette: 'deepseek',
         truecolor: false,
         leftPrompt: '${cwd}${git/worktree}${model}${token_meter/cache_hit_rate}${context}',
         rightPrompt: '${mode}${queued}',
@@ -371,7 +371,7 @@ describe('TUI config', () => {
       showHardwareCursor: true,
       theme: {
         color: false,
-        palette: 'claude',
+        palette: 'deepseek',
         truecolor: true,
         leftPrompt: '${cwd}${git/worktree}${model}${token_meter/cache_hit_rate}${context}',
         rightPrompt: '${mode}${queued}',
@@ -2464,6 +2464,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
 
     // The turn ending resets the badge, so the next running turn starts clean.
     result.agent.status = 'idle'
+    result.terminal.output = ''
     result.ctx.emit('agent/status', { agent: result.agent, status: 'idle' })
     result.agent.status = 'running'
     result.terminal.output = ''
@@ -2632,49 +2633,29 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await dispose(result)
   })
 
-  it('replaces the prompt caret with a phase-specific status glyph while running', async () => {
-    // Hold the clock past the fade-in so the glyph is at full opacity; with
-    // color off the settled glyph renders as its bare character.
+  it('shows the phase-specific running status above a quiet editor', async () => {
     let clock = 0
     const result = await setup({ status: 'running', now: () => clock })
     clock = 1_000
 
-    // The `❯` rail precedes the caret slot: the prompt reads `❯ <glyph> ` with
-    // the same visible width as the idle `❯ `, so the cursor never shifts.
-    // Assert both the glyph slot and that constant width
-    // (color is off in this harness, so output carries no ANSI to strip).
-    // Each phase swaps only the glyph character in the same slot at equal width.
     const phaseGlyph: [() => void, string][] = [
-      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'reasoning-delta', index: 0, text: 'weighing' } }), '❯✻'],
-      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'text-delta', index: 1, text: 'answer' } }), '❯●'],
-      [() => result.session.append('tool/call', { turn: 1, step: 1, callId: 'c1' as never, name: 'bash', arguments: '{}' }), '❯⚙'],
+      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'reasoning-delta', index: 0, text: 'weighing' } }), '✻'],
+      [() => result.session.append('assistant/chunk', { turn: 1, step: 1, chunk: { type: 'text-delta', index: 1, text: 'answer' } }), '●'],
+      [() => result.session.append('tool/call', { turn: 1, step: 1, callId: 'c1' as never, name: 'bash', arguments: '{}' }), '⚙'],
     ]
-    let runningWidth: number | undefined
     for (const [drive, expected] of phaseGlyph) {
       result.terminal.output = ''
       drive()
       await tick()
-      expect(result.terminal.output).toContain(expected)
-      runningWidth ??= promptWidth(result.terminal.output)
-      expect(promptWidth(result.terminal.output)).toBe(runningWidth)
+      expect(result.terminal.output).toContain(`${expected} press enter to steer and esc to cancel`)
+      expect(result.terminal.output).not.toContain(`❯${expected}`)
     }
 
-    // Idle begins a fade-out; once it settles (clock past the fade window) the
-    // plain `>` caret returns at the same width — no horizontal shift. The
-    // fade-out timer emits intermediate frames, so read the terminal's final
-    // rendered prompt row rather than the accumulated stream.
     result.agent.status = 'idle'
     result.ctx.emit('agent/status', { agent: result.agent, status: 'idle' })
     clock = 2_000
     await new Promise(resolve => setTimeout(resolve, 150))
     await tick()
-    const promptRow = (): string => {
-      const rows = result.terminal.output.split(/\r?\n|\x1b\[[0-9;]*[A-Za-z]/u).filter(r => r.includes('❯'))
-      return rows.at(-1) ?? ''
-    }
-    expect(promptRow()).toContain('❯')
-    expect(promptRow()).not.toMatch(/❯(?:\x1b\[[0-9;]*m| )*[◍✻●⚙⊙]/u)
-    expect(promptWidth(result.terminal.output)).toBe(runningWidth)
 
     await dispose(result)
   })
@@ -2770,7 +2751,8 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.session.append('compaction/start', { compactionId: CompactionId('compact-1'), turn: null })
     await tick()
 
-    expect(result.terminal.output).toContain('❯◍')
+    expect(result.terminal.output).toContain('◍ press enter to steer and esc to cancel')
+    expect(result.terminal.output).not.toContain('❯◍')
     expect(result.terminal.output).not.toContain('❯⊙')
     result.session.append('compaction/end', { compactionId: CompactionId('compact-1'), turn: null })
     await tick()
@@ -2778,7 +2760,8 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.terminal.resize(result.terminal.columns + 1)
     await tick()
 
-    expect(result.terminal.output).toContain('❯◍')
+    expect(result.terminal.output).toContain('◍ press enter to steer and esc to cancel')
+    expect(result.terminal.output).not.toContain('❯◍')
     expect(result.terminal.output).not.toContain('❯⊙')
     expect(result.terminal.progress.at(-1)).toBe(true)
     await dispose(result)
@@ -2903,7 +2886,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await dispose(result)
   })
 
-  it('fades the running glyph out to the plain caret after the turn ends', async () => {
+  it('fades the running status above the editor after the turn ends', async () => {
     let clock = 0
     const result = await setup({ status: 'running', config: { theme: { color: true, truecolor: true } }, now: () => clock })
     clock = 1_000
@@ -2914,25 +2897,22 @@ describe('pi-tui chat lifecycle and transcript', () => {
     result.agent.status = 'idle'
     result.ctx.emit('agent/status', { agent: result.agent, status: 'idle' })
     await tick()
-    // Just after the end the glyph still paints a gray, not `>`.
+    // Just after the end the status-row glyph still paints a gray.
     expect(result.terminal.output).toMatch(/\x1b\[38;2;\d+;\d+;\d+m●/u)
-    expect(result.terminal.output).not.toContain('❯\x1b[90m>')
 
     // While the clock stays within the fade window the timer keeps ticking
     // without clearing the fade (the not-yet-elapsed branch): the last frame is
-    // still the fading glyph, and the plain caret has not returned.
+    // still the fading glyph.
     result.terminal.output = ''
     await new Promise(resolve => setTimeout(resolve, 120))
-    const lastPromptRow = result.terminal.output.split(/\x1b\[[0-9;]*[A-Za-z]/u).filter(r => r.includes('❯')).at(-1) ?? ''
-    expect(lastPromptRow).not.toContain('❯\x1b[90m>')
 
-    // Past the fade window the fade timer clears and the plain caret returns.
+    // Past the fade window the status glyph is gone and the normal mode prompt remains.
     clock = 2_000
     result.terminal.output = ''
     await new Promise(resolve => setTimeout(resolve, 120))
     await tick()
-    expect(result.terminal.output).not.toMatch(/❯(?:\x1b\[[0-9;]*m| )*●/u)
-    expect(result.terminal.output).toContain('❯')
+    expect(result.terminal.output).not.toMatch(/\x1b\[38;2;\d+;\d+;\d+m●/u)
+    expect(result.terminal.output).toContain('◆')
 
     await dispose(result)
   })
@@ -4428,6 +4408,46 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await dispose(result)
   })
 
+  it('switches Minimal and Router profiles through /mode on a fresh session boundary', async () => {
+    const swap = vi.fn<NonNullable<TuiRuntime['swapFresh']>>(
+      () => Promise.reject(new Error('test host retained the current session')),
+    )
+    const result = await setup({ swapFresh: swap })
+
+    result.terminal.send('/mode')
+    result.terminal.send('\r')
+    await vi.waitFor(() => {
+      expect(result.terminal.output).toContain('Tool routing mode: Minimal')
+    })
+    expect(swap).not.toHaveBeenCalled()
+
+    result.terminal.send('/mode router')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(swap).toHaveBeenCalledOnce() })
+    expect(swap).toHaveBeenLastCalledWith({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+    }, undefined, 'suite')
+    expect(result.terminal.output).toContain('Switching to Router mode in a fresh session.')
+    await dispose(result)
+  })
+
+  it('submits a Windows drive-root /workdir command with one Enter press', async () => {
+    const swap = vi.fn<NonNullable<TuiRuntime['swapFresh']>>(
+      () => Promise.reject(new Error('test host retained the current session')),
+    )
+    const result = await setup({ swapFresh: swap })
+
+    result.terminal.send('/workdir D:\\')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(swap).toHaveBeenCalledOnce() })
+    expect(swap).toHaveBeenLastCalledWith({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+    }, 'D:\\', undefined)
+    await dispose(result)
+  })
+
   it('renames the durable session and lets /clear name it before a fresh-session swap', async () => {
     const titlesAtSwap: Array<string | undefined> = []
     const swap = vi.fn<NonNullable<TuiRuntime['swapFresh']>>(async () => {
@@ -4661,6 +4681,30 @@ describe('pi-tui chat lifecycle and transcript', () => {
       type: 'text',
       text: `before ${first} between ${second} after`,
     }]])
+    await dispose(result)
+  })
+
+  it('inserts the latest completed mouse selection after a double right-click', async () => {
+    const result = await setup()
+    // Select a broad part of the rendered welcome screen. The release copies
+    // through OSC 52 and also retains the exact DSH-owned selection as a draft source.
+    result.terminal.send('\x1b[<0;1;1M')
+    result.terminal.send('\x1b[<32;80;20M')
+    result.terminal.send('\x1b[<0;80;20m')
+    await tick()
+    expect(result.terminal.output).toContain('\x1b]52;c;')
+
+    result.terminal.send('\x1b[<2;80;20M')
+    result.terminal.send('\x1b[<2;80;20m')
+    result.terminal.send('\x1b[<2;80;20M')
+    result.terminal.send('\x1b[<2;80;20m')
+    await tick()
+    expect(result.terminal.output).toMatch(/\[Paste #1 \+\d+ lines\]/u)
+
+    result.terminal.send('\r')
+    expect(result.agent.sent).toHaveLength(1)
+    expect(result.agent.sent[0]?.[0]).toMatchObject({ type: 'text' })
+    expect((result.agent.sent[0]?.[0] as { text?: string }).text).not.toContain('[paste #')
     await dispose(result)
   })
 

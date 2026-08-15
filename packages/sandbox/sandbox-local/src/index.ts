@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,6 +62,8 @@ export interface Config {
   runnerFailureSignatures?: string[]
   /** Positive timeout for each functional probe; zero would mean unbounded to Node. */
   probeTimeoutMs?: number
+  /** Existing or creatable parent for private Windows ACL temp directories. */
+  windowsTempRoot?: string
 }
 
 /** Probe whether `bwrap` can create the profile; the provider caches the bounded result. */
@@ -253,6 +255,7 @@ export class LocalSandboxProvider extends SandboxProvider {
     runnerCommand: z.array(z.string()).default([]),
     runnerFailureSignatures: z.array(z.string()).default([]),
     probeTimeoutMs: z.natural().default(5_000),
+    windowsTempRoot: z.string().default(''),
   })
 
   /** Test hook (mirrors the bash executors' `internals`). */
@@ -261,6 +264,7 @@ export class LocalSandboxProvider extends SandboxProvider {
   private readonly runnerCommand: string[] | undefined
   private readonly configuredRunnerFailureSignatures: string[]
   private readonly probeTimeoutMs: number
+  private readonly windowsTempRoot: string | undefined
   /** Cached chain verdict; undefined until the first confined wrap needs it. */
   private selectedRunner: SelectedRunner | 'unavailable' | undefined
   /**
@@ -292,6 +296,8 @@ export class LocalSandboxProvider extends SandboxProvider {
     this.runnerCommand = runner.length > 0 ? runner : undefined
     this.configuredRunnerFailureSignatures = runnerFailureSignatures
     this.probeTimeoutMs = config.probeTimeoutMs as number
+    const configuredTempRoot = (config.windowsTempRoot ?? '').trim()
+    this.windowsTempRoot = configuredTempRoot.length === 0 ? undefined : configuredTempRoot
     assertPositiveFinite('probeTimeoutMs', this.probeTimeoutMs)
     // The temp grants are revoked with the provider: a clean server
     // shutdown leaves no temp ACEs behind (workspace ACEs stand by design —
@@ -356,12 +362,13 @@ export class LocalSandboxProvider extends SandboxProvider {
    * @returns the runner invocation.
    */
   private windowsAclRunnerArgv(policy: SandboxPolicy): string[] {
+    const tempRoot = this.resolveWindowsTempRoot()
     const sessionId = policy.sessionId
     if (sessionId === undefined || policy.mode === 'read-only') {
       return [
         ...this.windowsAclRunnerInvocation(),
         '--workspace', policy.workspaceRoot,
-        '--temp', tmpdir(),
+        '--temp', tempRoot,
         '--mode', policy.mode,
       ]
     }
@@ -390,7 +397,8 @@ export class LocalSandboxProvider extends SandboxProvider {
    * @returns the pair's private temp directory and write capability.
    */
   private materializeAclGrant(sessionId: SessionId, workspaceRoot: string): AclTempCapability {
-    assertTempRootOutsideWorkspace(workspaceRoot, tmpdir())
+    const tempRoot = this.resolveWindowsTempRoot()
+    assertTempRootOutsideWorkspace(workspaceRoot, tempRoot)
     const writeSid = workspaceWriteSid(workspaceRoot)
     if (!this.workspaceGrants.has(workspaceRoot)) {
       const grant = AclWriteGrant.create(writeSid)
@@ -412,7 +420,7 @@ export class LocalSandboxProvider extends SandboxProvider {
     const key = JSON.stringify([String(sessionId), workspaceRoot])
     const existing = this.tempCapabilities.get(key)
     if (existing !== undefined) return existing
-    const tempDir = mkdtempSync(join(tmpdir(), 'dsh-'))
+    const tempDir = mkdtempSync(join(tempRoot, 'dsh-'))
     const tempSid = tempWriteSid(tempDir)
     let grant: AclWriteGrant | undefined
     try {
@@ -440,6 +448,13 @@ export class LocalSandboxProvider extends SandboxProvider {
     const capability = { dir: tempDir, writeSid: tempSid, grant }
     this.tempCapabilities.set(key, capability)
     return capability
+  }
+
+  /** Resolve and create the operator-selected Windows private-temp parent. */
+  private resolveWindowsTempRoot(): string {
+    const root = this.windowsTempRoot ?? tmpdir()
+    if (!existsSync(root)) mkdirSync(root, { recursive: true })
+    return root
   }
 
   /**

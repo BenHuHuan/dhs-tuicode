@@ -349,6 +349,8 @@ Requires: `subprocess`
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */
 export interface Config {
+  /** Bash executable or absolute path (default: `bash`). */
+  executable?: string
   /** Default working directory for commands (default: process.cwd()). */
   cwd?: string
   /** Default foreground timeout in milliseconds. */
@@ -860,6 +862,10 @@ export interface Config {
   thinking?: 'enabled' | 'disabled'
   /** Default thinking effort (default `high`); `off` disables thinking per request. */
   reasoningEffort?: 'off' | 'high' | 'max'
+  /** Default sampling temperature sent when a request does not override it. */
+  temperature?: number
+  /** Fixed nucleus-sampling probability sent on every request. */
+  topP?: number
   /** Default per-request output cap (default 256,000); a model's own cap and explicit request values win. */
   maxTokens?: number
   /** Positive context capacity used when the selected model has no exact value (default 1,000,000). */
@@ -1275,7 +1281,7 @@ export interface ReconnectConfig {
 }
 ```
 
-Source: [`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
+Source: [`packages/mcp/mcp-client/src/index.ts:106`](../packages/mcp/mcp-client/src/index.ts)
 
 <a id="deepseek-aidsh-message-feedback"></a>
 
@@ -1488,6 +1494,8 @@ export interface Config {
   runnerFailureSignatures?: string[]
   /** Positive timeout for each functional probe; zero would mean unbounded to Node. */
   probeTimeoutMs?: number
+  /** Existing or creatable parent for private Windows ACL temp directories. */
+  windowsTempRoot?: string
 }
 ```
 
@@ -2898,6 +2906,12 @@ export interface FirstRunWelcomeConfig {
 export interface TuiThemeConfig {
   /** Apply the built-in ANSI color palette. */
   color?: boolean
+  /**
+   * Palette style. `deepseek` uses blue/violet roles on dark terminals,
+   * `claude` keeps the terracotta reference palette, and `adaptive` follows
+   * the terminal's ANSI colors.
+   */
+  palette?: TuiPaletteStyle
   /** Paint the startup banner with the 24-bit DeepSeek brand gradient. */
   truecolor?: boolean
   /** Left-aligned template on the row above the editor. */
@@ -2909,9 +2923,12 @@ export interface TuiThemeConfig {
   /** Static placeholder shown in an empty editor while the agent is running. */
   inputPlaceholder?: string
 }
+
+/** Visual style of the built-in palette. */
+export type TuiPaletteStyle = 'deepseek' | 'claude' | 'adaptive'
 ```
 
-Source: [`packages/ui/tui/src/config.ts:186`](../packages/ui/tui/src/config.ts)
+Source: [`packages/ui/tui/src/config.ts:197`](../packages/ui/tui/src/config.ts)
 
 <a id="deepseek-aidsh-typert-loader"></a>
 

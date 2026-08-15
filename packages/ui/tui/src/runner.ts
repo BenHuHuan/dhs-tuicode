@@ -136,8 +136,14 @@ export class TuiAgentService extends Service {
    * resumable, while the ready payload carries reasoning effort that is not an
    * AgentOptions field.
    * @param selection - model target selected by the current TUI.
+   * @param cwd - optional workspace for the new conversation.
+   * @param routingProfile - prompt/tool routing profile for the fresh session.
    */
-  async fresh(selection: ModelSelection | undefined, cwd?: string): Promise<void> {
+  async fresh(
+    selection: ModelSelection | undefined,
+    cwd?: string,
+    routingProfile: 'anchored' | 'suite' = 'anchored',
+  ): Promise<void> {
     const settleContext = this.settleContext
     if (settleContext === undefined) {
       throw new Error('tui-runner: no settled agent to replace with a fresh session')
@@ -149,7 +155,10 @@ export class TuiAgentService extends Service {
       : { ...baseOptions, provider: selection.provider, model: selection.model }
     const handle = await settleContext.agents.create({
       sessionId: freshSessionId(),
-      meta: { cwd: cwd ?? current?.session.header.cwd ?? process.cwd() },
+      meta: {
+        cwd: cwd ?? current?.session.header.cwd ?? process.cwd(),
+        ...(routingProfile === 'suite' ? { agentPreset: 'routing-suite' } : {}),
+      },
       agentOptions,
     })
     await this.replace(handle, selection)
@@ -178,10 +187,10 @@ export class TuiAgentService extends Service {
     }
     const seed = current.session.events.slice(0, boundaryIndex + 1)
     const lastTurnBoundary = seed.findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
-    if (lastTurnBoundary?.type === 'turn/start') {
+    if (lastTurnBoundary !== undefined && lastTurnBoundary.type === 'turn/start') {
       throw new Error(`tui-runner: fork boundary ${String(boundary)} ends inside an active turn`)
     }
-    const baseOptions = current.options ?? settleContext.agentOptions
+    const baseOptions = current.options
     const agentOptions: AgentOptions = selection === undefined
       ? baseOptions
       : { ...baseOptions, provider: selection.provider, model: selection.model }

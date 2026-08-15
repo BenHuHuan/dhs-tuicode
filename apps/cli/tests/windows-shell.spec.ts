@@ -27,7 +27,13 @@ import { composeEntries, initProfile, loadProfile, PROFILES_DIR } from '@deepsee
 function disabledOn(row: { disabled?: unknown }, platform: 'win32' | 'linux'): boolean {
   const value = row.disabled
   if (value !== null && typeof value === 'object' && '__jsExpr' in value) {
-    return Boolean(evaluate({ process: { platform } }, (value as { __jsExpr: string }).__jsExpr))
+    return Boolean(evaluate({
+      process: {
+        platform,
+        env: {},
+        getBuiltinModule: process.getBuiltinModule.bind(process),
+      },
+    }, (value as { __jsExpr: string }).__jsExpr))
   }
   return value === true
 }
@@ -100,10 +106,10 @@ describe('the shipped shell composition (real bundle layers)', () => {
   })
 })
 
-describe('shipped agent presets gate both shell tools by platform', () => {
+describe('shipped agent presets select their shell stacks intentionally', () => {
   const presetRoot = resolve(fileURLToPath(new URL('../package.json', import.meta.url)), '..', 'config', 'agent-presets')
 
-  it.each(['standard', 'code', 'cordis'])('preset %s gates its shell tool rows by platform', (preset) => {
+  it.each(['code', 'cordis'])('preset %s gates its shell tool rows by platform', (preset) => {
     const entries: unknown = yaml.load(
       readFileSync(join(presetRoot, preset, 'agent.cordis.yml'), 'utf8'),
       { schema: entryListSchema },
@@ -120,6 +126,27 @@ describe('shipped agent presets gate both shell tools by platform', () => {
       expect(Boolean(evaluate({ process: { platform: 'win32' } }, expression)), `${id} on win32`).toBe(win32)
       expect(Boolean(evaluate({ process: { platform: 'linux' } }, expression)), `${id} on linux`).toBe(!win32)
     }
+  })
+
+  it('standard keeps Minimal persistent bash on every platform and adds pwsh on Windows after promotion', () => {
+    const entries: unknown = yaml.load(
+      readFileSync(join(presetRoot, 'standard', 'agent.cordis.yml'), 'utf8'),
+      { schema: entryListSchema },
+    )
+    if (!Array.isArray(entries)) throw new TypeError('standard preset must parse to an entry array')
+    const byId = new Map(entries.map((entry) => {
+      if (typeof entry !== 'object' || entry === null) throw new TypeError('standard entries must be objects')
+      const row = entry as Record<string, unknown>
+      return [row.id, row]
+    }))
+    expect(byId.get('tool-bash')?.disabled).toBe(true)
+    expect(byId.has('persistent-shell')).toBe(true)
+    expect(byId.has('bootstrap-filesystem')).toBe(true)
+    const pwsh = byId.get('tool-pwsh')
+    expect(pwsh?.disabled).toMatchObject({ __jsExpr: expect.any(String) as string })
+    const expression = (pwsh?.disabled as { __jsExpr: string }).__jsExpr
+    expect(Boolean(evaluate({ process: { platform: 'win32' } }, expression))).toBe(false)
+    expect(Boolean(evaluate({ process: { platform: 'linux' } }, expression))).toBe(true)
   })
 
   it('minimal mounts no shell tool row at all (its shell is the PTY stack)', () => {

@@ -152,13 +152,13 @@ export class HeaderComponent implements Component {
     const name = this.gradient
       ? this.palette.bold(gradientText('DEEPSEEK'))
       : this.palette.bold(this.palette.accent('DEEPSEEK'))
-    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.0.1')}`
-    const model = displayText(this.agent.options?.model ?? 'model unset')
+    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.1.0')}`
+    const model = displayText(this.agent.options.model ?? 'model unset')
     const cwd = displayText(this.agent.session.header.cwd ?? process.cwd())
     const detail = displayText(this.agent.session.id)
     const subtitle = this.subtitle()
-    const pad = (value: string, target: number): string => {
-      const bounded = truncateToWidth(value, target, '')
+    const pad = (value: string, target: number, suffix = ''): string => {
+      const bounded = truncateToWidth(value, target, suffix)
       return bounded + ' '.repeat(Math.max(0, target - visibleWidth(bounded)))
     }
     let lines: string[]
@@ -181,7 +181,9 @@ export class HeaderComponent implements Component {
       const border = (value: string): string => this.palette.accent(value)
       const topPrefix = `${border('╭─')} ${title} `
       const top = topPrefix + border('─'.repeat(Math.max(0, cardWidth - visibleWidth(topPrefix) - 1))) + border('╮')
-      const row = (left: string, right: string): string => `${border('│')} ${pad(left, leftWidth)} ${border('│')} ${pad(right, rightWidth)} ${border('│')}`
+      // Only the information pane advertises clipped copy with an ellipsis.
+      // Mascot rows use hard width bounds so no synthetic glyph changes its silhouette.
+      const row = (left: string, right: string): string => `${border('│')} ${pad(left, leftWidth)} ${border('│')} ${pad(right, rightWidth, '…')} ${border('│')}`
       const subtitleText = subtitle === undefined ? 'Minimal mode · tools on demand' : displayText(subtitle)
       const center = (value: string, target: number): string => {
         const bounded = truncateToWidth(value, target, '')
@@ -218,6 +220,7 @@ export class HeaderComponent implements Component {
         this.palette.bold(this.palette.brand("What's new")),
         'Complete brick mascot with protected edge detail',
         'Crash-safe copy selection and composable inline paste blocks',
+        '/mode switches Minimal and task-aware Router profiles',
         '/skills shares available Codex skill catalogs',
         '/workdir switches projects without losing history',
         `${this.palette.code('/bypass')} toggles full access instantly`,
@@ -251,7 +254,10 @@ export class EditorFrameComponent implements Component {
     this.paint = paint
   }
 
-  /** Replace the frame's color role; the next render picks it up. */
+  /**
+   * Replace the frame's color role; the next render picks it up.
+   * @param paint - Palette role used for the editor rail.
+   */
   setPaint(paint: ColorRole): void {
     this.paint = paint
   }
@@ -275,6 +281,10 @@ export class StatusToastComponent implements Component {
     private readonly paint?: (text: string) => string,
   ) {}
 
+  /**
+   * Replace or clear the transient status message.
+   * @param message - Message to render, or undefined to hide the toast.
+   */
   setMessage(message: string | undefined): void {
     this.message = message
   }

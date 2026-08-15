@@ -259,7 +259,11 @@ export interface TuiRuntime {
    * model target. The host commits atomically: rejection leaves the current
    * agent and channel usable, while success remounts through `tui-agent/ready`.
    */
-  swapFresh?: (selection: ModelSelection | undefined, cwd?: string) => Promise<void>
+  swapFresh?: (
+    selection: ModelSelection | undefined,
+    cwd?: string,
+    routingProfile?: 'anchored' | 'suite',
+  ) => Promise<void>
   /**
    * Replace this channel with a fresh child session seeded through one stable
    * inclusive event boundary of the current session. The old session remains

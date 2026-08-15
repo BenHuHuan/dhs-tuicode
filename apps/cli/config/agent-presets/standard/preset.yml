@@ -1,3 +1,3 @@
 name: 标准模式
-description: 首次请求采用极简提示词与 shell/read，首次工具调用后立即恢复完整编码工具。
+description: 首次请求采用官方极简 bash/str_replace_editor 工具结构，首次回复后立即恢复完整编码工具。
 order: 1

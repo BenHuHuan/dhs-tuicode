@@ -1,27 +1,20 @@
 # DeepSeek Code TUI
 
-[![Release](https://img.shields.io/badge/release-v0.0.1-2563eb)](https://github.com/BenHuHuan/dhscode-tui/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](#platform-support)
-[![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v0.1.0-2563eb)](https://github.com/BenHuHuan/dhscode-tui/releases) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](#platform-support) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
 
 [English](README.md) | 中文
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.0.1-preview.png" alt="DeepSeek Code TUI v0.0.1 预览">
+  <img src="docs/assets/dhscode-tui-v0.1.0-preview.png" alt="DeepSeek Code TUI v0.1.0 预览">
 </p>
 
-**DeepSeek Code TUI v0.0.1** 是基于官方
-[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生
-Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pro/Flash
-加入适用于 Windows、Linux、服务器与 SSH 的类 Claude Code 工作流。
+**DeepSeek Code TUI v0.1.0** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pro/Flash 加入适用于 Windows、Linux、服务器与 SSH 的类 Claude Code 工作流。
 
-在项目目录输入 `deepseek`，即可获得包含极简首轮提示、按需工具、权限模式、MCP、
-可继续 Agent、检查点和持久会话的纯终端编码工作区。
+在项目目录输入 `deepseek`，即可获得包含极简首轮提示、按需工具、权限模式、MCP、可继续 Agent、检查点和持久会话的纯终端编码工作区。
 
-> 本项目是独立社区 fork，不是 DeepSeek 官方产品，也与 Anthropic 无关。文中提到
-> Claude Code 仅用于说明交互体验。
+> 本项目是独立社区发行版，不是 DeepSeek 官方产品，也与 Anthropic 无关。文中提到 Claude Code 仅用于说明交互体验。
 
-## v0.0.1 亮点
+## v0.1.0 亮点
 
 - **一条命令启动：** `deepseek` 或 `dsh` 默认打开当前目录。
 - **DeepSeek 优先：** V4 Pro、max 推理强度、极简首轮工具目录，随后按需恢复完整工具。
@@ -44,6 +37,8 @@ Coding Agent。它保留 Harness 的 Cordis 插件架构，并为 DeepSeek V4 Pr
 - Git 与 DeepSeek API Key
 - Windows Terminal、WezTerm、Kitty、iTerm2 等现代终端
 - Windows 可选 Git for Windows，用于 Linux 风格 Bash 工具
+
+<a id="run"></a><a id="run-from-source"></a>
 
 ## 从源码安装
 
@@ -93,12 +88,9 @@ deepseek --dangerously-skip-permissions
 
 ## 极简首轮与工具恢复
 
-标准 Agent 以小型稳定提示词和最小工具集合（`shell` + `read`）开始。第一次持久工具调用
-或助手回复后，完整编码工具目录立即恢复。这样首轮尽量接近 DeepSeek Harness Minimal Mode，
-后续又保留完整 Coding Agent 能力。
+标准 Agent 以小型稳定提示词和最小工具集合（`shell` + `read`）开始。第一次持久工具调用或助手回复后，完整编码工具目录立即恢复。这样首轮尽量接近 DeepSeek Harness Minimal Mode，后续又保留完整 Coding Agent 能力。
 
-默认推理强度为 max，DeepSeek Profile 支持 `temperature=1.0`、`top_p=0.95` 等采样配置。
-提示锚定可以提高一致性，但不能保证隐藏思维链固定以某个单词开头。
+默认推理强度为 max，DeepSeek Profile 支持 `temperature=1.0`、`top_p=0.95` 等采样配置。提示锚定可以提高一致性，但不能保证隐藏思维链固定以某个单词开头。
 
 ## 主要命令
 
@@ -141,8 +133,7 @@ deepseek --dangerously-skip-permissions
 
 ### Windows
 
-Windows Terminal + PowerShell 是 v0.0.1 的主要桌面目标。沙箱模式使用 PowerShell；
-bypass 模式发现 Git for Windows 后可优先使用 Git Bash，以获得更接近 Linux 的环境。
+Windows Terminal + PowerShell 是 v0.1.0 的主要桌面目标。沙箱模式使用 PowerShell；bypass 模式发现 Git for Windows 后可优先使用 Git Bash，以获得更接近 Linux 的环境。
 
 ```powershell
 $env:DSH_BASH_PATH = 'C:\Program Files\Git\bin\bash.exe'
@@ -151,8 +142,7 @@ deepseek
 
 ### Linux 与服务器
 
-在 Bash 兼容终端和 SSH 中直接运行同一条 `deepseek` 命令。图片能力取决于终端；不支持
-位图协议时会退化为 ANSI 像素图或文本元数据。
+在 Bash 兼容终端和 SSH 中直接运行同一条 `deepseek` 命令。图片能力取决于终端；不支持位图协议时会退化为 ANSI 像素图或文本元数据。
 
 ## 数据与安全
 
@@ -164,8 +154,7 @@ deepseek
 
 ## 架构与文档
 
-DeepSeek Code 仍是 DeepSeek Harness 的发行形态，而非单体 CLI。模型、工具、会话、权限、
-凭据、MCP、Skills、Agents 与 UI 都由 Cordis 插件提供；缺少可选服务时对应能力独立降级。
+DeepSeek Code 仍是 DeepSeek Harness 的发行形态，而非单体 CLI。模型、工具、会话、权限、凭据、MCP、Skills、Agents 与 UI 都由 Cordis 插件提供；缺少可选服务时对应能力独立降级。
 
 - [TUI 子系统](docs/subsystems/tui.md)
 - [MCP 子系统](docs/subsystems/mcp.md)
@@ -173,7 +162,7 @@ DeepSeek Code 仍是 DeepSeek Harness 的发行形态，而非单体 CLI。模�
 - [开发指南](docs/development.md)
 - [测试](docs/testing.md)
 
-## v0.0.1 已知限制
+## v0.1.0 已知限制
 
 - 当前仅源码发布，暂无 npm、MSI、Homebrew 或独立二进制。
 - 不同终端对鼠标、OSC 52 剪贴板与图片协议的支持不同。
@@ -190,14 +179,11 @@ pnpm run test
 pnpm run test:e2e
 ```
 
-Keyless E2E 不需要真实 API Key；真实模型请求需要。请通过
-[GitHub Issues](https://github.com/BenHuHuan/dhscode-tui/issues) 报告问题，并附系统、终端、
-Node 版本、启动命令和最小复现。
+Keyless E2E 不需要真实 API Key；真实模型请求需要。请通过 [GitHub Issues](https://github.com/BenHuHuan/dhscode-tui/issues) 报告问题，并附系统、终端、Node 版本、启动命令和最小复现。
 
 ## 发布状态
 
-**v0.0.1 — 第一个公开预览版。** 核心终端编码循环已可供早期用户使用；API 与配置仍在
-1.0 前快速迭代。
+**v0.1.0 — 第一个公开版本。** 核心终端编码循环已可供早期用户使用；API 与配置仍在 1.0 前快速迭代。
 
 ## 许可证
 

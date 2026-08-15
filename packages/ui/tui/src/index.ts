@@ -714,7 +714,11 @@ export function createTuiChat(
   )({ type: 'image', attachment: brandImageRef })
   const header = new HeaderComponent(
     agent,
-    () => sessionTitle ?? config.welcome,
+    () => sessionTitle
+      ?? config.welcome
+      ?? (agent.session.header.agentPreset === 'routing-suite'
+        ? 'Router mode · task-aware tools'
+        : undefined),
     palette,
     resolved.theme.color && resolved.theme.truecolor,
     brandImage,
@@ -739,6 +743,7 @@ export function createTuiChat(
     || symbolValue === undefined || indicatorValue === undefined) {
     throw new Error('TUI prompt built-ins failed to initialize')
   }
+  let runningActivityGlyph = ''
   const updatePromptValues = (): void => {
     const renderTime = now()
     cwdValue.set(palette.bold(palette.accent(formattedCwd)))
@@ -794,18 +799,14 @@ export function createTuiChat(
     // Remember the live phase glyph so the fade-out shows it, not the ttft
     // fallback the derivation returns once the closing turn's step has ended.
     if (runningStatus !== undefined && statusGlyph !== undefined) runningStatus.lastGlyph = statusGlyph
-    // The fade envelope gates appear/disappear; the active throb breathes the
-    // glyph throughout the operation. Truecolor opacity is envelope × throb; the
-    // non-truecolor fallback keys visibility off the envelope alone, so the
-    // throb never blinks it. `envelope` clamps to [0, 1].
     const activeSince = runningStatus?.startedAt ?? compacting?.startedAt
     const envelope = activeSince !== undefined && statusGlyph !== undefined
       ? { glyph: statusGlyph, level: Math.min(1, (renderTime - activeSince) / STATUS_FADE_MS) }
       : fadingStatus !== undefined
         ? { glyph: fadingStatus.glyph, level: Math.max(0, 1 - (renderTime - fadingStatus.endedAt) / STATUS_FADE_MS) }
         : undefined
-    const caret = envelope === undefined
-      ? palette.dim(' ')
+    runningActivityGlyph = envelope === undefined
+      ? ''
       : fadeGlyph(
         envelope.glyph,
         palette,
@@ -814,7 +815,10 @@ export function createTuiChat(
         envelope.level * pulseLevel(renderTime),
         envelope.level >= 0.5,
       )
-    indicatorValue.set(`${caret}${palette.dim(' ')}`)
+    // Keep the editor itself visually quiet while a turn is running. The
+    // animated activity glyph and steering hint live on the status row above
+    // the editor (see updateEditorHint), rather than masquerading as input.
+    indicatorValue.set(palette.dim('  '))
     const modeIdentity = mode?.dangerous === true
       ? { badge: 'UNLOCKED', detail: 'full access', tone: 'danger' as const }
       : mode?.kind === 'plan'
@@ -829,6 +833,7 @@ export function createTuiChat(
     footerLine.setText(
       `${modeBadgeText(`└─ ${modeIdentity.badge}`, modeIdentity.tone, resolved.theme.color)}${palette.dim(`  ${modeIdentity.detail} · ? help · 1 agent`)}`,
     )
+    updateEditorHint()
   }
   const promptContext = new PromptContextComponent(
     parseTuiPromptTemplate(displayInlineText(resolved.theme.leftPrompt)),
@@ -861,10 +866,10 @@ export function createTuiChat(
   ui.addChild(promptContext)
   ui.addChild(questionContainer)
   ui.addChild(statusToast)
+  ui.addChild(editorStatusLine)
   ui.addChild(editorTopFrame)
   ui.addChild(editor)
   ui.addChild(editorBottomFrame)
-  ui.addChild(editorStatusLine)
   ui.addChild(footerLine)
   ui.setFocus(editor)
   const updateTerminalTitle = (): void => {
@@ -933,6 +938,9 @@ export function createTuiChat(
     `Press ${key === 'ctrl-c' ? 'Ctrl+C' : 'Ctrl+D'} again to exit`,
   )
   const updateEditorHint = (): void => {
+    const runningHint = agent.status === 'running'
+      ? `${runningActivityGlyph || palette.dim('✣')} ${palette.dim(displayInlineText(resolved.theme.inputPlaceholder))}`
+      : fadingStatus === undefined ? '' : runningActivityGlyph
     editorStatusLine.setText(externalEditorInFlight
       ? palette.dim('Editing in external editor…')
       : transferOperation === 'reading'
@@ -956,15 +964,13 @@ export function createTuiChat(
                         : subagentKillConfirmation !== undefined
                           ? palette.dim('Press Ctrl+X Ctrl+K again within 3s to stop all running background subagents')
                           : clearConversationConfirmation === undefined
-                            ? ''
+                            ? runningHint
                             : palette.dim('Press Ctrl+L again to run /clear'))
-    editor.hint = agent.status === 'running'
-      ? palette.dim(displayInlineText(resolved.theme.inputPlaceholder))
-      : idleExitConfirmation !== undefined
-        ? idleExitHint(idleExitConfirmation.key)
-        : stashedEditorDraft === undefined
-          ? undefined
-          : palette.dim('Prompt stashed · Ctrl+S to restore')
+    editor.hint = idleExitConfirmation !== undefined
+      ? idleExitHint(idleExitConfirmation.key)
+      : stashedEditorDraft === undefined
+        ? undefined
+        : palette.dim('Prompt stashed · Ctrl+S to restore')
   }
   const clearIdleExitConfirmation = (render = true): void => {
     if (idleExitConfirmation === undefined) return
@@ -1909,7 +1915,10 @@ export function createTuiChat(
   }
 
   /** Flush the current log and atomically replace this channel with a fresh session. */
-  const startFreshConversation = (nextCwd?: string): void => {
+  const startFreshConversation = (
+    nextCwd?: string,
+    routingProfile?: 'anchored' | 'suite',
+  ): void => {
     clearIdleExitConfirmation(false)
     clearConversationConfirmationState(false)
     if (freshSwapInFlight) return
@@ -1938,7 +1947,7 @@ export function createTuiChat(
       }
       await runtime.terminal.drainInput(100, 20)
       if (isDisposed()) return
-      await swapFresh(selection, nextCwd)
+      await swapFresh(selection, nextCwd, routingProfile)
     })().catch((error: unknown) => {
       if (!isDisposed()) appendNotice(`Clear failed: ${errorChain(error)}`, 'error')
     }).finally(() => {
@@ -1986,6 +1995,42 @@ export function createTuiChat(
     }
     startFreshConversation(nextCwd)
     return { kind: 'success', text: `Switching workspace to ${displayText(nextCwd)}.` }
+  }
+
+  /** Switch the model-facing tool router at a clean first-request boundary. */
+  const runMode = (rawInput: string): CommandResult => {
+    const requested = rawInput.trim().toLowerCase()
+    const current = agent.session.header.agentPreset === 'routing-suite' ? 'suite' : 'anchored'
+    if (requested === '') {
+      return {
+        kind: 'success',
+        text: `Tool routing mode: ${current === 'suite' ? 'Router' : 'Minimal'}. Usage: /mode <minimal|router>`,
+      }
+    }
+    const aliases: Record<string, 'anchored' | 'suite'> = {
+      anchored: 'anchored',
+      minimal: 'anchored',
+      anchor: 'anchored',
+      suite: 'suite',
+      routing: 'suite',
+      router: 'suite',
+    }
+    const profile = aliases[requested]
+    if (profile === undefined) {
+      return { kind: 'error', text: 'Usage: /mode <minimal|router>' }
+    }
+    if (profile === current) {
+      return { kind: 'success', text: `Already using ${profile === 'suite' ? 'Router mode' : 'Minimal mode'}.` }
+    }
+    if (freshSwapInFlight) return { kind: 'error', text: 'A mode transition is already starting.' }
+    if (hasActiveConversationWork()) {
+      return { kind: 'error', text: 'Finish or cancel active work before switching tool routing mode.' }
+    }
+    startFreshConversation(undefined, profile)
+    return {
+      kind: 'success',
+      text: `Switching to ${profile === 'suite' ? 'Router mode' : 'Minimal mode'} in a fresh session.`,
+    }
   }
 
   /** Open the picker when bare, or hand one exact id/title to the shared resume preflight. */
@@ -2835,7 +2880,7 @@ export function createTuiChat(
       'Esc cancel turn • Ctrl+G / Ctrl+X Ctrl+E external editor • Ctrl+T toggle task checklist',
       'Ctrl+X Ctrl+K twice within 3s stop all running background subagents',
       'Ctrl+S stash/restore prompt',
-      'Mouse wheel scroll transcript - Ctrl+End jump to the latest message',
+      'Mouse wheel scroll transcript · double right-click paste the last DSH selection · Ctrl+End jump to latest',
       'Ctrl+O cycle cards (collapse/expand/hide) • Ctrl+R search history • Ctrl+L redraw; press twice to /clear',
       'Ctrl+B background foreground shell • Ctrl+C cancel/clear; press twice on empty input to exit',
       'Ctrl+D delete forward while editing; press twice on empty input to exit • ? on empty input opens shortcut help',
@@ -3316,6 +3361,13 @@ export function createTuiChat(
       input: { hint: '[path]' },
       recordInput: false,
       handler: async ({ rawInput }) => await runWorkdir(rawInput),
+    })
+    commandCtx.commands.register({
+      name: 'mode',
+      description: 'Show or switch Minimal / Router tool routing',
+      input: { hint: '[minimal|router]' },
+      recordInput: false,
+      handler: ({ rawInput }) => runMode(rawInput),
     })
     commandCtx.commands.register({
       name: 'cd',
@@ -4032,6 +4084,8 @@ export function createTuiChat(
   let selectionDragging = false
   let selectionRenderLines: string[] = []
   let mouseSelectionActive = false
+  let copiedMouseSelection: string | undefined
+  let previousRightClickAt = Number.NEGATIVE_INFINITY
   let transcriptScrollOffset = 0
   let transcriptScrollMaximum = 0
   let previousTranscriptLineCount = 0
@@ -4137,6 +4191,7 @@ export function createTuiChat(
   const copyMouseSelection = (): void => {
     const text = selectionText()
     if (text === '') return
+    copiedMouseSelection = text
     // Claude Code's fullscreen selection writes OSC 52 directly to the
     // attached terminal. Doing the same avoids spawning PowerShell for every
     // drag and works through compatible SSH/tmux clipboard forwarding.
@@ -4166,10 +4221,25 @@ export function createTuiChat(
       return true
     }
     if (final === 'M' && baseButton === 0 && !motion) {
+      copiedMouseSelection = undefined
+      previousRightClickAt = Number.NEGATIVE_INFINITY
       selectionAnchor = mousePoint(column, row)
       selectionFocus = selectionAnchor
       selectionDragging = true
       ui.requestRender(true)
+      return true
+    }
+    if (final === 'M' && baseButton === 2 && !motion) {
+      const clickedAt = now()
+      const doubleClick = clickedAt - previousRightClickAt <= 500
+      previousRightClickAt = doubleClick ? Number.NEGATIVE_INFINITY : clickedAt
+      if (doubleClick && copiedMouseSelection !== undefined) {
+        editor.insertPastedText(copiedMouseSelection)
+        selectionAnchor = undefined
+        selectionFocus = undefined
+        selectionDragging = false
+        requestRender()
+      }
       return true
     }
     if (final === 'M' && baseButton === 0 && motion && selectionDragging) {
@@ -4366,6 +4436,17 @@ export function createTuiChat(
         return undefined
       }
       else if (confirmIdleExit('ctrl-d')) requestExit()
+      return { consume: true }
+    }
+    // A trailing Windows separator can leave pi-tui's generic path completion
+    // armed even though /workdir owns the whole argument. Submit these commands
+    // directly so ` /workdir D:\ ` needs exactly one Enter press.
+    if (
+      matchesKey(data, Key.enter)
+      && !editor.disableSubmit
+      && /^\/(?:workdir|cd)(?:\s.*)?$/u.test(editor.getText())
+    ) {
+      editor.onSubmit?.(editor.getText())
       return { consume: true }
     }
     return undefined
@@ -4753,12 +4834,12 @@ export function apply(ctx: Context, config: Config): void {
         },
         // `/clear` and timely double Ctrl+L keep the old log resumable while
         // creating a fresh identity and remounting this terminal in place.
-        swapFresh: (freshSelection, freshCwd) => {
+        swapFresh: (freshSelection, freshCwd, routingProfile) => {
           const tuiAgent = ctx.get('tuiAgent')
           if (tuiAgent === undefined) {
             return Promise.reject(new Error('tui-runner service is not mounted'))
           }
-          return tuiAgent.fresh(freshSelection, freshCwd)
+          return tuiAgent.fresh(freshSelection, freshCwd, routingProfile)
         },
         // `/rewind` forks a child through a completed event boundary, leaving
         // the source session durable and resumable before this terminal remounts.

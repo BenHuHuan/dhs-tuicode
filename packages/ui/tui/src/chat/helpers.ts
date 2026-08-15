@@ -66,6 +66,14 @@ export class HintEditor extends Editor {
     this.insertTextAtCursor(`[paste #${String(id)} ${detail}]`)
   }
 
+  /**
+   * Insert programmatic clipboard text through the same atomic paste path as a terminal paste.
+   * @param raw - Clipboard text to sanitize and insert.
+   */
+  insertPastedText(raw: string): void {
+    this.commitPaste(raw)
+  }
+
   override handleInput(data: string): void {
     let remaining = data
     while (remaining !== '') {

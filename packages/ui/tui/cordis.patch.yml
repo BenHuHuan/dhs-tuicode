@@ -26,6 +26,11 @@
 - id: hmr
   disabled: true
 
+# The anchored first request must use Minimal's persistent Bash schema on every
+# platform. PowerShell remains available after promotion on Windows.
+- id: tool-bash
+  disabled: true
+
 # Shipped default: full thinking at max effort on every request. No key or
 # endpoint is inlined here — both resolve per request from the `llm-deepseek:`
 # settings section and the credential store.
@@ -39,16 +44,33 @@
 # ── TUI-only rows ───────────────────────────────────────────────────────────
 
 - insert:
-    # Anchor the first V4 request to Minimal's prompt and pwsh/read (or
-    # bash/read), then restore this TUI bundle's complete catalog after the
+    # Anchor the first V4 request to Minimal's real bash/editor schema, then
+    # restore this TUI bundle's complete catalog after the
     # first durable assistant result. Resume and reload derive the phase from the log.
     - id: tool-bootstrap
       name: '@deepseek-ai/dsh-tools/bootstrap'
       config:
-        shellTools: [bash, pwsh]
-        commonTools: [read]
+        bootstrapTools: [bash, str_replace_editor]
         promoteOn: either
-        bootstrapMaxTokens: 1024
+        suppressedContextSources: [agent-instructions, skill-catalog]
+
+    - id: minimal-persistent-shell
+      name: cordis:group
+      group: true
+      isolate:
+        terminals: true
+      config:
+        - id: pty
+          name: '@deepseek-ai/dsh-terminal'
+        - id: terminal-bash
+          name: '@deepseek-ai/dsh-terminal-bash'
+          config:
+            shellPath: !!js "process.env.DSH_BASH_PATH ?? (process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash')"
+            timeoutMs: 300000
+        - id: persistent-bash
+          name: '@deepseek-ai/dsh-tool-bash-persistent'
+          config:
+            timeoutMs: 300000
 
     # Durable KV backend for the projection cache below: same storage root the
     # web surface uses, so checkpoint rows written by either surface serve both.

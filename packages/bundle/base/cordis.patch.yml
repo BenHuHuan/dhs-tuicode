@@ -168,6 +168,11 @@
     # sessions pin workspace-write + ask through the permission service below.
     - id: sandbox
       name: '@deepseek-ai/dsh-sandbox-local'
+      config:
+        # `%TEMP%` normally lives below the user's home directory. When DSH is
+        # launched from that home, the Windows ACL sandbox requires a disjoint
+        # private-temp capability, so keep it under ProgramData instead.
+        windowsTempRoot: !!js "process.platform === 'win32' ? (process.env.DSH_SANDBOX_TEMP_ROOT ?? ((process.env.ProgramData ?? 'C:/ProgramData') + '/DeepSeekHarness/Temp')) : ''"
 
     - id: sandbox-policy
       name: '@deepseek-ai/dsh-sandbox-policy'

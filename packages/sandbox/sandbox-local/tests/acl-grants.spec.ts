@@ -65,9 +65,9 @@ vi.mock('@deepseek-ai/dsh-sandbox-windows-acl', () => {
 
 const WORKSPACE_SID = 'S-1-4-42-42'
 
-async function setup() {
+async function setup(config: { windowsTempRoot?: string } = {}) {
   const ctx = new Context()
-  const fiber = await ctx.plugin(LocalSandboxProvider, {})
+  const fiber = await ctx.plugin(LocalSandboxProvider, config)
   const sandbox = ctx.sandbox as LocalSandboxProvider
   sandbox.internals = { platform: 'win32', windowsAclRunnerArgs: ['node', 'windows-acl-runner.js'] }
   return { ctx, sandbox, fiber }
@@ -138,6 +138,27 @@ describe('windows-acl write grants (LocalSandboxProvider)', () => {
       await fiber.dispose()
       expect(mockState.grants.every(grant => grant.disposed)).toBe(true)
       expect(existsSync(tempDir ?? '')).toBe(false)
+    } finally {
+      cleanup()
+    }
+  })
+
+  it('uses a configured temp root outside a home-directory workspace', async () => {
+    try {
+      const ws = workspaceRoot()
+      const privateTempRoot = mkdtempSync(join(tmpdir(), 'dsh-acl-private-root-'))
+      scratch.push(ws, privateTempRoot)
+      const { sandbox, fiber } = await setup({ windowsTempRoot: privateTempRoot })
+      const confined = sandbox.confine(['bash', '-lc', 'pwd'], {
+        mode: 'workspace-write',
+        workspaceRoot: ws,
+        sessionId: SessionId('git-bash'),
+      })
+
+      const tempDir = flag(confined.argv, '--temp') ?? ''
+      expect(tempDir.startsWith(`${privateTempRoot}${process.platform === 'win32' ? '\\' : '/'}`)).toBe(true)
+      expect(existsSync(tempDir)).toBe(true)
+      await fiber.dispose()
     } finally {
       cleanup()
     }
