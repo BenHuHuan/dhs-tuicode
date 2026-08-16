@@ -4408,7 +4408,7 @@ describe('pi-tui chat lifecycle and transcript', () => {
     await dispose(result)
   })
 
-  it('switches Minimal and Router profiles through /mode on a fresh session boundary', async () => {
+  it('switches Minimal, Router Standard, and Router Spec profiles through /mode on a fresh session boundary', async () => {
     const swap = vi.fn<NonNullable<TuiRuntime['swapFresh']>>(
       () => Promise.reject(new Error('test host retained the current session')),
     )
@@ -4428,7 +4428,16 @@ describe('pi-tui chat lifecycle and transcript', () => {
       provider: 'deepseek-official',
       model: 'deepseek-v4-flash',
     }, undefined, 'suite')
-    expect(result.terminal.output).toContain('Switching to Router mode in a fresh session.')
+    expect(result.terminal.output).toContain('Switching to Router Standard mode in a fresh session.')
+
+    result.terminal.send('/mode spec')
+    result.terminal.send('\r')
+    await vi.waitFor(() => { expect(swap).toHaveBeenCalledTimes(2) })
+    expect(swap).toHaveBeenLastCalledWith({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+    }, undefined, 'suite-spec')
+    expect(result.terminal.output).toContain('Switching to Router Spec mode in a fresh session.')
     await dispose(result)
   })
 

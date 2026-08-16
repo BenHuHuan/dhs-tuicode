@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-tui-model-routing-profiles.md
-2026-08-15-tui-model-routing-profiles.md: d563429512e91643eca678bd35595d6af1b24536
-2026-08-15-tui-model-routing-profiles.zh.md: 978d04eb4cfdb482f8cb51b17625d25e4d07cf3d
+2026-08-15-tui-model-routing-profiles.md: 0ddd145942204a8a7f80e49164849a431525730e
+2026-08-15-tui-model-routing-profiles.zh.md: 958123ca43bfe84b6fe23d930ecb165533f3f1a7

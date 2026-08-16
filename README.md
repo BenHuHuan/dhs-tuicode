@@ -18,7 +18,7 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 
 - **One-command TUI:** bare `deepseek` or `dsh` opens the current directory.
 - **DeepSeek-first defaults:** V4 Pro, max reasoning effort, and a Minimal first request that promotes the full coding tool catalog on demand.
-- **Two model profiles:** `/mode minimal` keeps the anchored V4 Pro path; `/mode router` enables task-aware initial tool routing, primarily for V4 Flash.
+- **Three model profiles:** `/mode minimal` keeps the anchored V4 Pro path; `/mode router` restores the RL interface (one-sentence persona + shell/editor surface); `/mode spec` enables deep-think-first task-aware routing, primarily for V4 Flash.
 - **Windows + Linux:** automatic Git Bash execution for Minimal/Router agent tools on Windows, with native Bash on Linux and servers; PowerShell remains available for Windows-safe operations.
 - **CJK-friendly terminal text:** Chinese and Latin glyphs stay column-aligned in Git Bash when using a true CJK monospace font such as Sarasa Mono SC.
 - **Persistent authentication:** `/login` securely saves or replaces the DeepSeek API token.
@@ -98,13 +98,14 @@ The standard agent begins with a small stable prompt and minimal catalog (`shell
 The default effort is max. DeepSeek profiles support sampling values such as `temperature=1.0` and `top_p=0.95`. Prompt anchoring improves consistency, but cannot guarantee a particular hidden chain-of-thought prefix.
 
 - **Minimal (recommended for V4 Pro):** preserves the anchored Minimal system prompt and promotes the complete catalog only after the first durable action.
-- **Router (primarily for V4 Flash):** adapts the task-aware routing approach from [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite). It narrows the first visible tool surface by task, then restores the complete catalog. The routing-suite author describes this profile as mainly intended for Flash; Pro users should keep Minimal unless they specifically want to evaluate routing behavior.
+- **Router Standard (`/mode router`):** ports the v0.2.0 RL-interface restoration from [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite): the first request carries only the RL training sentence plus the shell/str_replace_editor surface, then the complete catalog opens after the first tool call.
+- **Router Spec (`/mode spec`):** ports the v0.2.0 deep-think-first preset: the classified persona and the spec/react/weak first-turn core tool surface stay visible together with the full prompt sections; the long first-turn reasoning chain is the intended behavior. Both Router profiles are primarily intended for V4 Flash; Pro users should keep Minimal unless they specifically want to evaluate routing behavior.
 
-Switch profiles with `/mode minimal` or `/mode router`. This profile selector is independent from Build/Flow/Inspect/Plan permission modes.
+Switch profiles with `/mode minimal`, `/mode router`, or `/mode spec`. This profile selector is independent from Build/Flow/Inspect/Plan permission modes.
 
 ### Windows Git Bash behavior
 
-The v0.2.0 Windows backend gives agent tool calls real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. Minimal is the default V4 Pro profile; Router keeps the same Bash backend but is tuned mainly for V4 Flash. In local V4 Pro max-effort Minimal runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
+The v0.2.0 Windows backend gives agent tool calls real Git Bash/MSYS command semantics instead of presenting PowerShell as Bash. Minimal is the default V4 Pro profile; Router Standard and Router Spec keep the same Bash backend but are tuned mainly for V4 Flash. In local V4 Pro max-effort Minimal runs, planning language became more collaborative (`We could`, `Should we`, and `We should`) while retaining natural `Let's` transitions. These screenshots are observed samples, not a guarantee that every model response will use a fixed prefix.
 
 <p align="center">
   <img src="docs/assets/gitbash-reasoning-before-v2.png" alt="V4 Pro reasoning sample using Git Bash" width="100%"><br>

@@ -23,6 +23,7 @@ import {
 } from '@deepseek-ai/dsh-agent'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import z from '@deepseek-ai/schemastery'
+import { ROUTING_PROFILE_PRESETS, type ToolRoutingProfile } from './runtime.ts'
 
 /** Stable Cordis plugin name. */
 export const name = 'tui-runner'
@@ -142,7 +143,7 @@ export class TuiAgentService extends Service {
   async fresh(
     selection: ModelSelection | undefined,
     cwd?: string,
-    routingProfile: 'anchored' | 'suite' = 'anchored',
+    routingProfile: ToolRoutingProfile = 'anchored',
   ): Promise<void> {
     const settleContext = this.settleContext
     if (settleContext === undefined) {
@@ -157,7 +158,9 @@ export class TuiAgentService extends Service {
       sessionId: freshSessionId(),
       meta: {
         cwd: cwd ?? current?.session.header.cwd ?? process.cwd(),
-        ...(routingProfile === 'suite' ? { agentPreset: 'routing-suite' } : {}),
+        ...(routingProfile === 'anchored'
+          ? {}
+          : { agentPreset: ROUTING_PROFILE_PRESETS[routingProfile] }),
       },
       agentOptions,
     })

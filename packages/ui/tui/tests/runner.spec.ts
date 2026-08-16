@@ -131,6 +131,29 @@ describe('TuiAgentService fresh-session swaps', () => {
     await ctx.fiber.dispose()
   })
 
+  it('marks a fresh Router Spec mode session with its own preset marker', async () => {
+    const ctx = new Context()
+    const initial = agentHandle('main', '/workspace', { provider: 'base', model: 'base-model' })
+    const routed = agentHandle('routed-spec', '/workspace', { provider: 'base', model: 'base-model' })
+    const create = vi.fn<(options: CreateAgentOptions) => Promise<AgentHandle>>()
+      .mockResolvedValueOnce(initial)
+      .mockResolvedValueOnce(routed)
+    const service = new TuiAgentService(ctx)
+    await service.settle(undefined, {
+      agents: { create } as unknown as AgentRegistry,
+      agentOptions: { provider: 'base', model: 'base-model' },
+    })
+
+    await service.fresh(undefined, undefined, 'suite-spec')
+
+    expect(create.mock.calls[0]?.[0].meta).toEqual({ cwd: process.cwd() })
+    expect(create.mock.calls[1]?.[0].meta).toEqual({
+      cwd: '/workspace',
+      agentPreset: 'routing-suite-spec',
+    })
+    await ctx.fiber.dispose()
+  })
+
   it('disposes a prepared replacement when the current agent cannot retire', async () => {
     const ctx = new Context()
     const retirementError = new Error('old agent stayed live')

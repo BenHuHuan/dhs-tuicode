@@ -220,7 +220,7 @@ export class HeaderComponent implements Component {
         this.palette.bold(this.palette.brand("What's new")),
         'Complete brick mascot with protected edge detail',
         'Crash-safe copy selection and composable inline paste blocks',
-        '/mode switches Minimal and task-aware Router profiles',
+        '/mode switches Minimal, Router Standard, and Router Spec profiles',
         '/skills shares available Codex skill catalogs',
         '/workdir switches projects without losing history',
         `${this.palette.code('/bypass')} toggles full access instantly`,

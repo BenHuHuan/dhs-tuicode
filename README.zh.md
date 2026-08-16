@@ -18,7 +18,7 @@
 
 - **一条命令启动：** `deepseek` 或 `dsh` 默认打开当前目录。
 - **DeepSeek 优先：** V4 Pro、max 推理强度、Minimal 极简首轮工具目录，随后按需恢复完整工具。
-- **两种模型 Profile：** `/mode minimal` 保留面向 V4 Pro 的锚定路径；`/mode router` 提供任务感知的首轮工具路由，主要面向 V4 Flash。
+- **三种模型 Profile：** `/mode minimal` 保留面向 V4 Pro 的锚定路径；`/mode router` 还原 RL 接口（单句 persona + shell/str_replace_editor）；`/mode spec` 提供深度思考优先的任务感知路由，主要面向 V4 Flash。
 - **Windows + Linux：** Windows 下 Minimal/Router 的 Agent 工具自动使用 Git Bash，Linux/服务器直接使用 Bash；Windows 安全操作仍可使用 PowerShell。
 - **中文等宽显示：** Git Bash 配合 Sarasa Mono SC 等真正的 CJK 等宽字体时，中英文字符可保持列宽一致。
 - **持久登录：** `/login` 安全保存或替换 API Token，无需每次设置环境变量。
@@ -96,13 +96,14 @@ deepseek --dangerously-skip-permissions
 默认推理强度为 max，DeepSeek Profile 支持 `temperature=1.0`、`top_p=0.95` 等采样配置。提示锚定可以提高一致性，但不能保证隐藏思维链固定以某个单词开头。
 
 - **Minimal（V4 Pro 推荐）：** 保留锚定的 Minimal system prompt，第一次持久动作后才恢复完整工具目录。
-- **Router（主要面向 V4 Flash）：** 适配 [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite) 的任务感知路由思路，按任务缩小首轮可见工具面，之后再恢复完整目录。Routing Suite 作者说明该 Profile 主要为 Flash 设计；Pro 用户除非专门评估路由行为，否则建议保持 Minimal。
+- **Router Standard（`/mode router`）：** 移植 [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite) v0.2.0 的 RL 接口还原：首轮只携带 RL 训练句 + shell/str_replace_editor 工具面，第一次工具调用后恢复完整目录。
+- **Router Spec（`/mode spec`）：** 移植 v0.2.0 的深度思考优先预设：分类 persona 与 spec/react/weak 首轮核心工具面随完整 prompt sections 保留，首轮超长思维链是预期行为。两个 Router Profile 都主要面向 V4 Flash；Pro 用户除非专门评估路由行为，否则建议保持 Minimal。
 
-使用 `/mode minimal` 或 `/mode router` 切换。它与 Build、Flow、Inspect、Plan 这些权限/工作模式相互独立。
+使用 `/mode minimal`、`/mode router` 或 `/mode spec` 切换。它与 Build、Flow、Inspect、Plan 这些权限/工作模式相互独立。
 
 ### Windows Git Bash 行为
 
-v0.2.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。Minimal 是 V4 Pro 的默认 Profile；Router 使用同一个 Bash 后端，但主要针对 V4 Flash。本机 V4 Pro max-effort Minimal 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
+v0.2.0 的 Windows 后端会让 Agent 工具调用使用真实的 Git Bash/MSYS 命令语义，不再把 PowerShell 包装成 Bash。Minimal 是 V4 Pro 的默认 Profile；Router Standard 与 Router Spec 使用同一个 Bash 后端，但主要针对 V4 Flash。本机 V4 Pro max-effort Minimal 实测中，规划语言更常出现协作式的 `We could`、`Should we` 与 `We should`，同时保留自然的 `Let's` 过渡。以下是实际观察截图，不代表每次模型响应都能固定使用某个开头。
 
 <p align="center">
   <img src="docs/assets/gitbash-reasoning-before-v2.png" alt="V4 Pro 使用 Git Bash 的推理样例" width="100%"><br>

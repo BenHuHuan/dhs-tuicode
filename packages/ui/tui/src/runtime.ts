@@ -13,6 +13,19 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { TuiUserSettings } from './config.ts'
 
+/**
+ * User-facing prompt/tool routing profile. `suite` selects the built-in
+ * Router Standard compatibility port; `suite-spec` selects Router Spec.
+ * The preset ids are owned by `@deepseek-ai/dsh-tools/bootstrap`.
+ */
+export type ToolRoutingProfile = 'anchored' | 'suite' | 'suite-spec'
+
+/** Session `agentPreset` marker selected by each routing profile. */
+export const ROUTING_PROFILE_PRESETS = {
+  suite: 'routing-suite',
+  'suite-spec': 'routing-suite-spec',
+} as const
+
 /** Opaque durable identifier for one user-created TUI checkpoint. */
 export type WorkspaceCheckpointId = Branded<'WorkspaceCheckpointId'>
 
@@ -262,7 +275,7 @@ export interface TuiRuntime {
   swapFresh?: (
     selection: ModelSelection | undefined,
     cwd?: string,
-    routingProfile?: 'anchored' | 'suite',
+    routingProfile?: ToolRoutingProfile,
   ) => Promise<void>
   /**
    * Replace this channel with a fresh child session seeded through one stable

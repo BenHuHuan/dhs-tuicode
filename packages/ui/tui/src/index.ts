@@ -240,9 +240,11 @@ import { editTextInExternalEditor, ExternalEditorShortcut, latestAssistantRespon
 import type {
   TextFileWriteResult,
   TuiRuntime,
+  ToolRoutingProfile,
   WorkspaceCheckpoint,
   WorkspaceDiff,
 } from './runtime.ts'
+import { ROUTING_PROFILE_PRESETS } from './runtime.ts'
 import { WorkspaceFileSearch } from './chat/file-autocomplete.ts'
 import { UserShellHistory } from './chat/shell-autocomplete.ts'
 import { PromptHistory, type PromptHistoryEntry } from './chat/prompt-history.ts'
@@ -716,9 +718,11 @@ export function createTuiChat(
     agent,
     () => sessionTitle
       ?? config.welcome
-      ?? (agent.session.header.agentPreset === 'routing-suite'
-        ? 'Router mode · task-aware tools'
-        : undefined),
+      ?? (agent.session.header.agentPreset === ROUTING_PROFILE_PRESETS.suite
+        ? 'Router Standard · RL-interface tools'
+        : agent.session.header.agentPreset === ROUTING_PROFILE_PRESETS['suite-spec']
+          ? 'Router Spec · deep-think-first tools'
+          : undefined),
     palette,
     resolved.theme.color && resolved.theme.truecolor,
     brandImage,
@@ -1917,7 +1921,7 @@ export function createTuiChat(
   /** Flush the current log and atomically replace this channel with a fresh session. */
   const startFreshConversation = (
     nextCwd?: string,
-    routingProfile?: 'anchored' | 'suite',
+    routingProfile?: ToolRoutingProfile,
   ): void => {
     clearIdleExitConfirmation(false)
     clearConversationConfirmationState(false)
@@ -2000,27 +2004,43 @@ export function createTuiChat(
   /** Switch the model-facing tool router at a clean first-request boundary. */
   const runMode = (rawInput: string): CommandResult => {
     const requested = rawInput.trim().toLowerCase()
-    const current = agent.session.header.agentPreset === 'routing-suite' ? 'suite' : 'anchored'
+    const profileName: Record<ToolRoutingProfile, string> = {
+      anchored: 'Minimal',
+      suite: 'Router Standard',
+      'suite-spec': 'Router Spec',
+    }
+    const preset = agent.session.header.agentPreset
+    const current: ToolRoutingProfile = preset === ROUTING_PROFILE_PRESETS.suite
+      ? 'suite'
+      : preset === ROUTING_PROFILE_PRESETS['suite-spec']
+        ? 'suite-spec'
+        : 'anchored'
     if (requested === '') {
       return {
         kind: 'success',
-        text: `Tool routing mode: ${current === 'suite' ? 'Router' : 'Minimal'}. Usage: /mode <minimal|router>`,
+        text: `Tool routing mode: ${profileName[current]}. Usage: /mode <minimal|router|spec>`,
       }
     }
-    const aliases: Record<string, 'anchored' | 'suite'> = {
+    const aliases: Record<string, ToolRoutingProfile> = {
       anchored: 'anchored',
       minimal: 'anchored',
       anchor: 'anchored',
       suite: 'suite',
       routing: 'suite',
       router: 'suite',
+      'router-standard': 'suite',
+      standard: 'suite',
+      'suite-spec': 'suite-spec',
+      spec: 'suite-spec',
+      'router-spec': 'suite-spec',
+      deep: 'suite-spec',
     }
     const profile = aliases[requested]
     if (profile === undefined) {
-      return { kind: 'error', text: 'Usage: /mode <minimal|router>' }
+      return { kind: 'error', text: 'Usage: /mode <minimal|router|spec>' }
     }
     if (profile === current) {
-      return { kind: 'success', text: `Already using ${profile === 'suite' ? 'Router mode' : 'Minimal mode'}.` }
+      return { kind: 'success', text: `Already using ${profileName[profile]} mode.` }
     }
     if (freshSwapInFlight) return { kind: 'error', text: 'A mode transition is already starting.' }
     if (hasActiveConversationWork()) {
@@ -2029,7 +2049,7 @@ export function createTuiChat(
     startFreshConversation(undefined, profile)
     return {
       kind: 'success',
-      text: `Switching to ${profile === 'suite' ? 'Router mode' : 'Minimal mode'} in a fresh session.`,
+      text: `Switching to ${profileName[profile]} mode in a fresh session.`,
     }
   }
 
@@ -3365,7 +3385,7 @@ export function createTuiChat(
     commandCtx.commands.register({
       name: 'mode',
       description: 'Show or switch Minimal / Router tool routing',
-      input: { hint: '[minimal|router]' },
+      input: { hint: '[minimal|router|spec]' },
       recordInput: false,
       handler: ({ rawInput }) => runMode(rawInput),
     })
