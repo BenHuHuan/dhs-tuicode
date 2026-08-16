@@ -125,8 +125,8 @@ function firstTaskText(agent: { session?: Sessionish } | undefined): string {
 /** Cordis plugin name. */
 export const name = 'anchored-tool-bootstrap'
 
-/** Register before instruction/skill injectors so bootstrap can strip them last. */
-export const inject: string[] = []
+/** Host services used by the Router tuning tools and mode-isolated subagent. */
+export const inject = ['tools', 'llm']
 
 const DEFAULT_SUPPRESSED_CONTEXT_SOURCES = ['agent-instructions', 'skill-catalog']
 const PROMOTE_EVENTS = {
@@ -464,4 +464,7 @@ export function apply(ctx: Context, config: Config): void {
   })))
 }
 
-export default apply
+// Loader unwraps an ESM default export before Cordis inspects plugin metadata.
+// Keep the compatibility default while carrying the metadata on the function
+// itself; named exports alone are invisible after that unwrap.
+export default Object.assign(apply, { inject, Config })

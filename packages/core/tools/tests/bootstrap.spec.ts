@@ -4,6 +4,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { renderPrompt, type AssembleContext, type PromptAssembly } from '@deepseek-ai/dsh-system-prompt'
 import Bootstrap, {
   classifyRouterTask,
+  inject,
   MINIMAL_SYSTEM_PROMPT,
   ROUTING_SUITE_PRESET,
   ROUTING_SUITE_SPEC_PRESET,
@@ -102,6 +103,11 @@ async function assemble(
 }
 
 describe('anchored tool bootstrap', () => {
+  it('declares every Cordis service used during plugin activation', () => {
+    expect(inject).toEqual(['tools', 'llm'])
+    expect(Bootstrap.inject).toEqual(inject)
+  })
+
   it('uses the Minimal prompt and two tools, then durably restores the full catalog', async () => {
     const listener = register()
     const first = await assemble(listener, [])
