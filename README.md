@@ -19,6 +19,7 @@ Enter `deepseek` in a project to get a persistent coding workspace with a compac
 - **One-command TUI:** bare `deepseek` or `dsh` opens the current directory.
 - **DeepSeek-first defaults:** V4 Pro, max reasoning effort, and a Minimal first request that promotes the full coding tool catalog on demand.
 - **Three model profiles:** `/mode minimal` keeps the anchored V4 Pro path; `/mode router` restores the RL interface (one-sentence persona + shell/editor surface); `/mode spec` enables deep-think-first task-aware routing, primarily for V4 Flash.
+- **Adaptive Router follow-ups:** the reproducible mode-boost v0.1 behavior lets greetings stand down, reclassifies new tasks from round three, varies guidance by task complexity, and omits the extra closure constraint for Flash models.
 - **Windows + Linux:** automatic Git Bash execution for Minimal/Router agent tools on Windows, with native Bash on Linux and servers; PowerShell remains available for Windows-safe operations.
 - **CJK-friendly terminal text:** Chinese and Latin glyphs stay column-aligned in Git Bash when using a true CJK monospace font such as Sarasa Mono SC.
 - **Persistent authentication:** `/login` securely saves or replaces the DeepSeek API token.
@@ -98,8 +99,10 @@ The standard agent begins with a small stable prompt and minimal catalog (`shell
 The default effort is max. DeepSeek profiles support sampling values such as `temperature=1.0` and `top_p=0.95`. Prompt anchoring improves consistency, but cannot guarantee a particular hidden chain-of-thought prefix.
 
 - **Minimal (recommended for V4 Pro):** preserves the anchored Minimal system prompt and promotes the complete catalog only after the first durable action.
-- **Router Standard (`/mode router`):** ports the v0.2.0 RL-interface restoration from [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite): the first request carries only the RL training sentence plus the shell/str_replace_editor surface, then the complete catalog opens after the first tool call.
+- **Router Standard (`/mode router`):** ports the reproducible v0.2.0 RL-interface restoration from [dsh-routing-suite](https://github.com/yjh051108/dsh-routing-suite): the first request carries only the RL training sentence plus the shell/str_replace_editor surface, then the complete catalog opens after the first tool call.
 - **Router Spec (`/mode spec`):** ports the v0.2.0 deep-think-first preset: the classified persona and the spec/react/weak first-turn core tool surface stay visible together with the full prompt sections; the long first-turn reasoning chain is the intended behavior. Both Router profiles are primarily intended for V4 Flash; Pro users should keep Minimal unless they specifically want to evaluate routing behavior.
+
+Both Router profiles also include the suite's reproducible mode-boost v0.1 refinements: short conversational messages do not receive routing pressure; a new task at round three or later is classified afresh; simple tasks receive a commit-and-act nudge while complex tasks receive architecture and integration guidance; the explicit reasoning-closure suffix is reserved for non-Flash models.
 
 Switch profiles with `/mode minimal`, `/mode router`, or `/mode spec`. This profile selector is independent from Build/Flow/Inspect/Plan permission modes.
 

@@ -1,10 +1,8 @@
 /**
  * Router Suite core: reasoning-mode routing logic (zero dependencies).
  *
- * Faithful TypeScript port of dsh-router-standard@eff787e (v0.2.0)
- * `preset/router-standard/router-core.mjs`. Keep behavior byte-identical with
- * the upstream module: the exported texts, regexes, and band quantizers are
- * the measured routing contract, not local policy.
+ * TypeScript port of dsh-router-standard@eff787e (v0.2.0), augmented with
+ * the reproducible dsh-mode-boost@a9a666a (v0.1.0) routing refinements.
  *
  * BEHAVIORAL REALITY (measured, 21-point × n=2 on v4-pro): model behavior
  * along the react↔spec axis collapses into THREE stable regions, not a
@@ -93,6 +91,33 @@ const COMPLEX_RE = /(重构|架构|全面|详细|设计|系统|优化|分析|sur
 
 export function isComplexTask(text: string): boolean {
   return typeof text === 'string' && (text.length > 120 || COMPLEX_RE.test(text))
+}
+
+const CHAT_RE = /^(你好|您好|hello|hi|hey|嗨|哈喽|在吗|谢谢|感谢|thanks|thank you|早上好|下午好|晚上好|嗯|好|ok|okay|yes|no|嗯嗯|好的)[!.。！？?~～]*$/i
+
+/** Greetings and short non-task messages should not receive router pressure. */
+export function isChatTask(text: string): boolean {
+  const trimmed = text.trim()
+  if (trimmed.length === 0 || CHAT_RE.test(trimmed)) return true
+  if (trimmed.length > 24) return false
+  return !trimmed.match(REACT_RE) && !trimmed.match(SPEC_RE)
+}
+
+/** First two rounds retain the stable baseline; later rounds reclassify. */
+export const GUIDE_BASE =
+  '\n\nRouter: classify this task (build or fix) now, then adopt the matching style — build: direct production; fix: inspect-first.'
+export const GUIDE_BOOST =
+  '\n\nRouter: this is a NEW task, different from the previous ones. Classify it fresh (build or fix) and adopt the matching style — build: direct production; fix: inspect-first. Do not follow the previous task\'s style.'
+export const GUIDE_COMMIT = ' Think deeply first, then commit and act.'
+export const GUIDE_DEEP = ' Think deeply about the architecture, edge cases, and integration points. Do not spend reasoning on the environment or tooling. Produce when your information is complete.'
+export const GUIDE_CLOSURE = ' End each reasoning block with a decision or an information need.'
+
+/** Exact near-field guidance selected by round, complexity, and model family. */
+export function guideFor(round: number, text: string, modelId?: string): string {
+  const base = round >= 3 ? GUIDE_BOOST : GUIDE_BASE
+  if (!isComplexTask(text)) return base + GUIDE_COMMIT
+  const deep = base + GUIDE_DEEP
+  return isFlashModel(modelId) ? deep : deep + GUIDE_CLOSURE
 }
 
 /** True when the routed model id is a Flash-family model. */

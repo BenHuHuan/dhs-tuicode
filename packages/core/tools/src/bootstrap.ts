@@ -16,8 +16,8 @@ import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { defineTool } from './schema.ts'
 import {
-  applyPersona, bandFor, bandOf, classifyTask, coreFor, extractText, isComplexTask,
-  parseMode, personaFor, testinessFor, clamp01,
+  applyPersona, bandFor, bandOf, classifyTask, coreFor, extractText, guideFor,
+  isChatTask, parseMode, personaFor, testinessFor, clamp01,
   type RouterMode,
 } from './router-core.ts'
 
@@ -74,16 +74,6 @@ function legacyCore(mode: RouterMode): readonly string[] {
     default: return ['read', 'write', 'edit']
   }
 }
-
-// ── near-field routing guidance for weak mode (P14/P16/P17/P19/P20) ─────────
-// Every REAL user message in a weak-mode session gets ONE fixed guidance
-// message appended right after it (near field, cache-neutral). Depth-adaptive:
-// SIMPLE tasks get the fast-convergence guide; COMPLEX tasks get the deep-
-// exploration guide (depth-first, information-driven stop signal).
-const GUIDE_WEAK =
-  '\nRouter: classify this task (build or fix) now, then adopt the matching style — build: direct production; fix: inspect-first. Think deeply first, then commit and act.'
-const GUIDE_DEEP =
-  '\nRouter: classify this task (build or fix) now, then adopt the matching style — build: direct production; fix: inspect-first. Think deeply about the architecture, edge cases, and integration points. Do not spend reasoning on the environment or tooling. Produce when your information is complete. End each reasoning block with a decision or an information need.'
 
 /**
  * Classify one task exactly like Router Standard, without its unstable mixed region.
@@ -315,17 +305,24 @@ export function apply(ctx: Context, config: Config): void {
     const decision = await next()
     if (decision.kind === 'reject') return decision
     if (isRoutingSuite(payload.agent)) {
-      // Near-field weak guidance (v0.2.0): one fixed guidance message per REAL
-      // user message when the routed band is weak. Strong bands need none.
-      const task = payload.messages.find(message => message.source.kind === 'user')
+      // Reproducible mode-boost v0.1 behavior on top of Router v0.2: weak
+      // bands receive round-aware guidance while short chat stands down.
+      const task = payload.messages.findLast(message => message.source.kind === 'user')
       if (task !== undefined) {
         const text = textOfMessage(task)
         const session = payload.agent.session
         const sessionMode = session.events.length > 0
           ? overrides.get(session.id) ?? classifyTask(firstTaskText(payload.agent))
           : classifyTask(text)
-        if (text.trim() !== '' && bandOf(sessionMode) === 'weak') {
-          const guide = isComplexTask(text) ? GUIDE_DEEP : GUIDE_WEAK
+        if (!isChatTask(text) && bandOf(sessionMode) === 'weak') {
+          const durableRounds = session.events.filter((event) => {
+            if (event.type !== 'user/message') return false
+            const data = event.data as { source?: { kind?: unknown }; message?: { source?: { kind?: unknown } } } | undefined
+            return data?.source?.kind === 'user' || data?.message?.source?.kind === 'user'
+          }).length
+          const messageRounds = payload.messages.filter(message => message.source.kind === 'user').length
+          const round = Math.max(1, durableRounds, messageRounds)
+          const guide = guideFor(round, text, payload.agent.options?.model)
           return {
             ...decision,
             messages: [...decision.messages, createUserMessage({

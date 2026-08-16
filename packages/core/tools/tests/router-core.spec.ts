@@ -6,8 +6,9 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  applyPersona, bandFor, classifyTask, coreFor, extractText, isFlashModel,
-  parseMode, personaFor, sessionMode, testinessFor,
+  applyPersona, bandFor, classifyTask, coreFor, extractText, guideFor,
+  isChatTask, isComplexTask, isFlashModel, parseMode, personaFor, sessionMode,
+  testinessFor,
 } from '../src/router-core.ts'
 
 describe('router-core (dsh-router-standard@eff787e mirror)', () => {
@@ -64,6 +65,25 @@ describe('router-core (dsh-router-standard@eff787e mirror)', () => {
     expect(personaFor('weak', 'deepseek-v4-flash')).toBe(personaFor('weak', 'deepseek-v4-flash'))
     expect(isFlashModel('deepseek-v4-flash')).toBe(true)
     expect(isFlashModel('deepseek-v4-pro')).toBe(false)
+  })
+
+  it('ports mode-boost chat stand-down and complexity detection', () => {
+    expect(isChatTask('你好')).toBe(true)
+    expect(isChatTask('hello!')).toBe(true)
+    expect(isChatTask('修复 bug')).toBe(false)
+    expect(isComplexTask('全面优化这个系统的架构')).toBe(true)
+    expect(isComplexTask('rename this')).toBe(false)
+  })
+
+  it('ports mode-boost reclassification and model-specific closure', () => {
+    expect(guideFor(1, 'rename this', 'deepseek-v4-pro')).toContain('classify this task')
+    expect(guideFor(1, 'rename this', 'deepseek-v4-pro')).toContain('commit and act')
+    expect(guideFor(3, 'rename this', 'deepseek-v4-pro')).toContain('NEW task')
+    const pro = guideFor(3, '全面优化这个系统的架构', 'deepseek-v4-pro')
+    const flash = guideFor(3, '全面优化这个系统的架构', 'deepseek-v4-flash')
+    expect(pro).toContain('architecture, edge cases, and integration points')
+    expect(pro).toContain('End each reasoning block')
+    expect(flash).not.toContain('End each reasoning block')
   })
 
   it('parseMode accepts weak', () => {

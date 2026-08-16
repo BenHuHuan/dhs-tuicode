@@ -186,7 +186,7 @@ describe('anchored tool bootstrap', () => {
     expect(promoted.tools.map(tool => tool.name)).toEqual(['bash', 'grep', 'read', 'str_replace_editor', 'write', 'dev_router_status'])
   })
 
-  it('appends the v0.2.0 near-field guide only for weak-band Router sessions', async () => {
+  it('appends Router guidance only for weak-band task messages', async () => {
     const listener = registerPreStep()
     const user = createUserMessage({
       source: { kind: 'user' },
@@ -228,5 +228,53 @@ describe('anchored tool bootstrap', () => {
       () => Promise.resolve({ kind: 'accept', messages: [strongUser] }),
     )
     expect(strong.messages).toHaveLength(1)
+  })
+
+  it('ports mode-boost chat stand-down and round-three reclassification', async () => {
+    const listener = registerPreStep()
+    const greeting = createUserMessage({
+      source: { kind: 'user' },
+      content: [{ type: 'text', text: '你好' }],
+    })
+    const chat = await listener(
+      {
+        agent: {
+          options: { model: 'deepseek-v4-pro' },
+          session: {
+            id: 'chat-session',
+            header: { agentPreset: ROUTING_SUITE_PRESET },
+            events: [{ type: 'tui/input', data: { text: '你好' } }],
+          },
+        },
+        messages: [greeting],
+      },
+      () => Promise.resolve({ kind: 'accept', messages: [greeting] }),
+    )
+    expect(chat.messages).toEqual([greeting])
+
+    const newTask = createUserMessage({
+      source: { kind: 'user' },
+      content: [{ type: 'text', text: 'tell me what this repository does' }],
+    })
+    const thirdRound = await listener(
+      {
+        agent: {
+          options: { model: 'deepseek-v4-pro' },
+          session: {
+            id: 'third-round-session',
+            header: { agentPreset: ROUTING_SUITE_PRESET },
+            events: [
+              { type: 'tui/input', data: { text: 'explain this repository' } },
+              { type: 'user/message', data: { source: { kind: 'user' } } },
+              { type: 'user/message', data: { source: { kind: 'user' } } },
+              { type: 'user/message', data: { source: { kind: 'user' } } },
+            ],
+          },
+        },
+        messages: [newTask],
+      },
+      () => Promise.resolve({ kind: 'accept', messages: [newTask] }),
+    )
+    expect(thirdRound.messages.at(1)?.content[0]?.text).toContain('NEW task')
   })
 })
