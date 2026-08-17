@@ -5,7 +5,7 @@
 [English](README.md) | 中文
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI 在 Windows Terminal 中运行">
+  <img src="docs/assets/dhscode-tui-v0.2.0-preview-20260817.png" alt="DeepSeek Code TUI v0.2.0 在 Windows Terminal 中运行">
 </p>
 
 **DeepSeek Code TUI** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 coding agent（编程智能体）。它把 DeepSeek V4 Pro/Flash、持久化 TUI、真实编码工具、可恢复会话、权限控制、MCP、skill 和可续接 subagent 集成到一套 Shell 优先的工作流中。

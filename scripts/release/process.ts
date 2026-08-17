@@ -25,6 +25,26 @@ export interface CommandResult {
   readonly stderr: string
 }
 
+/** A directly executable command and its arguments. */
+interface Invocation {
+  readonly command: string
+  readonly args: readonly string[]
+}
+
+/** Quote one argument for cmd.exe without allowing command separators or expansion. */
+function quoteCmdArgument(value: string): string {
+  if (/[\0\r\n]/u.test(value)) throw new Error('Windows command arguments cannot contain NUL or newlines')
+  if (/^[\w@+.,:\\/=-]+$/u.test(value)) return value
+  return `"${value.replaceAll('%', '%%').replaceAll('"', '""')}"`
+}
+
+/** Resolve package-manager batch shims through cmd.exe on Windows. */
+function invocation(command: string, args: readonly string[]): Invocation {
+  if (process.platform !== 'win32' || (command !== 'npm' && command !== 'pnpm')) return { command, args }
+  const line = [`${command}.cmd`, ...args.map(quoteCmdArgument)].join(' ')
+  return { command: process.env.ComSpec ?? 'cmd.exe', args: ['/d', '/s', '/c', line] }
+}
+
 /**
  * Run a command and capture its output without judging the exit status.
  * @param command - executable name.
@@ -33,7 +53,8 @@ export interface CommandResult {
  * @returns The exit status and captured streams.
  */
 export function attempt(command: string, args: readonly string[], options: RunOptions = {}): CommandResult {
-  const result = spawnSync(command, [...args], { cwd: options.cwd, env: options.env, encoding: 'utf8' })
+  const child = invocation(command, args)
+  const result = spawnSync(child.command, [...child.args], { cwd: options.cwd, env: options.env, encoding: 'utf8' })
   if (result.error !== undefined) throw result.error
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
@@ -61,7 +82,8 @@ export function capture(command: string, args: readonly string[], options: RunOp
  * @param options - working directory and environment.
  */
 export function run(command: string, args: readonly string[], options: RunOptions = {}): void {
-  const result = spawnSync(command, [...args], { cwd: options.cwd, env: options.env, stdio: 'inherit' })
+  const child = invocation(command, args)
+  const result = spawnSync(child.command, [...child.args], { cwd: options.cwd, env: options.env, stdio: 'inherit' })
   if (result.error !== undefined) throw result.error
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${String(result.status)}`)
 }

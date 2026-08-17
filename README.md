@@ -5,7 +5,7 @@
 English | [中文](README.zh.md)
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.1.0-preview-20260816.png" alt="DeepSeek Code TUI running in Windows Terminal">
+  <img src="docs/assets/dhscode-tui-v0.2.0-preview-20260817.png" alt="DeepSeek Code TUI v0.2.0 running in Windows Terminal">
 </p>
 
 **DeepSeek Code TUI** is a terminal-native coding agent built on the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It combines DeepSeek V4 Pro/Flash, a persistent TUI, real coding tools, resumable sessions, permissions, MCP, skills, and continuable subagents in one shell-first workflow.
