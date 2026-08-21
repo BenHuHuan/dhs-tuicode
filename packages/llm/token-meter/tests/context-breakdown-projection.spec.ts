@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, ToolSchema } from '@deepseek-ai/dsh-llm'
 import SessionStore from '@deepseek-ai/dsh-session'
@@ -292,6 +293,16 @@ describe('shared estimator', () => {
       type: 'tool-result', toolCallId: 'c' as never,
       content: [{ type: 'text', text: 'abcd' }],
     }])).toBe(9)
+    expect(estimateContent([{
+      type: 'image',
+      attachment: {
+        attachmentId: AttachmentId(`sha256:${'a'.repeat(64)}`),
+        mediaType: 'image/png',
+        bytes: 4,
+        width: 640,
+        height: 480,
+      },
+    }])).toBe(209 + 4)
     const unknown = { type: 'mystery', payload: 'abc' } as unknown as ContentBlock
     expect(estimateContent([unknown])).toBe(4 + Math.ceil(JSON.stringify(unknown).length / 4))
   })

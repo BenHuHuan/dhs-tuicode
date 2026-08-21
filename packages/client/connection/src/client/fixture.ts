@@ -319,6 +319,12 @@ function fixtureModelGroups(): ModelProviderGroup[] {
           description: '复杂任务',
           reasoning: DEEPSEEK_REASONING,
         },
+        {
+          id: 'deepseek-v4-flash-vision-exp',
+          name: 'DeepSeek-V4-Flash-Vision-Exp',
+          description: '图像理解',
+          reasoning: DEEPSEEK_REASONING,
+        },
       ],
     },
     {

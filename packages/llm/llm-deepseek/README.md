@@ -27,15 +27,20 @@ The package root exposes the Cordis plugin contract and `DeepSeekAdapter`; wire 
         maxDelayMs: 10000
         jitterRatio: 0.1
     defaultContextWindow: 1000000 # optional positive-integer fallback; this is the default
-    models:                  # optional; defaults to V4 Flash and V4 Pro
+    models:                  # optional; defaults to V4 Flash, V4 Pro, and V4 Flash Vision Exp
       - id: deepseek-v4-flash
         name: DeepSeek-V4-Flash
+      - id: deepseek-v4-pro
+        name: DeepSeek-V4-Pro
+      - id: deepseek-v4-flash-vision-exp
+        name: DeepSeek-V4-Flash-Vision-Exp
+        inputModalities: [text, image]
       - id: private-reasoner
         description: Company-hosted reasoning model
         contextWindow: 512000
 ```
 
-The plugin registers the single provider route `deepseek-official` together with its resolved `retryPolicy`. A request selects it with `provider: deepseek-official`; its `model` is passed through as the wire `model` string, so changing DeepSeek models does not require lifecycle-time registration. Omitting `models` advertises `deepseek-v4-flash` as `DeepSeek-V4-Flash` and `deepseek-v4-pro` as `DeepSeek-V4-Pro`, each with a 1,000,000-token context window; an explicit list replaces those defaults, while `models: []` advertises none. Catalog entries are exposed through `ctx.llm.listModels('deepseek-official')` for clients such as ACP editors and the Web selector, but remain advisory: unlisted model ids still pass through unchanged. An omitted entry name defaults to its id.
+The plugin registers the single provider route `deepseek-official` together with its resolved `retryPolicy`. A request selects it with `provider: deepseek-official`; its `model` is passed through as the wire `model` string, so changing DeepSeek models does not require lifecycle-time registration. Omitting `models` advertises `deepseek-v4-flash` as `DeepSeek-V4-Flash`, `deepseek-v4-pro` as `DeepSeek-V4-Pro`, and `deepseek-v4-flash-vision-exp` as `DeepSeek-V4-Flash-Vision-Exp`, each with a 1,000,000-token context window; an explicit list replaces those defaults, while `models: []` advertises none. Catalog entries are exposed through `ctx.llm.listModels('deepseek-official')` for clients such as ACP editors and the Web selector, but remain advisory: unlisted model ids still pass through unchanged. An omitted entry name defaults to its id. An entry that omits `inputModalities` declares `text` only; the shipped vision entry declares `text` and `image`, and an image-bearing request resolves those bytes through the optional `ctx.attachments` service. Without that service, or when the selected model does not advertise image input, the request fails with `UNSUPPORTED_CONTENT` before provider I/O.
 
 `contextWindow` is optional per configured model and is not exposed through the advisory catalog. `ctx.llm.resolveModelInfo('deepseek-official', model).context` returns an exact model value first, then `defaultContextWindow` for an entry without capacity or an unlisted pass-through id. The adapter default is 1,000,000; pressure-sensitive plugins therefore get deployment-owned capacity without treating the model selector as authoritative. Registering another adapter for `deepseek-official` throws `LlmError('DUPLICATE_ADAPTER')`.
 
@@ -70,6 +75,7 @@ DeepSeek request identity is separate from app attribution. After credential res
 - The adapter-owned `off` effort maps to `thinking: {type: 'disabled'}` and never crosses the wire as `reasoning_effort: 'off'`.
 - The first thinking-mode chunk carries `reasoning_content: ""` — handled (no spurious reasoning block).
 - **Reasoning passback rule**: on assistant turns that carried tool calls, `reasoning_content` is serialized back in history (required by the API in thinking mode); on tool-call-free turns it is dropped (ignored anyway — saves tokens).
+- **Image parts**: user-message image blocks become `image_url` parts with inline base64 data URLs; system, assistant, and tool-result images fail with `UNSUPPORTED_CONTENT`, and the provider's 32 MiB / 8192px per-image limits are enforced before expansion.
 - Cache accounting: `cacheReadTokens` ← `prompt_cache_hit_tokens` / `prompt_tokens_details.cached_tokens`; DeepSeek reports no cache-write metric.
 
 ## Errors
@@ -111,4 +117,4 @@ Loop-retained response blocks append to the next request and preserve its earlie
 - **A settings `models` list replaces the composition list wholesale** — settings-layer merging is per-field, and arrays are one field; per-entry catalog merging would need a keyed shape.
 - **`tool_choice` is not mapped** — not part of the core vocabulary (MVP cut, shared with the pi-ai twin).
 - **Requests use raw `fetch`, not `@cordisjs/plugin-http`** — no shared proxy/interception configuration; adoption is deferred until a second adapter wants it (`TODO(http)`).
-- **Serialization flattens user and tool-result content to text blocks** — plugin-added block types are skipped, and empty tool output crosses the wire as the literal `(no output)`.
+- **Vision serialization emits inline base64 data URLs only** — external URLs and Files API references are not generated, and images in tool results stay unsupported per the API's user-message restriction. Plugin-added block types are still skipped, and empty tool output crosses the wire as the literal `(no output)`.

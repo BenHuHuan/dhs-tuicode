@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { createLaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
+import { AttachmentError } from '@deepseek-ai/dsh-attachment'
+import type { AttachmentStore, ImageAttachmentRef, StoredImageAttachment } from '@deepseek-ai/dsh-attachment'
 import LlmRuntime, { createUserMessage,
   CONTEXT_WINDOW_EXCEEDED_CODE,
   ProviderRequestId,
@@ -11,6 +13,7 @@ import LlmRuntime, { createUserMessage,
   ReasoningEffortId,
   userAgent,
 } from '@deepseek-ai/dsh-llm'
+import type { GenerateOptions } from '@deepseek-ai/dsh-llm'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { getOrCreateAnonymousUserId, type AnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -54,6 +57,36 @@ function adapterOf(config: Partial<LlmDeepSeek.Config> & { apiKey?: string } = {
     resolveApiKey: () => Promise.resolve(apiKey ?? 'k'),
     resolveUserId: () => TEST_USER_ID,
   })
+}
+
+function imageRef(): ImageAttachmentRef {
+  return {
+    attachmentId: 'fixture-image' as ImageAttachmentRef['attachmentId'],
+    mediaType: 'image/png',
+    bytes: 4,
+    width: 2,
+    height: 2,
+  }
+}
+
+function imageAttachments(): AttachmentStore {
+  return {
+    readImage: (ref: ImageAttachmentRef): Promise<StoredImageAttachment> => Promise.resolve({
+      ref,
+      data: Uint8Array.of(137, 80, 78, 71),
+    }),
+  } as unknown as AttachmentStore
+}
+
+function imagePrompt() {
+  return [createUserMessage({
+    content: [{ type: 'image' as const, attachment: imageRef() }],
+    source: { kind: 'plugin', plugin: 'test' },
+  })]
+}
+
+async function drainStream(adapter: DeepSeekAdapter, options: GenerateOptions): Promise<void> {
+  for await (const _chunk of adapter.stream(options)) { /* drain */ }
 }
 
 describe('DeepSeekAdapter against a mock server', () => {
@@ -598,6 +631,67 @@ describe('DeepSeekAdapter against a mock server', () => {
       fetchSpy.mockRestore()
     }
   })
+
+  it('rejects image input when no durable attachment service is mounted', async () => {
+    const adapter = adapterOf()
+    await expect(drainStream(adapter, {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash-vision-exp',
+      messages: imagePrompt(),
+    })).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
+  })
+
+  it('rejects image input for models that do not advertise image support', async () => {
+    const adapter = new DeepSeekAdapter({
+      options: () => resolveAdapterOptions({}),
+      resolveApiKey: () => Promise.resolve('k'),
+      resolveUserId: () => TEST_USER_ID,
+      resolveAttachments: () => imageAttachments(),
+    })
+    await expect(drainStream(adapter, {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+      messages: imagePrompt(),
+    })).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
+  })
+
+  it('sends user images as inline base64 data URLs for the vision route', async () => {
+    const server = await mockServer([{ kind: 'sse', events: textEvents }])
+    const adapter = new DeepSeekAdapter({
+      options: () => resolveAdapterOptions({ baseURL: server.url }),
+      resolveApiKey: () => Promise.resolve('k'),
+      resolveUserId: () => TEST_USER_ID,
+      resolveAttachments: () => imageAttachments(),
+    })
+    for await (const _chunk of adapter.stream({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash-vision-exp',
+      messages: imagePrompt(),
+    })) { /* drain */ }
+    expect(server.requests[0]).toMatchObject({
+      model: 'deepseek-v4-flash-vision-exp',
+      messages: [{
+        role: 'user',
+        content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw==' } }],
+      }],
+    })
+  })
+
+  it('propagates attachment read failures without relabeling them as transport', async () => {
+    const adapter = new DeepSeekAdapter({
+      options: () => resolveAdapterOptions({}),
+      resolveApiKey: () => Promise.resolve('k'),
+      resolveUserId: () => TEST_USER_ID,
+      resolveAttachments: () => ({
+        readImage: () => Promise.reject(new AttachmentError('image store is down', 'ATTACHMENT_UNAVAILABLE')),
+      } as unknown as AttachmentStore),
+    })
+    await expect(drainStream(adapter, {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash-vision-exp',
+      messages: imagePrompt(),
+    })).rejects.toMatchObject({ code: 'ATTACHMENT_UNAVAILABLE' })
+  })
 })
 
 describe('plugin registration and config', () => {
@@ -660,6 +754,7 @@ describe('plugin registration and config', () => {
     await expect(ctx.llm.listModels('deepseek-official')).resolves.toEqual([
       { provider: 'deepseek-official', id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash', inputModalities: ['text'] },
       { provider: 'deepseek-official', id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro', inputModalities: ['text'] },
+      { provider: 'deepseek-official', id: 'deepseek-v4-flash-vision-exp', name: 'DeepSeek-V4-Flash-Vision-Exp', inputModalities: ['text', 'image'] },
     ])
     await expect(ctx.llm.resolveModelInfo('deepseek-official', 'deepseek-v4-flash'))
       .resolves.toMatchObject({
@@ -676,6 +771,11 @@ describe('plugin registration and config', () => {
           ],
           defaultEffort: ReasoningEffortId('high'),
         },
+      })
+    await expect(ctx.llm.resolveModelInfo('deepseek-official', 'deepseek-v4-flash-vision-exp'))
+      .resolves.toMatchObject({
+        id: 'deepseek-v4-flash-vision-exp',
+        inputModalities: ['text', 'image'],
       })
   })
 
@@ -755,6 +855,7 @@ describe('plugin registration and config', () => {
     await expect(ctx.llm.listModels('deepseek-official')).resolves.toEqual([
       { provider: 'deepseek-official', id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash', inputModalities: ['text'] },
       { provider: 'deepseek-official', id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro', inputModalities: ['text'] },
+      { provider: 'deepseek-official', id: 'deepseek-v4-flash-vision-exp', name: 'DeepSeek-V4-Flash-Vision-Exp', inputModalities: ['text', 'image'] },
     ])
   })
 
@@ -918,7 +1019,7 @@ describe('plugin registration and config', () => {
     // First-boot onboarding: the route registers so models stay discoverable;
     // only the request itself needs a key.
     expect(ctx.llm.listProviders()).toEqual([{ id: 'deepseek-official', name: 'DeepSeek' }])
-    await expect(ctx.llm.listModels('deepseek-official')).resolves.toHaveLength(2)
+    await expect(ctx.llm.listModels('deepseek-official')).resolves.toHaveLength(3)
     const first = await assemble(ctx, { model: 'deepseek-v4-flash', messages: [] })
     expect(first.finish).toMatchObject({ kind: 'error', failure: { code: 'MISSING_CREDENTIAL' } })
     // The guidance leads with the managed credential store.
@@ -1006,7 +1107,7 @@ describe('plugin registration and config', () => {
     expect(adapter).toBeInstanceOf(DeepSeekAdapter)
     // Direct embedding shares the plugin's one resolve step, so it advertises
     // the same default catalog instead of a divergent empty one.
-    await expect(adapter.listModels('deepseek-official')).resolves.toHaveLength(2)
+    await expect(adapter.listModels('deepseek-official')).resolves.toHaveLength(3)
   })
 
   it('resolves connection facts and the credential exactly once per stream call', async () => {

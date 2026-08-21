@@ -27,15 +27,20 @@ harness LLM（大语言模型）seam 的 DeepSeek chat-completions 适配器：�
         maxDelayMs: 10000
         jitterRatio: 0.1
     defaultContextWindow: 1000000 # optional positive-integer fallback; this is the default
-    models:                  # optional; defaults to V4 Flash and V4 Pro
+    models:                  # optional; defaults to V4 Flash, V4 Pro, and V4 Flash Vision Exp
       - id: deepseek-v4-flash
         name: DeepSeek-V4-Flash
+      - id: deepseek-v4-pro
+        name: DeepSeek-V4-Pro
+      - id: deepseek-v4-flash-vision-exp
+        name: DeepSeek-V4-Flash-Vision-Exp
+        inputModalities: [text, image]
       - id: private-reasoner
         description: Company-hosted reasoning model
         contextWindow: 512000
 ```
 
-该插件注册唯一提供方路由 `deepseek-official`，同时注册解析后的 `retryPolicy`。请求使用 `provider: deepseek-official` 选择该路由；其 `model` 会作为协议 `model` 字符串原样传递，因此更改 DeepSeek 模型不需要生命周期时注册。省略 `models` 会公布 `deepseek-v4-flash`（名称为 `DeepSeek-V4-Flash`）和 `deepseek-v4-pro`（名称为 `DeepSeek-V4-Pro`），两者的上下文窗口均为 1,000,000 token；显式列表会替换这些默认值，`models: []` 则不公布任何模型。Catalog 配置项通过 `ctx.llm.listModels('deepseek-official')` 公开给 ACP（Agent Client Protocol）编辑器和 Web 选择器等客户端，但仍只提供建议：未列出模型 id 仍原样传递。省略配置项 name 默认为其 id。
+该插件注册唯一提供方路由 `deepseek-official`，同时注册解析后的 `retryPolicy`。请求使用 `provider: deepseek-official` 选择该路由；其 `model` 会作为协议 `model` 字符串原样传递，因此更改 DeepSeek 模型不需要生命周期时注册。省略 `models` 会公布 `deepseek-v4-flash`（名称为 `DeepSeek-V4-Flash`）、`deepseek-v4-pro`（名称为 `DeepSeek-V4-Pro`）和 `deepseek-v4-flash-vision-exp`（名称为 `DeepSeek-V4-Flash-Vision-Exp`），三者的上下文窗口均为 1,000,000 token；显式列表会替换这些默认值，`models: []` 则不公布任何模型。Catalog 配置项通过 `ctx.llm.listModels('deepseek-official')` 公开给 ACP（Agent Client Protocol）编辑器和 Web 选择器等客户端，但仍只提供建议：未列出模型 id 仍原样传递。省略配置项 name 默认为其 id。省略 `inputModalities` 的配置项声明仅支持 `text`；内置 vision 配置项声明 `text` 与 `image`，携带图像的请求会通过可选的 `ctx.attachments` 服务解析持久字节。未挂载该服务，或所选模型未公布图像输入能力时，请求会在提供方 I/O 前以 `UNSUPPORTED_CONTENT` 失败。
 
 `contextWindow` 对每个已配置模型都可选，不会通过建议 catalog 公开。`ctx.llm.resolveModelInfo('deepseek-official', model).context` 先返回精确模型值，再对不含容量的配置项或未列出原样传递 id 返回 `defaultContextWindow`。适配器默认值为 1,000,000；因此，压力敏感插件可以获得由部署决定的容量，不会将模型 selector 视为权威。为 `deepseek-official` 注册另一个适配器会抛出 `LlmError('DUPLICATE_ADAPTER')`。
 
@@ -70,6 +75,7 @@ DeepSeek 请求身份独立于应用归因。凭据解析成功后，每个提�
 - 适配器持有的 `off` 推理强度映射为 `thinking: {type: 'disabled'}`，绝不会以 `reasoning_effort: 'off'` 通过协议发送。
 - 第一个思考模式分片携带 `reasoning_content: ""`，系统会处理它（不会产生多余 reasoning 块）。
 - **推理回传规则**：对携带工具调用的 assistant 轮次，会将 `reasoning_content` 序列化回历史（思考模式 API 必需）；对不含工具调用的轮次，它会被丢弃（不会使用，可节省 token）。
+- **图像分片**：用户消息中的 image 块会变为携带内联 base64 data URL 的 `image_url` 分片；system、assistant 与工具结果中的图像会以 `UNSUPPORTED_CONTENT` 失败，提供方每张图像 32 MiB／8192px 的限制会在 base64 展开前执行。
 - Cache 计量：`cacheReadTokens` ← `prompt_cache_hit_tokens` / `prompt_tokens_details.cached_tokens`；DeepSeek 不报告 cache-write 指标。
 
 ## 错误
@@ -111,4 +117,4 @@ loop 保留的响应块会追加到下一个请求，并保留其较早可复用
 - **settings 的 `models` 列表会整体替换组合列表**：settings 层按字段合并，而数组是单个字段；按条目合并 catalog 需要带键的形状。
 - **未映射 `tool_choice`**：它不属于核心词汇（MVP 取舍，与 pi-ai twin 共享）。
 - **请求使用原始 `fetch`，而非 `@cordisjs/plugin-http`**：没有共享 proxy／拦截配置；采用暂缓到第二个适配器需要该功能时（`TODO(http)`）。
-- **序列化会将 user 与工具结果内容展平为文本块**：会跳过插件添加的块类型，空工具输出会以字面 `(no output)` 通过协议发送。
+- **vision 序列化只生成内联 base64 data URL**：不会生成外部 URL 与 Files API 引用；依据 API 的用户消息限制，工具结果中的图像仍不支持。插件添加的块类型仍会被跳过，空工具输出会以字面 `(no output)` 通过协议发送。

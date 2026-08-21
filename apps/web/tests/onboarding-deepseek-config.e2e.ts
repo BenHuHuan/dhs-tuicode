@@ -203,7 +203,10 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
     await deepSeek.waitFor({ timeout: 10_000 })
     await deepSeek.locator('xpath=ancestor::li').getByRole('button', { name: '编辑' }).click()
     await settings.getByText('自定义设置').click()
-    await settings.getByRole('button', { name: /删除模型/ }).first().click()
+    // Defaults now ship three models; remove flash and vision-exp so the
+    // new row lands at index 2 and the golden keeps the intended two-row form.
+    await settings.getByRole('button', { name: '删除模型 1' }).click()
+    await settings.getByRole('button', { name: '删除模型 2' }).click()
     await settings.getByRole('button', { name: '添加模型' }).click()
     const customModelId = settings.getByLabel('模型 ID 2')
     await customModelId.fill('private-preview')

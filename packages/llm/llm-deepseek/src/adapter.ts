@@ -8,15 +8,17 @@
  * @module dsh-llm-deepseek/adapter
  */
 
-import { attributionHeaders, CONTEXT_WINDOW_EXCEEDED_CODE, isContextWindowExceededError, isQuotaExceededError, LlmAdapter, LlmError, ProviderRequestId, QUOTA_EXCEEDED_CODE, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { attributionHeaders, contentHasImage, CONTEXT_WINDOW_EXCEEDED_CODE, isContextWindowExceededError, isQuotaExceededError, LlmAdapter, LlmError, ProviderRequestId, QUOTA_EXCEEDED_CODE, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type {
   GenerateOptions,
   LlmModelInfo,
   LlmProviderInfo,
   LlmResolvedModelInfo,
+  ModelModality,
   ResolvedRetryPolicy,
   StreamChunk,
 } from '@deepseek-ai/dsh-llm'
+import type { AttachmentStore } from '@deepseek-ai/dsh-attachment'
 import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import type { AnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
@@ -24,7 +26,7 @@ import { serializeRequest } from './serialize.ts'
 import type { RequestDefaults } from './serialize.ts'
 import { parseSse } from './sse.ts'
 import { translate } from './translate.ts'
-import type { WireError } from './types.ts'
+import type { WireError, WireRequest } from './types.ts'
 
 /** One optional model entry advertised by the direct-fetch adapter. */
 export interface DeepSeekCatalogModel {
@@ -38,6 +40,8 @@ export interface DeepSeekCatalogModel {
   contextWindow?: number
   /** Per-request output cap for this model; omission falls back to the profile's {@link DeepSeekConnectionOptions.maxTokens}. */
   maxTokens?: number
+  /** Accepted request modalities; omission declares the text-only route default. */
+  inputModalities?: ModelModality[]
 }
 
 /**
@@ -83,6 +87,8 @@ export interface DeepSeekAdapterOptions {
   resolveApiKey: (connection: DeepSeekConnectionOptions) => Promise<string>
   /** Resolve the harness-home anonymous id shared with telemetry and feedback. */
   resolveUserId: () => AnonymousUserId
+  /** Resolve the durable attachment service for image-bearing requests. */
+  resolveAttachments?: () => AttachmentStore | undefined
 }
 
 /** Default maximum idle interval while an adapter stream read is outstanding. */
@@ -110,7 +116,7 @@ function modelInfo(provider: string, model: DeepSeekCatalogModel): LlmModelInfo 
     id: model.id,
     name: model.name ?? model.id,
     ...model.description === undefined ? {} : { description: model.description },
-    inputModalities: ['text'],
+    inputModalities: [...model.inputModalities ?? ['text']],
   }
 }
 
@@ -177,15 +183,22 @@ export class DeepSeekAdapter extends LlmAdapter {
     model: string,
     _signal?: AbortSignal,
   ): Promise<LlmResolvedModelInfo> {
-    const connection = this.config.options()
+    return Promise.resolve(this.resolvedModel(this.config.options(), provider, model))
+  }
+
+  /** Exact-route metadata from one already-resolved connection snapshot. */
+  private resolvedModel(
+    connection: DeepSeekConnectionOptions,
+    provider: string,
+    model: string,
+  ): LlmResolvedModelInfo {
     const configured = connection.models.find(entry => entry.id === model)
     const contextWindow = configured?.contextWindow
       ?? connection.defaultContextWindow
-    return Promise.resolve({
-      // The chat-completions wire route is text-only regardless of catalog
-      // membership, so the uncatalogued fallback declares the same negative
-      // capability — "unknown" here would let the host accept and persist
-      // images the serializer must then reject.
+    return {
+      // An unlisted pass-through id has no catalog metadata, so it declares
+      // text-only capability: "unknown" here would let the host accept and
+      // persist images the serializer must then reject.
       ...configured === undefined
         ? { provider, id: model, name: model, inputModalities: ['text' as const] }
         : modelInfo(provider, configured),
@@ -208,7 +221,7 @@ export class DeepSeekAdapter extends LlmAdapter {
                 : HIGH_REASONING_EFFORT,
           },
         },
-    })
+    }
   }
 
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
@@ -218,7 +231,22 @@ export class DeepSeekAdapter extends LlmAdapter {
     // The key resolves *from this snapshot*, so an endpoint and the secret
     // sent to it can never come from different configuration generations.
     const connection = this.config.options()
+    const model = this.resolvedModel(connection, options.provider, options.model)
+    const containsImage = options.messages.some(message => contentHasImage(message.content))
+    if (containsImage && (model.inputModalities === undefined || !model.inputModalities.includes('image'))) {
+      throw new LlmError(`DeepSeek model "${options.model}" does not support image input`, 'UNSUPPORTED_CONTENT')
+    }
+    const attachments = containsImage ? this.config.resolveAttachments?.() : undefined
+    if (containsImage && attachments === undefined) {
+      throw new LlmError('DeepSeek image input requires the durable attachment service', 'UNSUPPORTED_CONTENT')
+    }
     const apiKey = await this.config.resolveApiKey(connection)
+    // Serialization (including durable image reads) settles before the
+    // transport iterator exists, so attachment and validation failures keep
+    // their own codes instead of being relabeled as transport failures.
+    const body = attachments === undefined
+      ? serializeRequest(options, connection.defaults)
+      : await serializeRequest(options, connection.defaults, attachments)
     const userId = this.config.resolveUserId()
     const consumer = new AbortController()
     const upstream = options.signal === undefined
@@ -226,6 +254,7 @@ export class DeepSeekAdapter extends LlmAdapter {
       : AbortSignal.any([options.signal, consumer.signal])
     using watchdog = idleWatchdog(upstream, connection.streamIdleTimeoutMs, STREAM_IDLE_TIMEOUT_CODE)
     const iterator = this.request(
+      body,
       options,
       watchdog.signal,
       connection,
@@ -269,6 +298,7 @@ export class DeepSeekAdapter extends LlmAdapter {
   }
 
   private async * request(
+    body: WireRequest,
     options: GenerateOptions,
     signal: AbortSignal,
     connection: DeepSeekConnectionOptions,
@@ -276,9 +306,6 @@ export class DeepSeekAdapter extends LlmAdapter {
     userId: AnonymousUserId,
     onComment: () => void,
   ): AsyncIterable<StreamChunk> {
-    const body = serializeRequest(options, connection.defaults)
-    // Prepared outside the try so the TRANSPORT label below covers exactly the
-    // transport boundary, never a serialization failure.
     const payload = JSON.stringify(body)
     const headers = {
       'authorization': `Bearer ${apiKey}`,

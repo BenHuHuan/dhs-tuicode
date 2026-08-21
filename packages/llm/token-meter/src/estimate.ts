@@ -8,6 +8,7 @@
 
 import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
 import type { EpochHeader } from '@deepseek-ai/dsh-session'
+import { estimateImageTokens } from './image-tokens.ts'
 
 /** Fixed text-density estimate used until exact tokenization is needed. */
 const CHARS_PER_TOKEN = 4
@@ -38,6 +39,11 @@ export function estimateContent(blocks: readonly ContentBlock[]): number {
         break
       case 'tool-result':
         tokens += estimateContent(block.content) + BLOCK_OVERHEAD
+        break
+      case 'image':
+        // The attachment service records intrinsic dimensions; the estimate
+        // follows the provider's resize-then-token rule before usage arrives.
+        tokens += estimateImageTokens(block.attachment.width, block.attachment.height) + BLOCK_OVERHEAD
         break
       default:
         // ContentBlockMap is merge-extensible; unknown blocks retain a

@@ -186,7 +186,7 @@ describe('createFixtureApi', () => {
     if (!catalog.result.ok) throw new Error('models failed')
     expect(catalog.result.value.groups.map(group => group.name)).toEqual(['DeepSeek', 'OpenAI'])
     expect(catalog.result.value.groups[0]?.models.map(model => model.id))
-      .toEqual(['deepseek-v4-flash', 'deepseek-v4-pro'])
+      .toEqual(['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-v4-flash-vision-exp'])
 
     const selected = await api.sessions.selectModel(req({
       sessionId,

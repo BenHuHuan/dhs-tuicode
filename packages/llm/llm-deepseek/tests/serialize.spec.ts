@@ -1,8 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
+import type { AttachmentStore, ImageAttachmentRef, StoredImageAttachment } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, CallId, ReasoningEffortId, createMessage } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, GenerateOptions, Message } from '@deepseek-ai/dsh-llm'
 import { serializeMessages, serializeRequest } from '../src/serialize.ts'
+
+function imageRef(width: number, height: number, bytes = 4): ImageAttachmentRef {
+  return {
+    attachmentId: AttachmentId(`sha256:${'a'.repeat(64)}`),
+    mediaType: 'image/png',
+    bytes,
+    width,
+    height,
+  }
+}
+
+function attachmentsOf(ref: ImageAttachmentRef): AttachmentStore {
+  return {
+    readImage: vi.fn((): Promise<StoredImageAttachment> => Promise.resolve({
+      ref,
+      data: Uint8Array.of(137, 80, 78, 71),
+    })),
+  } as unknown as AttachmentStore
+}
 
 function request(overrides: Partial<GenerateOptions> = {}): GenerateOptions {
   return { provider: 'deepseek-official', model: 'deepseek-v4-flash', messages: [], ...overrides }
@@ -311,5 +331,124 @@ describe('review fixes: assistant content shapes', () => {
       source: { kind: 'plugin', plugin: 'test' },
     })])
     expect(wire[0]).toMatchObject({ content: '' })
+  })
+})
+
+describe('vision serialization', () => {
+  const ref = imageRef(2, 2)
+  const image = { type: 'image' as const, attachment: ref }
+  const imageMessage = () => createUserMessage({
+    content: [image],
+    source: { kind: 'plugin', plugin: 'test' },
+  })
+
+  it('sends user images as inline base64 image_url parts', async () => {
+    const wire = await serializeMessages([
+      createUserMessage({
+        content: [
+          { type: 'text', text: 'describe ' },
+          image,
+          { type: 'text', text: ' please' },
+        ],
+        source: { kind: 'plugin', plugin: 'test' },
+      }),
+    ], attachmentsOf(ref))
+    expect(wire).toEqual([{
+      role: 'user',
+      content: [
+        { type: 'text', text: 'describe ' },
+        { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw==' } },
+        { type: 'text', text: ' please' },
+      ],
+    }])
+  })
+
+  it('keeps text-only user content a string when the attachment service is supplied', async () => {
+    const wire = await serializeMessages([createUserMessage({
+      content: [{ type: 'text', text: 'plain' }],
+      source: { kind: 'plugin', plugin: 'test' },
+    })], attachmentsOf(ref))
+    expect(wire).toEqual([{ role: 'user', content: 'plain' }])
+  })
+
+  it('serializes an image-only prompt as a content-part array', async () => {
+    const wire = await serializeMessages([imageMessage()], attachmentsOf(ref))
+    expect(wire).toEqual([{
+      role: 'user',
+      content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw==' } }],
+    }])
+  })
+
+  it('splits user text + images from tool results and keeps tool content text-only', async () => {
+    const wire = await serializeMessages([createUserMessage({
+      content: [
+        { type: 'text', text: 'look' },
+        image,
+        { type: 'tool-result', toolCallId: CallId('call-1'), content: [{ type: 'text', text: 'ok' }] },
+      ],
+      source: { kind: 'plugin', plugin: 'test' },
+    })], attachmentsOf(ref))
+    expect(wire).toEqual([
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'look' },
+          { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw==' } },
+        ],
+      },
+      { role: 'tool', tool_call_id: 'call-1', content: 'ok' },
+    ])
+  })
+
+  it.each([
+    ['system', () => createMessage({
+      role: 'system', content: [image], source: { kind: 'plugin', plugin: 'test' },
+    })],
+    ['assistant', () => createMessage({
+      role: 'assistant', content: [image], source: { kind: 'plugin', plugin: 'test' },
+    })],
+    ['tool-result', () => createUserMessage({
+      content: [{
+        type: 'tool-result',
+        toolCallId: CallId('call-1'),
+        content: [image],
+      }],
+      source: { kind: 'plugin', plugin: 'test' },
+    })],
+  ] as const)('rejects images outside user messages: %s', async (_role, build) => {
+    await expect(serializeMessages([build()], attachmentsOf(ref)))
+      .rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
+  })
+
+  it('rejects an image over the provider byte limit before base64 expansion', async () => {
+    const oversized = imageRef(2, 2, 32 * 1024 * 1024 + 1)
+    await expect(serializeMessages([createUserMessage({
+      content: [{ type: 'image', attachment: oversized }],
+      source: { kind: 'plugin', plugin: 'test' },
+    })], attachmentsOf(oversized))).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
+  })
+
+  it('rejects an image over the provider dimension limit', async () => {
+    const oversized = imageRef(8193, 1)
+    await expect(serializeMessages([createUserMessage({
+      content: [{ type: 'image', attachment: oversized }],
+      source: { kind: 'plugin', plugin: 'test' },
+    })], attachmentsOf(oversized))).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
+  })
+
+  it('serializes a full request with images through the attachment overload', async () => {
+    const wire = await serializeRequest(request({
+      model: 'deepseek-v4-flash-vision-exp',
+      messages: [imageMessage()],
+    }), undefined, attachmentsOf(ref))
+    expect(wire).toMatchObject({
+      model: 'deepseek-v4-flash-vision-exp',
+      messages: [{
+        role: 'user',
+        content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw==' } }],
+      }],
+      stream: true,
+      stream_options: { include_usage: true },
+    })
   })
 })
