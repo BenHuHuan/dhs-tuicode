@@ -16,7 +16,7 @@ Run `deepseek` inside a project. No browser is required.
 
 ## Why this build
 
-- **DeepSeek-native defaults:** V4 Pro, max reasoning effort, and a Minimal first request that reveals the complete coding tool catalog on demand.
+- **DeepSeek-native defaults:** V4 Pro, max reasoning effort, and a Minimal first request that reveals the complete coding tool catalog on demand. The catalog also includes the vision-capable `deepseek-v4-flash-vision-exp` model for image input.
 - **Real Bash semantics on Windows:** model-facing shell calls use Git Bash/MSYS instead of pretending PowerShell is Bash; safe Windows operations can still use PowerShell.
 - **A complete terminal loop:** inspect, search, edit, run commands, review diffs, create checkpoints, rewind, resume, export, and manage long-running work without leaving the TUI.
 - **Explicit safety states:** permission and planning modes have distinct colors, prompt rails, glyphs, and footer labels; unrestricted access is always an explicit choice.
@@ -122,7 +122,7 @@ Dangerous full access is never added to the normal cycle until it has been selec
 | Coding | File read/search/edit, shell execution, background jobs, task lists, tool cards, external editor, and direct `! command` execution |
 | Sessions | Persistent logs, resume/continue, rename, clear/new, prompt history, context compaction, copy, and export |
 | Review and recovery | Interactive diff, named workspace/conversation checkpoints, rewind, and conversation branching |
-| Models | Provider/model selection, reasoning effort, thinking visibility, token usage, and context pressure |
+| Models | Provider/model selection, reasoning effort, thinking visibility, token usage, vision image input, image token estimation, and context pressure |
 | Extensions | MCP status/reload, skill discovery and invocation, durable subagent management, and Cordis plugins |
 | Multi-agent | `allin` orchestration with a V4 Pro coordinator and parallel V4 Flash execution lanes |
 | Terminal UX | Mouse scrolling, jump-to-bottom, OSC 52 selection copy, inline paste blocks, clipboard-image input, terminal images, ANSI pixel fallback, and CJK-aware width handling |

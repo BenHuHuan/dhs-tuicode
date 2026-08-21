@@ -152,7 +152,7 @@ export class HeaderComponent implements Component {
     const name = this.gradient
       ? this.palette.bold(gradientText('DEEPSEEK'))
       : this.palette.bold(this.palette.accent('DEEPSEEK'))
-    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.2.0')}`
+    const title = `${name} ${this.palette.bold('CODE')} ${this.palette.dim('v0.3.0')}`
     const model = displayText(this.agent.options.model ?? 'model unset')
     const cwd = displayText(this.agent.session.header.cwd ?? process.cwd())
     const detail = displayText(this.agent.session.id)
@@ -218,8 +218,9 @@ export class HeaderComponent implements Component {
         `${this.palette.code('/mcp')} and ${this.palette.code('/agents')} manage extensions`,
         this.palette.dim('─'.repeat(rightWidth)),
         this.palette.bold(this.palette.brand("What's new")),
-        'Complete brick mascot with protected edge detail',
-        'Crash-safe copy selection and composable inline paste blocks',
+        'Vision image input with deepseek-v4-flash-vision-exp',
+        'User images send as inline image_url data URLs',
+        'Image token estimation follows the official DeepSeek calculator',
         '/mode switches Minimal, Router Standard, and Router Spec profiles',
         '/skills shares available Codex skill catalogs',
         '/workdir switches projects without losing history',
