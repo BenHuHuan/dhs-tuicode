@@ -218,13 +218,13 @@ export class HeaderComponent implements Component {
         `${this.palette.code('/mcp')} and ${this.palette.code('/agents')} manage extensions`,
         this.palette.dim('─'.repeat(rightWidth)),
         this.palette.bold(this.palette.brand("What's new")),
-        'Vision image input with deepseek-v4-flash-vision-exp',
-        'User images send as inline image_url data URLs',
-        'Image token estimation follows the official DeepSeek calculator',
-        '/mode switches Minimal, Router Standard, and Router Spec profiles',
-        '/skills shares available Codex skill catalogs',
-        '/workdir switches projects without losing history',
-        `${this.palette.code('/bypass')} toggles full access instantly`,
+        'Vision EXP model route accepts image prompts',
+        'Inline image_url payloads with official token estimates',
+        'Alt+V reads Windows clipboard images reliably',
+        'Native PNG, bitmap, and copied-file clipboard intake',
+        'Image markers compose with text and multiline paste blocks',
+        'Text-only clipboard fallback replays without corruption',
+        `${this.palette.code('/model')} switches between text and vision routes`,
       ]
       const bodyHeight = Math.max(leftLines.length, rightLines.length)
       const rightTop = Math.max(0, Math.floor((bodyHeight - rightLines.length) / 2))

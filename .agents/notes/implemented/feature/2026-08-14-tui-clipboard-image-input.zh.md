@@ -12,9 +12,9 @@
 
 `TuiRuntime.readClipboardImage` 是可替换的宿主边界。它接收 abort signal、字节上限与会话工作目录，并返回临时编码字节及声明的图像媒体类型。随附的 `readImageFromClipboard` 实现不经过 shell，直接启动精确 argv，捕获有界二进制 stdout，只为失败保留有界 stderr，在取消时终止子进程，并把退出码 3 解释为“没有图像”。主 channel 增加五秒超时，并在 dispose 时中止所有 reader。
 
-平台选择在 Windows 与 WSL 上使用 Windows PowerShell，在 Linux 上依次使用 `wl-paste` 与 `xclip`，在 macOS 上使用 `pngpaste`。每条默认路径都产生 PNG。部署持有的 `clipboardImageCommand` 会用一条同样产生原始 PNG 的精确 argv 替换候选列表；它支持远程桌面与自定义剪贴板桥接，同时不把 shell 命令字符串引入运行时契约。
+平台选择在 Windows 与 WSL 上使用 Windows PowerShell，在 Linux 上依次使用 `wl-paste` 与 `xclip`，在 macOS 上使用 `pngpaste`。Windows reader 会依次检查 Chromium／Electron 注册的 PNG 流、位图截图和从资源管理器复制的图像文件，并把后两类规范化为 PNG。因此每条默认路径都产生 PNG。部署持有的 `clipboardImageCommand` 会用一条同样产生原始 PNG 的精确 argv 替换候选列表；它支持远程桌面与自定义剪贴板桥接，同时不把 shell 命令字符串引入运行时契约。
 
-Ctrl+V 与 Alt+V 从主编辑器调用 reader。异步读取期间，提交与其他全局按键操作会冻结，确保结果落在激活时的光标位置。成功摄取会复制返回字节，把任何所提供路径缩减为显示 basename，应用当前媒体类型、数量、单图字节与聚合字节快速检查，并插入 `[Image #N]`。字节保存在挂载本地的 `ClipboardImageDraft` registry 中，而不进入编辑器文本。后续摄取前会清理已经删除的未保存条目；暂存 marker 会保留其字节，dispose 则释放整个 registry。
+Windows 上的 Alt+V，以及终端会转发该按键时的 Ctrl+V，会从主编辑器调用 reader。Windows Terminal 的原生 Ctrl+V 绑定会在 TUI 观察到按键前吞掉它，因此可见快捷键提示采用与 Claude Code 一致且可靠的 Windows Alt+V 约定。若终端改为转发括号粘贴替代文本，输入边界会在转发此类粘贴前探测图像 reader，把可用图像转换为 `[Image #N]`，并原样重放纯文本内容。异步读取期间，提交与其他全局按键操作会冻结，确保结果落在激活时的光标位置。成功摄取会复制返回字节，把任何所提供路径缩减为显示 basename，应用当前媒体类型、数量、单图字节与聚合字节快速检查，并插入 `[Image #N]`。字节保存在挂载本地的 `ClipboardImageDraft` registry 中，而不进入编辑器文本。后续摄取前会清理已经删除的未保存条目；暂存 marker 会保留其字节，dispose 则释放整个 registry。
 
 提交只识别本 channel 持有的 marker id。Shell、skill 或斜杠命令中的图像 marker 会被拒绝，并完整保留草稿。普通提示词会快照已选 provider／model、禁用输入，并解析精确模型元数据。显式 modality 列表缺少 `image` 时，会在验证或存储前拒绝；能力未知时继续交给 adapter guard。会话 reference 会在持久化前准备。随后草稿按当前附件限制检查，先验证每一张唯一临时图像、再保存任何图像，按 marker 顺序保存，并且只有全部保存成功后才把已识别 marker 替换为持久图像 block 并派发消息。重复 marker 会在模型内容中重复同一持久引用，但底层对象只保存一次。允许只包含图像的消息。
 
@@ -24,7 +24,7 @@ Ctrl+V 与 Alt+V 从主编辑器调用 reader。异步读取期间，提交与�
 
 进程边界测试固定平台命令选择、二进制 stdout、无图像退出码、字节上限、非零诊断与 abort 传播。草稿测试固定光标 marker 词汇、basename 清理、有序混合内容、纯图像投影、重复引用复用、数量与聚合限制、未知 marker 的字面行为、已删除字节清理，以及“全部验证后再保存”的规则。
 
-已挂载 channel 测试通过 headless terminal 驱动 Alt+V 与 Ctrl+V。它们证明混合与纯图像派发、显式纯文本模型在写入前拒绝、完整草稿恢复、双图验证失败时零保存，以及 reader、store 或剪贴板图像缺失时的可见降级。常规 TUI 单测、快照、lint 与类型 gate 覆盖随之变化的帮助与渲染表层。
+已挂载 channel 测试通过 headless terminal 驱动 Alt+V、原始 Ctrl+V 与 Windows Terminal 风格的括号粘贴替代文本。它们证明图像替代文本转换、纯文本原样重放、混合与纯图像派发、显式纯文本模型在写入前拒绝、完整草稿恢复、双图验证失败时零保存，以及 reader、store 或剪贴板图像缺失时的可见降级。常规 TUI 单测、快照、lint 与类型 gate 覆盖随之变化的帮助与渲染表层。
 
 一个无 key 的 built-lib PTY smoke 会启动随附 TUI profile，选择显式支持图像的 scripted 模型，调用输出有效单像素 PNG 的自定义剪贴板子进程，提交已插入 marker，并要求 adapter 观测到图像 block。运行后检查证明 JSONL 只包含 `sha256:` 附件引用和显示元数据，不包含 base64；在终端干净释放前，精确 PNG 字节已经存在于 `$DSH_HOME/attachments/v1/objects`。
 

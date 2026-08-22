@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-allin",
   "description": "Model-facing All in Luna-style multi-agent orchestration: pro planner, parallel flash task lanes, pro synthesis",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publishConfig": {
     "access": "public"
   },

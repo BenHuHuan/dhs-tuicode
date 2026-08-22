@@ -1,11 +1,11 @@
 # DeepSeek Code TUI
 
-[![Source](https://img.shields.io/badge/source-v0.2.0-2563eb)](https://github.com/BenHuHuan/dhs-tuicode/tree/v0.2.0) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](https://github.com/BenHuHuan/dhs-tuicode) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
+[![Source](https://img.shields.io/badge/source-v0.3.0-2563eb)](https://github.com/BenHuHuan/dhs-tuicode/tree/v0.3.0) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](https://github.com/BenHuHuan/dhs-tuicode) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
 
 [English](README.md) | 中文
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.2.0-preview-20260817.png" alt="DeepSeek Code TUI v0.2.0 在 Windows Terminal 中运行">
+  <img src="docs/assets/dhscode-tui-v0.2.0-preview-20260817.png" alt="DeepSeek Code TUI 在 Windows Terminal 中运行">
 </p>
 
 **DeepSeek Code TUI** 是基于官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的终端原生 coding agent（编程智能体）。它把 DeepSeek V4 Pro/Flash、持久化 TUI、真实编码工具、可恢复会话、权限控制、MCP、skill 和可续接 subagent 集成到一套 Shell 优先的工作流中。
@@ -23,6 +23,13 @@
 - **可扩展架构：** MCP server、skill、持久 subagent 和 `allin` 多智能体工具直接复用 Cordis 插件架构，而不是运行在另一套包装层中。
 - **适合 Windows 终端：** 支持 CJK 列宽、鼠标滚动、回到底部、选择复制、多行黏贴块、剪贴板图片和宽度安全渲染。
 
+## v0.3.0 亮点
+
+- **视觉提示词：** 通过 `/model` 选择 `deepseek-v4-flash-vision-exp`，可在同一条提示词中发送文字、剪贴板图片或两者组合。
+- **可靠的 Windows 图片黏贴：** Alt+V 可读取原生 PNG 字节、位图剪贴板对象和已复制的图片文件；终端把 Ctrl+V 转发给 TUI 时也可使用 Ctrl+V。
+- **可组合草稿：** 图片 marker 可与普通文字、多行黏贴块保持顺序组合；纯文本括号黏贴会原样重放。
+- **安全发送准入：** 图片字节在发送前仅保留于草稿；纯文本模型路由会在持久化附件前拒绝图片提示词。
+
 <a id="run"></a>
 
 ## 快速开始
@@ -39,7 +46,7 @@
 
 ### 从源码安装
 
-当前源码线为 **v0.2.0**，暂未提供安装包或 npm 发行版。
+当前源码线为 **v0.3.0**，暂未提供安装包或 npm 发行版。
 
 ```bash
 git clone https://github.com/BenHuHuan/dhs-tuicode.git
@@ -154,7 +161,7 @@ Shift+Tab 会在已配置的安全状态和 Plan 之间循环。当前主题使�
 - Enter 发送；Shift+Enter 或 Alt+Enter 换行。
 - Shift+Tab 切换权限/规划状态；Alt+P 选择模型；Alt+T 切换思考。
 - Up/Down 浏览提示词历史；Ctrl+R 搜索历史。
-- 剪贴板中存在图片时，Ctrl+V 或 Alt+V 可黏贴图片。
+- Windows 上按 Alt+V 可黏贴剪贴板图片；终端把 Ctrl+V 转发给 TUI 时也可使用 Ctrl+V。
 - 长文本或多行文本会显示为紧凑的 `[Paste #N ...]` 块，可与普通文字和更多块组合。
 - 鼠标滚轮滚动 transcript（文本记录）；Ctrl+End 跳到最新输出。
 - Ctrl+O 切换工具卡片详情；Ctrl+T 切换任务清单。
@@ -221,7 +228,7 @@ pnpm run test:e2e
 
 ## 项目状态
 
-仓库源码和标签当前为 **v0.2.0**。这是面向早期用户与贡献者的 pre-1.0 社区发行版。
+仓库源码和标签当前为 **v0.3.0**。这是面向早期用户与贡献者的 pre-1.0 社区发行版。
 
 DeepSeek Harness 以及引入的 routing/minimal 项目保留各自的历史、作者与声明。GitHub Contributor 列表根据 commit 历史自动生成，并不代表本 README 对项目所有权的声明。
 

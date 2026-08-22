@@ -66,9 +66,9 @@ Footer 将会话报告的用量汇总为 `↑<uncached input> ↓<output>`；任
 
 Ctrl+S 会暂存主编辑器中的任意非空草稿并清空编辑器；在空编辑器中按下则会恢复最新暂存及其精确光标位置、撤销历史和 pi-tui 大段粘贴内容。存在另一份非空草稿时按 Ctrl+S 会替换旧暂存。暂存只存在于当前 TUI 挂载期间，并在恢复时被消费。
 
-Ctrl+V 或 Alt+V 会从桌面剪贴板读取一张栅格图像，并在编辑器的精确光标位置插入 `[Image #N]`。编码字节只存在于草稿中：删除 marker 后，下一次摄取会释放未保存图像；只有提交包含 marker 的普通提示词时才会持久化附件。发送准入会快照已选路由，在存储前拒绝显式纯文本模型，解析会话 mention，先验证每一张临时图像、再保存第一张，随后按内容顺序把 marker 替换为持久 `ImageBlock` 引用并派发消息。可以只发送图像。读取、能力、解码、限制或存储失败都会把包含 marker 的完整草稿留在编辑器中；图像 marker 不能附带在 `!`、`/skill:` 或其他斜杠命令中。Transcript 中的用户与 assistant 图像以紧凑的格式／尺寸／字节元数据 marker 显示，而不是原始终端图形；路径和 base64 都不会进入会话日志。
+Windows 上按 Alt+V，或在终端会把该按键转发给应用时按 Ctrl+V，会从桌面剪贴板读取一张栅格图像，并在编辑器的精确光标位置插入 `[Image #N]`。Windows Terminal 默认把 Ctrl+V 绑定为自身的文本粘贴动作，因此 Alt+V 才是可靠的 Windows 图片快捷键（也与 Claude Code 的 Windows 约定一致）。终端发送括号粘贴替代文本时，TUI 会在文本进入编辑器前先检查图像剪贴板；真实图像会变成同一 marker，纯文本粘贴则原样重放。编码字节只存在于草稿中：删除 marker 后，下一次摄取会释放未保存图像；只有提交包含 marker 的普通提示词时才会持久化附件。发送准入会快照已选路由，在存储前拒绝显式纯文本模型，解析会话 mention，先验证每一张临时图像、再保存第一张，随后按内容顺序把 marker 替换为持久 `ImageBlock` 引用并派发消息。可以只发送图像。读取、能力、解码、限制或存储失败都会把包含 marker 的完整草稿留在编辑器中；图像 marker 不能附带在 `!`、`/skill:` 或其他斜杠命令中。Transcript 中的用户与 assistant 图像以紧凑的格式／尺寸／字节元数据 marker 显示，而不是原始终端图形；路径和 base64 都不会进入会话日志。
 
-随附 reader 在 Windows 与 WSL 上使用 Windows PowerShell，在 Linux 上依次使用 `wl-paste` 与 `xclip`，在 macOS 上使用 `pngpaste`。`clipboardImageCommand` 可用精确、无 shell 的 argv 替换平台选择；其 stdout 必须是原始 PNG，退出码 3 表示“没有图像”。这也是远程桌面与自定义剪贴板桥接的集成 seam。剪贴板读取受字节上限约束，会在 TUI dispose 时取消，并在五秒后超时。部署缺少 `ctx.attachments`、宿主缺少 reader 或剪贴板中没有图像时，会显示明确的终端通知且保持草稿不变。
+随附 reader 在 Windows 与 WSL 上使用 Windows PowerShell，并接受原生 PNG 剪贴板流、位图截图和从资源管理器复制的图像文件；Linux 上依次使用 `wl-paste` 与 `xclip`，macOS 上使用 `pngpaste`。`clipboardImageCommand` 可用精确、无 shell 的 argv 替换平台选择；其 stdout 必须是原始 PNG，退出码 3 表示“没有图像”。这也是远程桌面与自定义剪贴板桥接的集成 seam。剪贴板读取受字节上限约束，会在 TUI dispose 时取消，并在五秒后超时。部署缺少 `ctx.attachments`、宿主缺少 reader 或剪贴板中没有图像时，会显示明确的终端通知且保持草稿不变。
 
 `/copy [N]` 会复制最新一条可见 assistant 回复；N 为正整数时复制倒数第 N 条。选择按持久 `assistant/message` 事件从新到旧进行，并且只接受 append-origin 可见文本：reasoning、工具调用、纯图像消息、纯空白消息与仅供模型使用的 replacement 都不占用序号。多个文本 block 会原样拼接。回复包含非空 Markdown fenced code 时，会打开键盘选择器，可选择完整回复或按源顺序排列的各段代码正文；Up／Down 移动，Enter 复制，`w` 把高亮目标写入文件，Escape 或 Ctrl+C 取消。文件动作会提示输入路径；相对路径按会话工作目录解析，新文件采用独占创建，已有文件只有在用户明确按下 `y` 后才会被替换。空 fence 不会成为候选。该操作只由人类触发，不会把所选文本或路径发送给模型；斜杠调用本身仍遵循普通 TUI 输入／命令日志生命周期。
 

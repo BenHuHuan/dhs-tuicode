@@ -55,6 +55,50 @@ async function settle(terminal: HeadlessTerminal): Promise<void> {
 }
 
 describe('TUI clipboard image input', () => {
+  it('turns Windows Terminal bracketed image fallback text into an image block', async () => {
+    const terminal = new HeadlessTerminal(88, 32)
+    const attachments = fakeAttachments()
+    const readClipboardImage = vi.fn(() => Promise.resolve({
+      data: Uint8Array.of(137, 80, 78, 71),
+      mediaType: 'image/png' as const,
+    }))
+    const setup = await createTuiTestHarness(terminal, vi.fn(), {
+      attachments: attachments.service,
+      readClipboardImage,
+      agentOptions: { provider: 'vision', model: 'model' },
+      catalog: catalog(['text', 'image']),
+    })
+    try {
+      terminal.send('\x1b[200~LD\x1b[201~')
+      await settle(terminal)
+      const snapshot = await terminal.snapshot({ includeScrollback: true })
+      expect(snapshot).toContain('[Image #1]')
+      expect(snapshot).not.toContain(' LD')
+      expect(readClipboardImage).toHaveBeenCalledOnce()
+    } finally {
+      await disposeTuiTestHarness(setup)
+      await terminal.dispose()
+    }
+  })
+
+  it('replays a bracketed text paste unchanged when the clipboard has no image', async () => {
+    const terminal = new HeadlessTerminal(88, 32)
+    const setup = await createTuiTestHarness(terminal, vi.fn(), {
+      attachments: fakeAttachments().service,
+      readClipboardImage: () => Promise.resolve(undefined),
+    })
+    try {
+      terminal.send('\x1b[200~ordinary text\x1b[201~')
+      await settle(terminal)
+      const snapshot = await terminal.snapshot({ includeScrollback: true })
+      expect(snapshot).toContain('ordinary text')
+      expect(snapshot).not.toContain('[Image #')
+    } finally {
+      await disposeTuiTestHarness(setup)
+      await terminal.dispose()
+    }
+  })
+
   it('pastes at the cursor and durably sends mixed and image-only prompts', async () => {
     const terminal = new HeadlessTerminal(88, 32)
     const attachments = fakeAttachments()

@@ -10,8 +10,13 @@ function request(maxBytes = 1024, signal = new AbortController().signal) {
 
 describe('clipboard image process boundary', () => {
   it('selects shell-free platform helpers and honors an exact argv override', () => {
-    expect(selectClipboardImageCommands({ platform: 'win32' })[0]?.argv.slice(0, 5))
+    const windows = selectClipboardImageCommands({ platform: 'win32' })[0]
+    expect(windows?.argv.slice(0, 5))
       .toEqual(['powershell.exe', '-NoLogo', '-NoProfile', '-NonInteractive', '-STA'])
+    const windowsScript = windows?.argv.at(-1)
+    expect(windowsScript).toContain('GetData("PNG", $false)')
+    expect(windowsScript).toContain('ContainsFileDropList()')
+    expect(windowsScript).toContain('GetImage()')
     expect(selectClipboardImageCommands({ platform: 'linux', environment: {} }).map(item => item.argv[0]))
       .toEqual(['wl-paste', 'xclip'])
     expect(selectClipboardImageCommands({ platform: 'linux', environment: { WSL_DISTRO_NAME: 'Ubuntu' } })[0]?.argv[0])

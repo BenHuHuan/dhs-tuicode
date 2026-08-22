@@ -110,7 +110,13 @@ import type {
   TuiOverlaySession,
   TuiTheme,
 } from './extension/types.ts'
-import { copyableScreenText, displayInlineText, displayText } from './components/text.ts'
+import {
+  BRACKETED_PASTE_END,
+  BRACKETED_PASTE_START,
+  copyableScreenText,
+  displayInlineText,
+  displayText,
+} from './components/text.ts'
 import {
   brandText,
   clipboardNoticeText,
@@ -1274,7 +1280,7 @@ export function createTuiChat(
     const session = overlayManager.open({
       create: () => new ShortcutHelpDialog([
         'Enter send · Shift/Alt+Enter newline · Up/Down prompt history',
-        'Ctrl+V / Alt+V paste an image from the clipboard',
+        'Alt+V paste clipboard image on Windows · Ctrl+V where the terminal forwards it',
         'Shift+Tab / Alt+M cycle permission modes · Alt+P choose model · Alt+T toggle thinking',
         'Esc cancel active turn · Ctrl+G / Ctrl+X Ctrl+E external editor',
         'Ctrl+X Ctrl+K twice within 3s stop all running background subagents',
@@ -2895,7 +2901,7 @@ export function createTuiChat(
     chat.addChild(new Spacer(1))
     chat.addChild(new Text(palette.bold(palette.accent('Keyboard shortcuts')), 0, 0))
     chat.addChild(new Text([
-      'Enter send • Shift/Alt+Enter newline • Up/Down prompt history • Ctrl+V/Alt+V paste clipboard image',
+      'Enter send • Shift/Alt+Enter newline • Up/Down prompt history • Alt+V paste image on Windows',
       'Shift+Tab/Alt+M cycle modes • Alt+P choose model • Alt+T toggle thinking',
       'Esc cancel turn • Ctrl+G / Ctrl+X Ctrl+E external editor • Ctrl+T toggle task checklist',
       'Ctrl+X Ctrl+K twice within 3s stop all running background subagents',
@@ -3862,15 +3868,23 @@ export function createTuiChat(
   }
 
   /** Read one desktop image into the draft without persisting its bytes. */
-  const pasteClipboardImage = (): void => {
+  const pasteClipboardImage = (textPasteFallback?: string): void => {
+    const restoreTextPaste = (): boolean => {
+      if (textPasteFallback === undefined) return false
+      editor.handleInput(textPasteFallback)
+      requestRender()
+      return true
+    }
     if (transferOperation !== undefined) return
     const readClipboardImage = runtime.readClipboardImage
     if (readClipboardImage === undefined) {
+      if (restoreTextPaste()) return
       appendNotice('Clipboard image input is unavailable because this runtime has no clipboard reader.', 'warning')
       return
     }
     const attachments = ctx.get('attachments')
     if (attachments === undefined) {
+      if (restoreTextPaste()) return
       appendNotice('Clipboard image input is unavailable because no attachment store is mounted.', 'warning')
       return
     }
@@ -3895,6 +3909,7 @@ export function createTuiChat(
     }).then((image) => {
       if (disposed || controller.signal.aborted) return
       if (image === undefined) {
+        if (restoreTextPaste()) return
         appendNotice('No image found in the clipboard.', 'warning')
         return
       }
@@ -4328,6 +4343,16 @@ export function createTuiChat(
     }
     if (matchesKey(data, Key.ctrl('v')) || matchesKey(data, Key.alt('v'))) {
       pasteClipboardImage()
+      return { consume: true }
+    }
+    // Windows Terminal owns Ctrl+V by default. It pastes the clipboard payload
+    // as one bracketed-paste sequence instead of forwarding the key chord, so
+    // inspect the desktop clipboard before the fallback text reaches pi-tui.
+    // If no image exists, replay the original sequence unchanged and preserve
+    // the editor's normal inline text-paste behavior.
+    if (data.startsWith(BRACKETED_PASTE_START) && data.endsWith(BRACKETED_PASTE_END)
+      && runtime.readClipboardImage !== undefined) {
+      pasteClipboardImage(data)
       return { consume: true }
     }
     const externalEditorAction = externalEditorShortcut.handle(data)

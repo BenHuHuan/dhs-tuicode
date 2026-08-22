@@ -1,11 +1,11 @@
 # DeepSeek Code TUI
 
-[![Source](https://img.shields.io/badge/source-v0.2.0-2563eb)](https://github.com/BenHuHuan/dhs-tuicode/tree/v0.2.0) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](https://github.com/BenHuHuan/dhs-tuicode) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
+[![Source](https://img.shields.io/badge/source-v0.3.0-2563eb)](https://github.com/BenHuHuan/dhs-tuicode/tree/v0.3.0) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-8b5cf6)](https://github.com/BenHuHuan/dhs-tuicode) [![License](https://img.shields.io/badge/license-MIT-111827)](LICENSE)
 
 English | [中文](README.zh.md)
 
 <p align="center">
-  <img src="docs/assets/dhscode-tui-v0.2.0-preview-20260817.png" alt="DeepSeek Code TUI v0.2.0 running in Windows Terminal">
+  <img src="docs/assets/dhscode-tui-v0.2.0-preview-20260817.png" alt="DeepSeek Code TUI running in Windows Terminal">
 </p>
 
 **DeepSeek Code TUI** is a terminal-native coding agent built on the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It combines DeepSeek V4 Pro/Flash, a persistent TUI, real coding tools, resumable sessions, permissions, MCP, skills, and continuable subagents in one shell-first workflow.
@@ -23,6 +23,13 @@ Run `deepseek` inside a project. No browser is required.
 - **Extensible by design:** MCP servers, skills, durable subagents, and the `allin` multi-agent tool use the underlying Cordis plugin architecture rather than a separate wrapper runtime.
 - **Windows-friendly interaction:** CJK-aware layout, mouse scrolling, jump-to-bottom, selection copy, multiline paste blocks, clipboard images, and width-safe rendering.
 
+## v0.3.0 highlights
+
+- **Vision prompts:** select `deepseek-v4-flash-vision-exp` with `/model` to send text, clipboard images, or both in one prompt.
+- **Reliable Windows image paste:** Alt+V reads native PNG bytes, bitmap clipboard objects, and copied image files; Ctrl+V also works when the terminal forwards that chord to the TUI.
+- **Composable drafts:** image markers stay in place beside ordinary text and multiline paste blocks, while text-only bracketed paste replays unchanged.
+- **Safe admission:** image bytes remain draft-local until send, and text-only model routes reject image prompts before attachment persistence.
+
 <a id="run"></a>
 
 ## Quick start
@@ -39,7 +46,7 @@ Run `deepseek` inside a project. No browser is required.
 
 ### Install from source
 
-The current source line is **v0.2.0**. Packaged installers and npm releases are not available yet.
+The current source line is **v0.3.0**. Packaged installers and npm releases are not available yet.
 
 ```bash
 git clone https://github.com/BenHuHuan/dhs-tuicode.git
@@ -154,7 +161,7 @@ Type `/` to open the scrollable command palette. Skill commands are populated as
 - Enter sends; Shift+Enter or Alt+Enter inserts a newline.
 - Shift+Tab changes the permission/planning state; Alt+P chooses a model; Alt+T toggles thinking.
 - Up/Down browses prompt history; Ctrl+R searches it.
-- Ctrl+V or Alt+V pastes a clipboard image when one is available.
+- Alt+V pastes a clipboard image on Windows; Ctrl+V also works when the terminal forwards that chord to the TUI.
 - Long or multiline text becomes a compact `[Paste #N ...]` block that can be combined with ordinary text and additional blocks.
 - The mouse wheel scrolls the transcript; Ctrl+End jumps to the latest output.
 - Ctrl+O cycles tool-card detail; Ctrl+T toggles the task checklist.
@@ -221,7 +228,7 @@ Keyless e2e fixtures do not require an API key; real model requests do. Report b
 
 ## Project status
 
-The repository and source tag are currently **v0.2.0**. This is a pre-1.0 community distribution intended for early adopters and contributors.
+The repository and source tag are currently **v0.3.0**. This is a pre-1.0 community distribution intended for early adopters and contributors.
 
 DeepSeek Harness and the imported routing/minimal projects retain their own history, authorship, and notices. GitHub's contributor list is derived automatically from commit history; it is not an ownership declaration by this README.
 
